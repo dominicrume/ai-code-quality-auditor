@@ -1007,10 +1007,25 @@ Under Bonferroni correction across the four metrics at α = 0.05
 (threshold 0.0125), **duplication and complexity differ significantly**;
 hallucinations and security density do not. Neither surviving result clears the
 stricter α = 0.01 Bonferroni threshold (0.0025), and this is stated plainly
-rather than obscured by choice of α. The defensible inferential claim from this
-study is therefore narrow and specific: *on identical tasks, Claude Code
-produces significantly less duplicated code and significantly more
-control-flow-dense code than Cursor Agent.*
+rather than obscured by choice of α.
+
+A further distinction must be drawn between the two surviving results, because
+replication is not uniform even within the live conditions. Examining
+within-cell variance for each arm separately: on *complexity* both conditions
+vary across all three specifications, so the comparison rests on genuine
+run-to-run replication at both ends. On *duplication* `claude_code` returns
+0.00 in every replication of every specification — the arm is constant, and the
+test therefore compares a fixed value against a distribution rather than two
+distributions. The gap it reports is real and visible in Table 4.1, but it is
+not evidence of the same kind.
+
+The single claim in this study that rests on unambiguous independent
+replication in **both** arms is therefore *complexity*: on identical tasks,
+Claude Code produces measurably more control-flow-dense code than Cursor Agent
+(Mann–Whitney *U* = 641.5, *p* = 0.0047, *N* = 30 per condition, rank-biserial
+*r* = −0.43). The duplication result is reported alongside it as a strong
+descriptive difference with partial inferential support, and the distinction is
+made explicit here rather than left for a reader to derive.
 
 **Level 3 — pseudoreplication-corrected omnibus (all four conditions).**
 Collapsing every condition to one value per specification — the honest unit of
@@ -1104,10 +1119,11 @@ The chapter's findings can be summarised in six points.
 3. **Claude Code produces the most disciplined output** — zero hallucinations and
    zero duplication across all 30 live runs — at the cost of the highest structural
    density (mean complexity 3.35), which is interpreted as denser, not worse.
-   This is the one cross-vendor contrast that rests on two fully live,
-   independently replicated conditions, and both components of it (less
-   duplication, greater density than Cursor Agent) are statistically significant
-   (§4.5.2).
+   This is the one cross-vendor contrast that rests on two fully live
+   conditions. Of its two components, the greater control-flow density relative
+   to Cursor Agent is the study's single result supported by genuine replication
+   in both arms; the duplication gap is large and consistent but rests on an arm
+   with no within-cell variance, and is reported as descriptive (§4.5.2).
 
 4. **Cursor Agent is the median performer** across all five metrics, neither best
    nor worst on any single one; its modest hallucinations are confined to the
