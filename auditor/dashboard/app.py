@@ -332,8 +332,9 @@ def pilot():
             "company": (request.form.get("company") or "").strip()[:200],
             "role":    (request.form.get("role") or "").strip()[:200],
             "context": (request.form.get("context") or "").strip()[:2000],
-            "ip":      request.headers.get("Fly-Client-IP") or request.remote_addr or "",
-            "ua":      (request.user_agent.string or "")[:300],
+            # No IP or user-agent. Both are personal data under UK GDPR, neither
+            # was ever read by anything, and the form carries no notice that
+            # would justify holding them.
             "ts":      datetime.now(timezone.utc).isoformat(),
         }
         if entry["email"] and entry["name"] and entry["company"]:

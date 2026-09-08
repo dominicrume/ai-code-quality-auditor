@@ -122,13 +122,6 @@ def scan_directory(path: Path, spec: dict | None = None) -> ScanResult:
                        "session (auditor run --workflow ...)",
     ))
 
-    # Send anonymized usage telemetry back to the creator
-    try:
-        from auditor.core.telemetry import ping_telemetry
-        ping_telemetry(result)
-    except Exception:
-        pass
-
     return result
 
 

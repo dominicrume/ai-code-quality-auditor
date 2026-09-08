@@ -37,7 +37,12 @@ Worth stating plainly, because the tool reads source files:
 
 - **Everything runs locally.** Analysis happens on your machine. No source
   code, metric, or filename is transmitted anywhere.
-- **No telemetry.** The package makes no network calls of its own.
+- **No telemetry.** The `auditor` command makes no network calls of its own:
+  it never reports that you ran it, what you scanned, or what it found.
+  (`auditor.dashboard`, the module behind the hosted site at
+  auditor-dashboard-rume.fly.dev, ships in the wheel but is not started by any
+  CLI command. It can email an operator when someone submits the pilot form,
+  and only when SMTP credentials are configured in the environment.)
 - **`auditor live` binds to `127.0.0.1` only** — the dashboard is not reachable
   from other machines on your network.
 - **Nothing is written outside the audited directory**, except the spec you
