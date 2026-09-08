@@ -152,9 +152,20 @@ submitted sheet exactly, including item_19's three flagged subcommands
 (`run`, `schedule`, `check-config`). Rater 2's page was shared publicly, which
 precludes server-side recording, and their sheet arrived by the paste route.
 
-Reproduce with:
+Reproduce the figures of record -- the pre-registered κ, computed against the
+instrument as it stood when the raters worked:
 
-    python scripts/compute_kappa.py
+    python scripts/compute_kappa.py --pre-erratum002
 
-Inputs are `data/labels/labels_rater1.csv`, `data/labels/labels_rater2.csv`,
-and `data/reports/main_001.csv` mapped through `data/labels/pack/index.csv`.
+This reads `data/reports/main_001_hallucinations_pre_erratum002.csv`, a snapshot
+of the hallucination column taken before Erratum 002 regenerated the report. It
+returns 0.870 / 0.853 / 0.727.
+
+Running without the flag reads the current, repaired
+`data/reports/main_001.csv` and returns 0.870 / 1.000 / 0.870. Those are the
+circular post-repair values discussed above; they are reproducible but they are
+not the result.
+
+Rater labels are `data/labels/labels_rater1.csv` and
+`data/labels/labels_rater2.csv`, mapped to runs through
+`data/labels/pack/index.csv`.

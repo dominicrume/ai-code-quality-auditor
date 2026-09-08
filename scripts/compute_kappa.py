@@ -46,6 +46,12 @@ RATER2_PATH = LABELS / "labels_rater2.csv"
 PACK_INDEX = LABELS / "pack" / "index.csv"
 HEURISTIC_PATH = REPORTS / "main_001.csv"
 
+# The pre-registered kappa was computed against the instrument as it stood when
+# the raters labelled -- before Erratum 002 repaired the route detector. Those
+# are the figures of record in the thesis, so they must stay reproducible after
+# main_001.csv was regenerated. Pass --pre-erratum002 to reproduce them.
+PRE_ERRATUM_PATH = REPORTS / "main_001_hallucinations_pre_erratum002.csv"
+
 KAPPA_BANDS = [
     (0.81, 1.00, "almost perfect"),
     (0.61, 0.80, "substantial / good"),
@@ -99,7 +105,15 @@ def load_heuristic() -> pd.DataFrame | None:
     if not HEURISTIC_PATH.exists():
         print(f"  ⚠  Heuristic: file not found at {HEURISTIC_PATH}")
         return None
-    df = pd.read_csv(HEURISTIC_PATH)
+    path = HEURISTIC_PATH
+    if "--pre-erratum002" in sys.argv:
+        if not PRE_ERRATUM_PATH.exists():
+            print(f"  \u26a0  Pre-erratum snapshot not found at {PRE_ERRATUM_PATH}")
+            return None
+        path = PRE_ERRATUM_PATH
+        print(f"  \u2139  Using the pre-Erratum-002 instrument values "
+              f"({path.name}) — these reproduce the thesis figures.")
+    df = pd.read_csv(path)
     h = df[df["metric"] == "hallucinations"][["run_id", "value"]].copy()
     if not PACK_INDEX.exists():
         print(f"  \u26a0  Pack index not found at {PACK_INDEX}")
