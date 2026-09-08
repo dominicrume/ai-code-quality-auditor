@@ -1,5 +1,5 @@
 > **Generated file — do not edit.**
-> Extracted from `DISSERTATION_FULL.md` on 2026-09-08 by
+> Extracted from `DISSERTATION_FULL.md` on 2026-09-09 by
 > `scripts/split_chapters.py`. Edit the master and re-run; any change made
 > here is overwritten. The master is the submission artefact.
 
@@ -363,7 +363,8 @@ evidence that hand-coding is superior.
 ## 4.7 Inter-rater reliability
 
 The hallucination heuristic was validated against human judgement as
-pre-registered. Two raters independently labelled the 30-run hand-label sample,
+pre-registered. Two raters independently labelled the 30-run hand-label sample, the second
+being Matthew Aston, who had no other involvement in the study,
 deduplicated to 19 distinct codebases (11 of the 30 rows are byte-identical
 replays under Deviation 001, and labelling identical code twice would inflate
 agreement by construction). Neither rater saw `data/reports/main_001.csv`, and
@@ -428,7 +429,7 @@ independently and was not otherwise involved in the study, and the single
 human–human disagreement is evidence that the two sheets were produced without
 conferring; neither fact establishes that Rater 1 was blind to the hypotheses.
 
-## 4.9 Application outside the controlled study
+## 4.8 Application outside the controlled study
 
 The design so far tests the instrument on captures built to be scored. Three
 further audits were run on codebases outside the study. They are descriptive,
@@ -445,13 +446,24 @@ experiment.
 | GovSignal | 30 | 1,923 | 17 | 2.26 | 4.79 | 0.89% | 4.00 |
 | This instrument | 141 | 13,136 | 86 | 3.14 | 3.58 | 4.01% | 12 |
 
+![The same project before and after a specification was supplied](figures/fig_4_9_scope_needs_spec.png)
+
+**Figure 4.9** Why the metric needs a brief. Two captures of `lcx-enterprise-core-v2`
+four minutes apart, during which twenty-two lines were added. In the first the
+tool has no specification and scope drift reports `n/a`, because there is
+nothing to measure against. In the second a specification has been supplied and
+the same codebase reports six off-specification features. The other four metrics
+are unchanged, since they do not depend on knowing what was asked for. This is
+the study's argument in one image: fidelity is not a property of code that can
+be read off the code alone.
+
 Two points follow. Scope drift discriminates: `kya-rails` returns 0.00, the
 reading the metric is designed to produce when output matches its brief, while
 `GovSignal` returns 4. A metric returning the same value on every real project
 would measure nothing. And `GovSignal` was audited by a third party on their own
 machine, so these readings occur in hands other than the author's.
 
-*4.9.1 The instrument audits itself.* The third row is the most uncomfortable
+*4.8.1 The instrument audits itself.* The third row is the most uncomfortable
 and the most useful. Scored against its own declared scope, transcribed from the
 pre-registration and the standing brief of 30 May 2026 and reproduced in
 `specs/auditor_instrument.yaml`, the instrument carries twelve capabilities
@@ -476,7 +488,7 @@ demonstration specification for a student-course application, under which almost
 everything the instrument contains is off-specification by construction. That is
 an artefact of the wrong brief, not a finding; the figure of record is 12.
 
-## 4.8 Summary of findings
+## 4.9 Summary of findings
 
 1. **Hallucination is the most discriminating governance metric.** The four
 conditions span 0.00 to 1.33 off-spec features per run, a range meaningful in

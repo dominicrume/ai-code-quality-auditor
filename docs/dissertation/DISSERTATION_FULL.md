@@ -155,7 +155,10 @@ cleaner-looking draft would have been. I thank the Aston–Capgemini Centre of
 Excellence for Enterprise AI for the enterprise framing that gives this
 instrument its purpose beyond the laboratory, and the mentors and industry
 partners whose questions about credibility, differentiation, and evidence
-sharpened every chapter. Any errors that remain are my own.
+sharpened every chapter. I thank Matthew Aston, who gave several hours to the
+independent labelling reported in §4.7 and who also installed and ran the
+instrument on his own machine, producing one of the field audits in §4.8. Any
+errors that remain are my own.
 
 ---
 
@@ -192,6 +195,7 @@ sharpened every chapter. Any errors that remain are my own.
 - Figure 4.6 Nominal versus effective sample size per condition
 - Figure 4.7 Human baseline against the agentic mean, per specification
 - Figure 4.8 Per-item comparison of both raters and the instrument
+- Figure 4.9 The same project before and after a specification was supplied
 - Figure 5.1 Both errata, as first reported and as corrected
 
 ---
@@ -402,37 +406,32 @@ explicit rather than implicit (§5.2).
 
 ## 2.3 Software-quality metrics
 
-The metrics used in this study are drawn from a long and well-validated
-tradition in software-engineering measurement. *Cyclomatic complexity* (McCabe,
-1976) counts the number of linearly independent paths through a program's
-control-flow graph and remains the canonical structural-complexity measure. It
-is, importantly, a *two-sided* indicator (both excessive complexity (which
-impairs comprehension and testing) and anomalously low complexity (which, as the
-human-baseline CLI result in §4.6 illustrates, can indicate an absence of
-modular structure) are interpretively meaningful) and it is treated as such here
-rather than as a simple "lower-is-better" score. *Code duplication* is a
-standard maintainability indicator, conventionally detected through token- or
-line-shingle matching; this study uses a six-line shingle, the conventional
-plagiarism-detection window, to quantify the proportion of source lines
-participating in a repeated block. *Security-vulnerability density*, expressed
-as CWE-tagged findings per thousand lines of code, follows the OWASP (2021) and
-MITRE CWE (2023) frameworks for vulnerability categorisation.
+The metrics used here are drawn from a long and well-validated measurement
+tradition. *Cyclomatic complexity* (McCabe, 1976) counts the linearly
+independent paths through a program's control-flow graph and remains the
+canonical structural measure. It is importantly a *two-sided* indicator:
+excessive complexity impairs comprehension and testing, while anomalously low
+complexity can signal an absence of modular structure, as the human-baseline CLI
+result in §4.6 illustrates. It is treated as such here rather than as a simple
+"lower is better" score. *Code duplication* is a standard maintainability
+indicator, conventionally detected by token or line shingling; this study uses a
+six-line shingle, the conventional plagiarism-detection window, to quantify the
+proportion of source lines participating in a repeated block.
+*Security-vulnerability density*, expressed as CWE-tagged findings per thousand
+lines, follows the OWASP (2021) and MITRE CWE (2023) categorisations.
 
-To these three established artefact metrics the study adds two that are specific
-to the agentic-evaluation problem. The first is a *specification-hallucination
-count*, defined as the number of shipped features, routes, or commands not
-present in the specification. This study argues that this construct is the
-agentic analogue of *scope creep* in traditional project management, and that
-(unlike scope creep, which accrues over a project's life) agentic scope creep is
-incurred instantaneously, at the moment of generation, and at machine scale. The
-second is a *keystroke-correction frequency* (backspaces and deletes per 1,000
-keystrokes), a process metric that is non-zero only for the human baseline and
-is included not as a cross-condition comparator but to provide an interpretive
-floor against which the agentic conditions' structural zero can be read (§4.6,
-§5.5). The selection of these five metrics is deliberately parsimonious: each is
-either a long-validated quality measure or a direct operationalisation of a
-governance property, and each is computable by static analysis without a runtime
-oracle.
+To these three the study adds two metrics specific to the agentic problem. The
+first is a *specification-hallucination count*: the number of shipped features,
+routes or commands absent from the specification. This construct is the agentic
+analogue of *scope creep*, with one difference that matters. Scope creep accrues
+over a project's life; agentic scope creep is incurred instantaneously, at the
+moment of generation, and at machine scale. The second is a
+*keystroke-correction frequency*, backspaces and deletes per 1,000 keystrokes,
+a process metric that is non-zero only for the human baseline and is included to
+provide an interpretive floor against which the agentic zero can be read (§4.6,
+§5.5). The selection is deliberately parsimonious: each metric is either a
+long-validated quality measure or a direct operationalisation of a governance
+property, and each is computable by static analysis without a runtime oracle.
 
 ## 2.4 Specification fidelity, hallucination and governance
 
@@ -1127,7 +1126,8 @@ evidence that hand-coding is superior.
 ## 4.7 Inter-rater reliability
 
 The hallucination heuristic was validated against human judgement as
-pre-registered. Two raters independently labelled the 30-run hand-label sample,
+pre-registered. Two raters independently labelled the 30-run hand-label sample, the second
+being Matthew Aston, who had no other involvement in the study,
 deduplicated to 19 distinct codebases (11 of the 30 rows are byte-identical
 replays under Deviation 001, and labelling identical code twice would inflate
 agreement by construction). Neither rater saw `data/reports/main_001.csv`, and
@@ -1192,7 +1192,7 @@ independently and was not otherwise involved in the study, and the single
 human–human disagreement is evidence that the two sheets were produced without
 conferring; neither fact establishes that Rater 1 was blind to the hypotheses.
 
-## 4.9 Application outside the controlled study
+## 4.8 Application outside the controlled study
 
 The design so far tests the instrument on captures built to be scored. Three
 further audits were run on codebases outside the study. They are descriptive,
@@ -1209,13 +1209,24 @@ experiment.
 | GovSignal | 30 | 1,923 | 17 | 2.26 | 4.79 | 0.89% | 4.00 |
 | This instrument | 141 | 13,136 | 86 | 3.14 | 3.58 | 4.01% | 12 |
 
+![The same project before and after a specification was supplied](figures/fig_4_9_scope_needs_spec.png)
+
+**Figure 4.9** Why the metric needs a brief. Two captures of `lcx-enterprise-core-v2`
+four minutes apart, during which twenty-two lines were added. In the first the
+tool has no specification and scope drift reports `n/a`, because there is
+nothing to measure against. In the second a specification has been supplied and
+the same codebase reports six off-specification features. The other four metrics
+are unchanged, since they do not depend on knowing what was asked for. This is
+the study's argument in one image: fidelity is not a property of code that can
+be read off the code alone.
+
 Two points follow. Scope drift discriminates: `kya-rails` returns 0.00, the
 reading the metric is designed to produce when output matches its brief, while
 `GovSignal` returns 4. A metric returning the same value on every real project
 would measure nothing. And `GovSignal` was audited by a third party on their own
 machine, so these readings occur in hands other than the author's.
 
-*4.9.1 The instrument audits itself.* The third row is the most uncomfortable
+*4.8.1 The instrument audits itself.* The third row is the most uncomfortable
 and the most useful. Scored against its own declared scope, transcribed from the
 pre-registration and the standing brief of 30 May 2026 and reproduced in
 `specs/auditor_instrument.yaml`, the instrument carries twelve capabilities
@@ -1240,7 +1251,7 @@ demonstration specification for a student-course application, under which almost
 everything the instrument contains is off-specification by construction. That is
 an artefact of the wrong brief, not a finding; the figure of record is 12.
 
-## 4.8 Summary of findings
+## 4.9 Summary of findings
 
 1. **Hallucination is the most discriminating governance metric.** The four
 conditions span 0.00 to 1.33 off-spec features per run, a range meaningful in

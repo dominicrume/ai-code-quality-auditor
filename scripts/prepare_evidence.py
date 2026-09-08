@@ -41,12 +41,23 @@ CROPS = {
     "PHOTO-2026-09-08-13-15-30.jpg":               (0, 32, 1548, 407),
     # Already a bare table.
     "PHOTO-2026-09-07-19-53-41.jpg":               None,
+    # The scope-drift pair: same project four minutes apart.
+    "Screenshot 2026-09-08 at 18.41.59.png":      (0, 310, 2940, 1420),
+    "Screenshot 2026-09-08 at 18.45.24.png":      (0, 310, 2940, 880),
+    # Windows VS Code: title bar off the top, taskbar and status bar off the
+    # bottom, activity rail off the left.
+    "1fbed596-aa52-4d30-b890-3503b7d5b470 2.JPG": (60, 45, 1600, 915),
 }
 
 # Not evidence for this study.
 EXCLUDE = {
     "MORE_Cover_Front_HiRes.png": "a book cover; unrelated to the study",
     "Screenshot 2026-08-31 at 19.39.54 copy.png": "byte-identical duplicate",
+    "a162b5b3-daa6-405e-98ac-5b29d39c64ac 2.JPG": "duplicate of GOV_SIGNAL_REALRUN",
+    # A private message thread. It carries a third party's photograph, contact
+    # details and unrelated conversation, none of which belongs in a submitted
+    # document. Kept on disk as provenance for the second rater's identity.
+    "IMG_7746 2.PNG": "private correspondence containing a third party's personal data",
 }
 
 

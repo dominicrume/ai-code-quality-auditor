@@ -15,7 +15,7 @@ def warn(cond, msg):
 
 print("\n[1] FIGURES")
 refs = re.findall(r'!\[[^\]]*\]\(([^)]+)\)', s)
-check(len(refs) == 12, f"12 figures referenced (found {len(refs)})")
+check(len(refs) == 13, f"13 figures referenced (found {len(refs)})")
 for r in refs:
     check((ROOT / "docs/dissertation" / r).resolve().exists(), f"file exists: {r}")
 caps = re.findall(r'^\*\*Figure ([0-9.]+)\*\*', s, re.M)
@@ -71,7 +71,12 @@ check(s.count(chr(8211)) > 0,
       "en dashes retained for ranges and compound names")
 import re as _re
 _flat = " ".join(s.split())
-for _n, _p in [("nested parentheses", r"\([^()]*\([^()]*\)[^()]*\)"),
+_d = _m = 0
+for _c in _flat:
+    if _c == "(": _d += 1; _m = max(_m, _d)
+    elif _c == ")": _d = max(0, _d - 1)
+check(_m <= 2, f"parenthesis nesting never exceeds two deep (max {_m})")
+for _n, _p in [("doubled spaces before brackets", r"\s\s+\("),
                ("doubled commas", r",\s*,"),
                ("space before punctuation", r"\s+[,.;:](?![0-9])")]:
     check(not _re.search(_p, _flat), f"no {_n}")

@@ -379,6 +379,43 @@ def fig_human_vs_ai():
     save(fig, "fig_4_7_human_vs_ai")
 
 
+# ------------------------------------------- the specification-dependence pair
+def fig_scope_needs_spec():
+    """Two captures of one project, four minutes apart.
+
+    The only change between them is that a specification was supplied. Without
+    one the scope-drift metric cannot report; with one it immediately reports 6.
+    This is the study's argument in a single image, so it is composed from the
+    two captures rather than described.
+    """
+    from PIL import Image as PILImage
+
+    prepared = ROOT / "evidence" / "prepared"
+    before = prepared / "Screenshot 2026-09-08 at 18.41.59.jpg"
+    after = prepared / "Screenshot 2026-09-08 at 18.45.24.jpg"
+    if not (before.exists() and after.exists()):
+        print("  skip fig_4_9: source captures not found")
+        return
+
+    fig = plt.figure(figsize=(7.4, 6.9))
+    gs = fig.add_gridspec(2, 1, height_ratios=[1.0, 0.62], hspace=0.20)
+
+    for ax, path, tag, note, colour in (
+        (fig.add_subplot(gs[0]), before, "18:41",
+         "No specification supplied. Scope drift cannot be computed.", AMBER),
+        (fig.add_subplot(gs[1]), after, "18:45",
+         "Specification supplied. Scope drift reports 6.", RED),
+    ):
+        with PILImage.open(path) as im:
+            ax.imshow(im)
+        ax.set_xticks([]); ax.set_yticks([])
+        for sp in ax.spines.values():
+            sp.set_color(GREY_L); sp.set_linewidth(0.8)
+        ax.set_title(f"{tag}   {note}", fontsize=9.2, fontweight="bold",
+                     loc="left", pad=7, color=colour)
+    save(fig, "fig_4_9_scope_needs_spec")
+
+
 if __name__ == "__main__":
     print("generating evidence figures...")
     fig_language_composition()
@@ -387,4 +424,5 @@ if __name__ == "__main__":
     fig_effective_n()
     fig_errata()
     fig_human_vs_ai()
+    fig_scope_needs_spec()
     print(f"done -> {OUT}")
