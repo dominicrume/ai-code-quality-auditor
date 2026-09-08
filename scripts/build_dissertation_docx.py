@@ -134,7 +134,7 @@ def heading(doc, text, level):
 # Figures are generated at 300 dpi for print. Embedding them at full size
 # makes the .docx too large to transport; 1600 px across a 6-inch column is
 # still 267 dpi, which survives PDF export without visible loss.
-MAX_PX = 900
+MAX_PX = 1150
 _TMP = ROOT / "build" / "_figures_optimised"
 
 
