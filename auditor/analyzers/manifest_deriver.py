@@ -31,8 +31,21 @@ from __future__ import annotations
 import re
 
 
-# Web routes: @app.get("/path"), @router.post("/path"), etc.
+# Web routes, Python decorator form: @app.get("/path"), @router.post("/path").
 _ROUTE_RE = re.compile(r"""@\w+\.(?:get|post|put|delete|patch)\(\s*["']([^"']+)["']""")
+
+# Web routes, JS/TS call form: app.get("/path"), router.post(`/path`).
+#
+# Added after the two-rater kappa validation (docs/KAPPA_RESULTS_001.md) found
+# a false negative: the replit_agent x agent_education_system capture is an
+# Express/TypeScript service exposing GET /healthz, which no specification
+# requests. Matching only the Python decorator form scored that cell zero by
+# construction rather than by judgement, and both raters independently
+# counted the route the instrument could not see.
+_JS_ROUTE_RE = re.compile(
+    r"""\b(?:app|router|api)\.(?:get|post|put|delete|patch)\(\s*["'`]([^"'`]+)""",
+    re.I,
+)
 
 # argparse subcommands:  subparsers.add_parser("name", ...)
 _ARGPARSE_RE = re.compile(r"""(?:add_parser|add_subparsers\()\s*\(\s*["']([a-zA-Z_][\w\-]*)["']""")
@@ -89,7 +102,7 @@ def _command_matches_feature(cmd: str, feature_id: str) -> bool:
 
 
 def _extract_routes(blob: str) -> list[str]:
-    return sorted(set(_ROUTE_RE.findall(blob)))
+    return sorted(set(_ROUTE_RE.findall(blob)) | set(_JS_ROUTE_RE.findall(blob)))
 
 
 def _extract_cli_commands(blob: str) -> list[str]:

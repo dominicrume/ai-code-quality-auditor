@@ -70,3 +70,22 @@ def test_detects_click_named_commands():
     result = derive(spec, code)
     assert "cli.add" in result["implemented"]
     assert "run" in result["hallucinated_commands"]
+
+
+def test_express_routes_are_detected():
+    """A TypeScript/Express service must not score zero by construction.
+
+    Regression for the false negative found by the two-rater kappa validation:
+    matching only Python decorator routes made every non-Python web capture
+    unfalsifiable. See docs/KAPPA_RESULTS_001.md.
+    """
+    spec = {"features": [{"id": "course.list"}, {"id": "auth.login"}]}
+    codebase = {"files": {"src/routes/courses.ts": (
+        "router.get('/courses', listCourses);\n"
+        "router.post('/auth/login', login);\n"
+        "router.get('/healthz', health);\n"
+    )}}
+    out = derive(spec, codebase)
+    assert "/healthz" in out["hallucinated_endpoints"]
+    assert "/courses" not in out["hallucinated_endpoints"]
+    assert "/auth/login" not in out["hallucinated_endpoints"]

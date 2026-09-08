@@ -216,12 +216,36 @@ def fig_metric_bands():
 
 
 # ------------------------------------ Figure 4.3 -- hallucination heatmap
+def _hallucination_cells(conds, specs):
+    """Read the per-cell means straight out of the study report.
+
+    These were hardcoded until Erratum 002, which meant the published figure
+    kept asserting a corrected value's predecessor after the CSV had been
+    regenerated. A figure that cannot disagree with the data cannot be wrong
+    in a way anyone notices.
+    """
+    import csv as _csv
+    from collections import defaultdict
+
+    path = Path(__file__).resolve().parent.parent / "data" / "reports" / "main_001.csv"
+    acc = defaultdict(list)
+    with path.open() as f:
+        for row in _csv.DictReader(f):
+            if row["metric"] != "hallucinations":
+                continue
+            parts = row["run_id"].split("__")
+            acc[(parts[2], parts[1])].append(float(row["value"]))
+
+    missing = [(c, s) for c in conds for s in specs if not acc[(c, s)]]
+    if missing:
+        raise SystemExit(f"no hallucination rows for {missing} in {path}")
+    return [[sum(acc[(c, s)]) / len(acc[(c, s)]) for s in specs] for c in conds]
+
+
 def fig_hallucination_heatmap():
     conds = ["claude_code", "cursor_agent", "antigravity", "replit_agent"]
-    data = [[0.00, 0.00, 0.00],
-            [0.50, 0.00, 0.00],
-            [1.00, 0.00, 0.00],
-            [0.00, 0.00, 3.00]]
+    specs = ["agent_education_system", "data_pipeline", "internal_tool_cli"]
+    data = _hallucination_cells(conds, specs)
 
     fig, ax = plt.subplots(figsize=(5.8, 3.1))
     cmap = matplotlib.colors.LinearSegmentedColormap.from_list(

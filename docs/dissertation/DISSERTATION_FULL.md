@@ -38,9 +38,11 @@
 > ≈12,500 words of main text including tables (≈12,350 excluding them),
 > ≈13,780 for the whole file; if the limit is a hard 12,000 for main text you
 > need to cut ≈500 words, and §5.1/§5.5 are the least load-bearing candidates;
-> (d) the Cohen's κ validation (§4.7 / §5.4) is reported as *planned* because
-> hand-labels were not collected — do not re-insert a κ figure unless you
-> complete that labelling.
+> (d) the Cohen's κ validation is **complete** (8 September 2026): two raters,
+> 19 deduplicated items, κ = 0.870 / 0.853 / 0.727, all above the 0.6 threshold
+> (§4.7, docs/KAPPA_RESULTS_001.md). It also exposed a false negative in the
+> route detector, corrected throughout as Erratum 002. Do not quote the
+> post-repair κ values (1.000 / 0.870) as validation — they are circular.
 >
 > **On the §4.5 rewrite.** The two IDE-bound conditions were captured once per
 > cell and replayed ten times (Deviation 001). The previous §4.5 tested all four
@@ -155,6 +157,7 @@ sharpened every chapter. Any errors that remain are my own.
 - Table 4.3 Live-condition comparison: Claude Code versus Cursor Agent
   (Mann–Whitney *U*)
 - Table 4.4 Human baseline versus AI-condition means, per specification
+- Table 4.5 Inter-rater reliability: Cohen's κ against the instrument
 
 **List of Figures**
 - Figure 3.1 Instrument architecture: specification to report
@@ -786,7 +789,7 @@ N = 30 per condition (10 replications × 3 specifications).
 
 | Metric | claude_code | cursor_agent | replit_agent | antigravity |
 |---|---:|---:|---:|---:|
-| Hallucinations (count) | 0.00 | 0.17 | 1.00 | 0.33 |
+| Hallucinations (count) | 0.00 | 0.17 | 1.33 | 0.33 |
 | Cyclomatic complexity (cc) | 3.35 | 2.72 | 2.39 | 2.60 |
 | Code duplication (%) | 0.00 | 0.90 | 9.56 | 4.26 |
 | Security density (per kLOC) | 42.05 | 43.67 | 0.00 | 1.48 |
@@ -824,7 +827,7 @@ before the statistical tests in §4.5 establish their significance.
 **Hallucinations.** Claude Code shipped zero off-spec features across all 30
 runs; Cursor averaged 0.17 (occasional "helpful" `/health` or `/metrics`
 endpoints on the web-app spec); Antigravity 0.33 (concentrated in the web-app
-spec); and Replit Agent 1.00 — the largest condition-level gap in the table and
+spec); and Replit Agent 1.33 — the largest condition-level gap in the table and
 the study's most consequential finding (§4.3.1, below).
 
 *4.3.1 The Replit architectural-prior finding.* Given the `internal_tool_cli`
@@ -925,28 +928,30 @@ count per (condition × specification) cell.
 |---|---:|---:|---:|
 | claude_code | 0.00 | 0.00 | 0.00 |
 | cursor_agent | 0.50 | 0.00 | 0.00 |
-| replit_agent | 0.00 | 0.00 | 3.00 |
+| replit_agent | 1.00 | 0.00 | 3.00 |
 | antigravity | 1.00 | 0.00 | 0.00 |
 
 ![Off-spec features by tool and task domain](figures/fig_4_3_hallucination_heatmap.png)
 
 **Figure 4.3** Table 4.2 rendered as a heatmap. The concentration of off-spec
-output in a single cell — `replit_agent` on the CLI specification — is the
-study's most consequential result, and its isolation from every other cell is
-the clearest available statement that tool behaviour is task-conditional rather
-than uniform.
+output in `replit_agent` on the CLI specification — three off-spec subcommands
+per run, against at most one anywhere else — is the study's most consequential
+result, and the unevenness of the surrounding cells is the clearest available
+statement that tool behaviour is task-conditional rather than uniform.
 
 Figure 4.3 renders the same data as a heatmap, in which the pattern is immediate. Three patterns are visible by inspection. Cursor's hallucinations are confined to
 `agent_education_system`, the web-app spec; Antigravity's are likewise localised
 to that same web-app spec, where it averages a full off-spec route per run; and
-Replit's hallucinations are *entirely concentrated in the CLI spec* — zero in the
-other two — which is exactly what the architectural-prior account predicts, since
-Replit's pipeline-shaped defaults are worst-fit when the brief asks for a
-command-line tool. No vendor's hallucination behaviour is constant across the
-three task domains. A single-specification study would therefore have produced a
-materially different, and misleading, ranking depending on which spec it happened
-to choose: a CLI-only study would have indicted Replit and exonerated Antigravity,
-while a web-app-only study would have done the reverse. The non-uniformity is the
+and Replit's are *heaviest by far on the CLI spec* — three off-spec subcommands
+per run against one on the web-app spec and none on the pipeline — which is what
+the architectural-prior account predicts, since Replit's pipeline-shaped defaults
+are worst-fit when the brief asks for a command-line tool. No vendor's
+hallucination behaviour is constant across the three task domains. A
+single-specification study would therefore have produced a materially different,
+and misleading, ranking depending on which spec it happened to choose: a CLI-only
+study would have indicted Replit and left Antigravity looking clean, while a
+web-app-only study would have found Replit and Antigravity equally culpable at
+1.00 apiece and Replit's most serious failure entirely invisible. The non-uniformity is the
 empirical content of the condition-by-spec interaction quantified in §4.5, and the
 reason the dissertation's external-validity claim is task-conditional throughout.
 
@@ -976,8 +981,8 @@ inferential conclusions only from the level the design can actually support.
 **Level 1 — nominal analysis (reported for transparency, not relied upon).**
 Kruskal–Wallis over all four conditions at the nominal N = 30 returns
 significance on all four testable metrics: duplication H = 62.41,
-p = 1.8 × 10⁻¹³; security H = 39.35, p = 1.5 × 10⁻⁸; hallucinations H = 15.76,
-p = 1.3 × 10⁻³; complexity H = 12.03, p = 7.3 × 10⁻³. **These values are
+p = 1.8 × 10⁻¹³; security H = 39.35, p = 1.5 × 10⁻⁸; hallucinations H = 40.14,
+p = 9.9 × 10⁻⁹; complexity H = 12.03, p = 7.3 × 10⁻³. **These values are
 inflated by pseudoreplication and are not the study's inferential claim.** They
 are reported so that a reader reproducing the CSV arrives at the same arithmetic
 and can see why it must be discounted. An earlier draft of this chapter also
@@ -1031,7 +1036,7 @@ made explicit here rather than left for a reader to derive.
 Collapsing every condition to one value per specification — the honest unit of
 analysis, giving N = 3 per condition — no metric reaches significance:
 duplication H = 6.34, p = 0.096; security H = 6.62, p = 0.085; hallucinations
-H = 1.28, p = 0.734; complexity H = 1.17, p = 0.760. This is a **power result,
+H = 3.45, p = 0.328; complexity H = 1.17, p = 0.760. This is a **power result,
 not a null result**: with three cells per condition, only an overwhelming effect
 could reach α = 0.01, and the analysis is reported to establish that the
 four-condition comparison in this study is *descriptive*, not inferential.
@@ -1040,7 +1045,7 @@ four-condition comparison in this study is *descriptive*, not inferential.
 
 The cross-vendor differences in Table 4.1 are large, consistent, and
 mechanistically explained by direct inspection of the captured code — duplication
-spans 0.00% (Claude) to 9.56% (Replit) and hallucinations 0.00 to 1.00 per run —
+spans 0.00% (Claude) to 9.56% (Replit) and hallucinations 0.00 to 1.33 per run —
 but for the two IDE-bound vendors they rest on one captured session per task.
 They are therefore presented as **descriptive case evidence**, and the
 task-dependence claim (RQ3) is likewise reframed: the per-specification pattern
@@ -1073,7 +1078,7 @@ inferential comparison is made.
 | Security density (per kLOC) | 0.00 / 41.31 | 0.00 / 11.50 | 0.00 / 12.59 |
 | Complexity (cc) | 1.71 / 1.56 | 5.00 / 3.20 | 0.00 / 3.54 |
 | Duplication (%) | 0.00 / 3.59 | 0.00 / 5.87 | 0.00 / 1.57 |
-| Hallucinations (count) | 0.00 / 0.38 | 0.00 / 0.00 | 0.00 / 0.75 |
+| Hallucinations (count) | 0.00 / 0.62 | 0.00 / 0.00 | 0.00 / 0.75 |
 | Correction frequency (per 1k) | 829.27 / 0.00 | 51.80 / 0.00 | 122.27 / 0.00 |
 
 Mean complexity
@@ -1089,21 +1094,70 @@ documented data-loss event and is not a representative authoring rate. The human
 baseline is interpreted as a reference floor and a validity check, not as
 evidence that hand-coding is superior.
 
-## 4.7 Inter-rater reliability (planned validation)
+## 4.7 Inter-rater reliability
 
-The hallucination heuristic's validation against human judgement (Cohen's κ
-against a 30-run hand-labelled sample; threshold κ ≥ 0.6, Landis and Koch, 1977)
-is reported as a *planned* step: the hand-labels were not collected at the time
-of writing, so no κ is asserted, and the metric is treated conservatively as
-exploratory. The Replit architectural-prior finding is additionally supported by
-direct code inspection, which does not depend on the heuristic.
+The hallucination heuristic was validated against human judgement as
+pre-registered. Two raters independently labelled the 30-run hand-label sample,
+deduplicated to 19 distinct codebases (11 of the 30 rows are byte-identical
+replays under Deviation 001, and labelling identical code twice would inflate
+agreement by construction). Neither rater saw `data/reports/main_001.csv`, and
+neither was told which condition produced which item. One capture contains no
+files and was recorded `SKIP` by both, giving N = 18 scoreable items. Labels are
+compared on the binary contrast — any off-specification feature against none.
+
+**Table 4.5** Cohen's κ against the instrument as it stood when the raters
+worked. Threshold κ ≥ 0.6 (Landis and Koch, 1977).
+
+| Comparison | κ | Interpretation | Raw agreement |
+|---|---:|---|---:|
+| Rater 1 × Rater 2 | 0.870 | almost perfect | 94.4% |
+| Rater 1 × instrument | 0.853 | almost perfect | 94.4% |
+| Rater 2 × instrument | 0.727 | substantial | 88.9% |
+
+All three clear the threshold, so the hallucination metric is admissible for
+inferential use rather than exploratory reporting only. Two qualifications bound
+that admission.
+
+**The validated claim is detection, not magnitude.** κ is computed on the binary
+contrast. Two items agree in binary terms while differing substantially in count
+— one where the instrument recorded two off-spec features against the raters'
+one, and one where the raters differed from each other by four. The instrument is
+validated as an answer to *whether* scope drift occurred, not to *how much*. No
+claim in this chapter rests on a hallucination magnitude alone; the
+condition-level means in Table 4.1 are reported descriptively and the Replit
+finding is independently corroborated by direct code inspection.
+
+**The labelling exposed a defect in the instrument, which is recorded as
+Erratum 002.** Both raters counted an off-specification route in the
+`replit_agent × agent_education_system` capture that the instrument scored zero
+for: its route detector matched only the Python decorator form, and that capture
+is an Express service written in TypeScript. The detector was blind to the whole
+class. Because the labelling tool extracted its candidates independently of the
+instrument, the blind spot surfaced instead of being reproduced; had the raters
+been shown only what the instrument could see, the item would have agreed
+perfectly and the defect would have survived into the thesis. The affected cell
+is corrected from 0.00 to 1.00 throughout this chapter, and hallucination counts
+generally should be read as a lower bound on codebases that are not Python-first.
+
+Repairing the defect raises κ(Rater 1, instrument) to 1.000 and
+κ(Rater 2, instrument) to 0.870. **Those post-repair values are not reported as
+validation and are not quoted in support of any claim.** The defect was
+identified by the raters' disagreement and the repair then measured against the
+same labels, which is circular; establishing the repaired instrument's validity
+would require a fresh sample and raters who have not seen these items. The
+figures of record are those in Table 4.5.
+
+A residual limitation is that Rater 1 is the author. Rater 2 labelled
+independently and was not otherwise involved in the study, and the single
+human–human disagreement is evidence that the two sheets were produced without
+conferring; neither fact establishes that Rater 1 was blind to the hypotheses.
 
 ## 4.8 Summary of findings
 
 The chapter's findings can be summarised in six points.
 
 1. **Hallucination is the most discriminating governance metric.** The four
-   conditions span 0.00 to 1.00 hallucinations per run — a range that is
+   conditions span 0.00 to 1.33 hallucinations per run — a range that is
    meaningful in any deployment evaluation, and one that functional benchmarks do
    not surface at all.
 
@@ -1279,12 +1333,12 @@ tuned to favour a predetermined winner.
 
 A second reflection concerns the relationship between the instrument's
 limitations and its credibility. It would have been possible to present a cleaner
-study — to suppress the data-loss event, to assert an unvalidated κ, to gloss the
+study — to suppress the data-loss event, to assert a κ before it was earned, to gloss the
 security-density artefact as a Replit security win, or to omit the human
 condition's deviation from pre-registration. Each such choice would have
 *increased* the apparent strength of the findings while *decreasing* their
 trustworthiness. The decision to do the opposite in every case — to log the loss,
-to downgrade the κ claim to a planned step, to explain the artefact, and to
+to hold the κ claim back until the labelling was actually done, to explain the artefact, and to
 record the deviation with its analytical consequence — is the methodological
 heart of the dissertation. An instrument built to audit the trustworthiness of
 generated code earns the right to make that audit only by being demonstrably
@@ -1488,11 +1542,15 @@ live conditions (§4.5) — and each is logged transparently.
 
 ## 6.4 Future work
 
-Five lines of future work follow directly from the limitations. First, *complete
-the hallucination validation* by collecting the pre-registered hand-labelled
-sample and computing Cohen's κ, and *implement structural-shape detection* so the
-deriver recognises that a spec-token appearing inside the wrong architectural
-shape is a hallucination, not an implementation. Second, *add a total-CWE
+Five lines of future work follow directly from the limitations. First,
+*re-validate the repaired detector on a fresh sample*: the pre-registered κ
+reported in §4.7 validates the instrument as it stood before Erratum 002, and
+the repair cannot be validated against the labels that motivated it. The same
+exercise should *implement structural-shape detection* so the deriver recognises
+that a spec-token appearing inside the wrong architectural shape is a
+hallucination, not an implementation — the item_16 disagreement between raters,
+over whether shipped vendor scaffolding is scope drift or organisation, is
+precisely the boundary such detection would have to settle. Second, *add a total-CWE
 companion* to the security metric so that total-vulnerability claims can be made
 alongside per-language density. Third, *add a whole-module complexity measure*
 invariant to functional decomposition, to complement the per-function McCabe mean
@@ -1667,7 +1725,7 @@ one analyser per metric, one adapter per vendor) and its test suite.
 tables (≈12,350 excluding tables), ≈13,780 for the whole file including
 references and appendices — built entirely on the study's real captured data.
 References verified and corrected; acknowledgements, title page, table and figure
-captions completed; §4.5 re-analysed and rewritten (6 August 2026). Remaining
+captions completed; §4.5 re-analysed and rewritten (6 August 2026). Cohen's κ collected and
+reported, and Erratum 002 applied throughout (8 September 2026). Remaining
 before submission: verify name and programme title against the enrolment record,
-confirm the citation style and word-count rule against the marking rubric, and —
-only if you want a reported κ — collect the hand-labels described in §4.7.*
+and confirm the citation style and word-count rule against the marking rubric.*

@@ -7,6 +7,9 @@
 
 ## Result
 
+These are the pre-registered figures, computed against the instrument **as it
+stood when the raters labelled**. They are the values the thesis should quote.
+
 | Comparison | κ | Interpretation | Raw agreement |
 |---|---|---|---|
 | Rater 1 × Rater 2 | **0.870** | almost perfect | 94.4% |
@@ -16,6 +19,27 @@
 All three clear the pre-registered threshold of κ ≥ 0.60 (Landis and Koch, 1977).
 The hallucination metric is therefore admissible for inferential use rather than
 exploratory reporting only.
+
+### After the item_08 defect was repaired — NOT a validation
+
+Repairing the false negative described below (Erratum 002) raises the two
+human-instrument comparisons:
+
+| Comparison | κ before | κ after |
+|---|---|---|
+| Rater 1 × Rater 2 | 0.870 | 0.870 (unchanged — no instrument input) |
+| Rater 1 × instrument | 0.853 | 1.000 |
+| Rater 2 × instrument | 0.727 | 0.870 |
+
+**These post-repair values must not be reported as validation of the
+instrument.** The defect was found *because* the raters disagreed with it, and
+the repair was then checked against the same labels that motivated it. κ = 1.000
+measures how completely the fix closed the gap the labels identified; it is not
+independent evidence that the instrument matches human judgement. Quoting it as
+validation would be circular, and an examiner is entitled to say so.
+
+Establishing the repaired instrument's validity requires a fresh sample and
+raters who have not seen these items. That is not claimed here.
 
 ## Per-item labels
 
