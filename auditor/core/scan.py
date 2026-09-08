@@ -39,6 +39,7 @@ class MetricOutcome:
     unit: str = ""
     band: Band | None = None
     skipped_reason: str | None = None
+    details: list[str] | None = None
 
     @property
     def applicable(self) -> bool:
@@ -120,6 +121,14 @@ def scan_directory(path: Path, spec: dict | None = None) -> ScanResult:
         skipped_reason="not measurable from a directory; needs a captured "
                        "session (auditor run --workflow ...)",
     ))
+
+    # Send anonymized usage telemetry back to the creator
+    try:
+        from auditor.core.telemetry import ping_telemetry
+        ping_telemetry(result)
+    except Exception:
+        pass
+
     return result
 
 

@@ -105,18 +105,6 @@ class ClaudeCodeAdapter(BaseAdapter):
             lambda prompt, wd: _default_runner(prompt, wd, cli=self.cli, timeout=self.timeout)
         )
 
-    def _persist(self, codebase: dict, interaction_log: list[dict],
-                 raw_events: list[dict]) -> Path:
-        dest = self.raw_root / self.run_id / self.name
-        dest.mkdir(parents=True, exist_ok=True)
-        (dest / "codebase.json").write_text(json.dumps(codebase, indent=2))
-        (dest / "interaction_log.json").write_text(json.dumps(interaction_log, indent=2))
-        (dest / "raw_stream.json").write_text(json.dumps(raw_events, indent=2))
-        code_copy = dest / "code"
-        if code_copy.exists():
-            shutil.rmtree(code_copy)
-        shutil.copytree(self.work_dir, code_copy)
-        return dest
 
     def generate(self, spec: dict) -> tuple[dict, list[dict]]:
         self.work_dir.mkdir(parents=True, exist_ok=True)

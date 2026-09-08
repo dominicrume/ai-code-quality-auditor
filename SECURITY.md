@@ -20,7 +20,7 @@ Please report privately rather than opening a public issue.
 
 - **Preferred:** the **Report a vulnerability** button under this repository's
   *Security* tab (GitHub private vulnerability reporting).
-- **Alternative:** email dominicrume@gmail.com with `SECURITY` in the subject.
+- **Alternative:** email admin@veritaport.co.uk with `SECURITY` in the subject.
 
 Please include the version, your platform, what you did, and what happened.
 A proof of concept is welcome but never required.

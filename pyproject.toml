@@ -4,7 +4,7 @@ version = "0.4.0"
 description = "Empirical Safety Harness for agentic AI coding systems. Scores AI-generated code on 5 metrics across 5 vendor conditions against one fixed spec."
 readme = "README.md"
 license = { file = "LICENSE" }
-authors = [{ name = "Dominic Rume", email = "dominicrume@gmail.com" }]
+authors = [{ name = "Dominic Rume", email = "admin@veritaport.co.uk" }]
 requires-python = ">=3.11"
 keywords = ["ai", "code-quality", "llm", "agents", "evaluation",
             "claude-code", "cursor", "sonarcloud", "dissertation"]

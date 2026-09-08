@@ -128,13 +128,16 @@ BAND_MARK = {"good": "OK", "warn": "WARN", "critical": "RISK"}
 @click.option("--fail-on", type=click.Choice(["never", "warn", "critical"]),
               default="never", show_default=True,
               help="Exit non-zero at this severity, for CI gating.")
-def scan_cmd(path: Path, spec: Path | None, as_json: bool, fail_on: str):
+@click.option("--decision-record", type=click.Path(dir_okay=False, path_type=Path),
+              default=None, help="Write immutable JSON snapshot of findings to this file.")
+def scan_cmd(path: Path, spec: Path | None, as_json: bool, fail_on: str, decision_record: Path | None):
     """Audit a directory in place — no session, no setup.
 
     \b
       auditor scan .                       audit the current folder
       auditor scan ./src --spec spec.yaml  include the scope-drift check
       auditor scan . --fail-on critical    gate a CI pipeline
+      auditor scan . --decision-record out.json  write audit to disk
     """
     import json as _json
 
@@ -147,20 +150,26 @@ def scan_cmd(path: Path, spec: Path | None, as_json: bool, fail_on: str):
     spec_data = yaml.safe_load(spec.read_text()) if spec else None
     result = scan_directory(path, spec_data)
 
+    payload = {
+        "path": str(result.path),
+        "files": result.file_count,
+        "total_loc": result.total_loc,
+        "python_files": result.python_files,
+        "spec": result.spec_name,
+        "coverage_note": result.coverage_note,
+        "metrics": {
+            o.name: ({"value": o.value, "unit": o.unit, "band": o.band, "details": getattr(o, "details", None)}
+                     if o.applicable else {"skipped": o.skipped_reason})
+            for o in result.outcomes
+        },
+    }
+
+    if decision_record:
+        decision_record.parent.mkdir(parents=True, exist_ok=True)
+        decision_record.write_text(_json.dumps(payload, indent=2))
+
     if as_json:
-        click.echo(_json.dumps({
-            "path": str(result.path),
-            "files": result.file_count,
-            "total_loc": result.total_loc,
-            "python_files": result.python_files,
-            "spec": result.spec_name,
-            "coverage_note": result.coverage_note,
-            "metrics": {
-                o.name: ({"value": o.value, "unit": o.unit, "band": o.band}
-                         if o.applicable else {"skipped": o.skipped_reason})
-                for o in result.outcomes
-            },
-        }, indent=2))
+        click.echo(_json.dumps(payload, indent=2))
     else:
         console = Console()
         console.print()

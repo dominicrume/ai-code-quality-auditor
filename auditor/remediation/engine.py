@@ -189,6 +189,81 @@ def _write_proposals(path: Path, proposals: list[tuple[int, Proposal]],
     target.write_text("".join(lines), encoding="utf-8")
 
 
+def _setup_sandbox(root: Path, sandbox: Path) -> None:
+    for rel, src_path in iter_source_files(root):
+        dest = sandbox / rel
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(src_path, dest)
+
+
+def _evaluate_counts(sandbox_before: list[dict], after: list[dict], proposals: dict, sandbox: Path):
+    before_counts = Counter((f["test_id"], _rel(f, sandbox)) for f in sandbox_before)
+    after_counts = Counter((f["test_id"], _rel(f, sandbox)) for f in after)
+    applied_ids = {prop.test_id for items in proposals.values() for _, prop in items}
+    tolerated = {sid for tid in applied_ids for sid in EXPECTED_SUCCESSORS.get(tid, set())}
+    introduced = {k for k, n in after_counts.items() if n > before_counts.get(k, 0) and k[0] not in tolerated}
+    downgrades = {k for k, n in after_counts.items() if n > before_counts.get(k, 0) and k[0] in tolerated}
+    return before_counts, after_counts, introduced, downgrades
+
+
+def _build_outcomes(sandbox_before: list[dict], before_counts: dict, after_counts: dict, 
+                    introduced: set, downgrades: set, proposals: dict, sandbox: Path) -> list[FixOutcome]:
+    proposed: dict[tuple[str, str, int], Proposal] = {}
+    for path, items in proposals.items():
+        rel = str(path.relative_to(sandbox))
+        for ln, prop in items:
+            proposed[(prop.test_id, rel, ln)] = prop
+
+    outcomes = []
+    for f in sandbox_before:
+        rel = _rel(f, sandbox)
+        k = (f["test_id"], rel, f["line_number"])
+        common = dict(test_id=f["test_id"], file=rel, line=f["line_number"], 
+                      severity=f["issue_severity"], issue=f["issue_text"])
+        prop = proposed.get(k)
+
+        if prop is None:
+            if f["test_id"] in UNFIXABLE:
+                status, reason = "unsupported", UNFIXABLE[f["test_id"]]
+            elif f["test_id"] in FIXERS:
+                status, reason = "no_pattern", "the line does not match a pattern this fixer can rewrite without guessing"
+            else:
+                status, reason = "unsupported", "no fixer for this check yet"
+            outcomes.append(FixOutcome(**common, status=status, reason=reason))
+            continue
+
+        ck = (f["test_id"], rel)
+        cleared = after_counts.get(ck, 0) < before_counts.get(ck, 0)
+        verified = cleared and not introduced
+        note = prop.behaviour_note or (
+            f"resolved; a lower-severity advisory ({', '.join(sorted({k[0] for k in downgrades}))}) remains, which is expected for any subprocess call"
+            if verified and downgrades and prop.test_id in EXPECTED_SUCCESSORS else None
+        )
+        outcomes.append(FixOutcome(
+            **common,
+            status="fixed" if verified else "unverified",
+            explanation=prop.explanation,
+            reason="" if verified else ("the rewrite introduced a new finding elsewhere" if introduced else "re-scanning did not clear the finding — discarded"),
+            before=prop.before.rstrip("\n"),
+            after=prop.after.rstrip("\n"),
+            behaviour_note=note,
+        ))
+    return outcomes
+
+
+def _apply_fixes(root: Path, sandbox: Path, fixed_outcomes: list[FixOutcome]) -> bool:
+    applied = False
+    for rel in {o.file for o in fixed_outcomes}:
+        try:
+            src = _contained(sandbox / rel, sandbox)
+            dest = _contained(root / rel, root)
+            shutil.copy2(src, dest)
+            applied = True
+        except ValueError:
+            continue
+    return applied
+
+
 def remediate(root: Path, apply: bool = False) -> Remediation:
     """Propose fixes, verify them in a sandbox, and optionally apply them."""
     root = Path(root).resolve()
@@ -202,10 +277,7 @@ def remediate(root: Path, apply: bool = False) -> Remediation:
     with tempfile.TemporaryDirectory() as tmp:
         sandbox = Path(tmp) / "code"
         sandbox.mkdir()
-        for rel, src_path in iter_source_files(root):
-            dest = sandbox / rel
-            dest.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(src_path, dest)
+        _setup_sandbox(root, sandbox)
 
         sandbox_before = _bandit(sandbox)
         proposals = _propose(sandbox, sandbox_before)
@@ -215,77 +287,10 @@ def remediate(root: Path, apply: bool = False) -> Remediation:
         after = _bandit(sandbox)
         report.findings_after = len(after)
 
-        # Verification is by (check, file) counts rather than line numbers:
-        # inserting an import shifts every line below it, so a surviving
-        # finding would otherwise look like a newly introduced one.
-        before_counts = Counter((f["test_id"], _rel(f, sandbox))
-                                for f in sandbox_before)
-        after_counts = Counter((f["test_id"], _rel(f, sandbox)) for f in after)
-        applied_ids = {prop.test_id
-                       for items in proposals.values() for _, prop in items}
-        tolerated = {sid for tid in applied_ids
-                     for sid in EXPECTED_SUCCESSORS.get(tid, set())}
-        introduced = {k for k, n in after_counts.items()
-                      if n > before_counts.get(k, 0) and k[0] not in tolerated}
-        downgrades = {k for k, n in after_counts.items()
-                      if n > before_counts.get(k, 0) and k[0] in tolerated}
-
-        proposed: dict[tuple[str, str, int], Proposal] = {}
-        for path, items in proposals.items():
-            rel = str(path.relative_to(sandbox))
-            for ln, prop in items:
-                proposed[(prop.test_id, rel, ln)] = prop
-
-        for f in sandbox_before:
-            rel = _rel(f, sandbox)
-            k = (f["test_id"], rel, f["line_number"])
-            common = dict(test_id=f["test_id"], file=rel,
-                          line=f["line_number"], severity=f["issue_severity"],
-                          issue=f["issue_text"])
-            prop = proposed.get(k)
-
-            if prop is None:
-                if f["test_id"] in UNFIXABLE:
-                    status, reason = "unsupported", UNFIXABLE[f["test_id"]]
-                elif f["test_id"] in FIXERS:
-                    status, reason = "no_pattern", (
-                        "the line does not match a pattern this fixer can "
-                        "rewrite without guessing")
-                else:
-                    status, reason = "unsupported", "no fixer for this check yet"
-                report.outcomes.append(FixOutcome(**common, status=status,
-                                                  reason=reason))
-                continue
-
-            ck = (f["test_id"], rel)
-            cleared = after_counts.get(ck, 0) < before_counts.get(ck, 0)
-            verified = cleared and not introduced
-            report.outcomes.append(FixOutcome(
-                **common,
-                status="fixed" if verified else "unverified",
-                explanation=prop.explanation,
-                reason="" if verified else (
-                    "the rewrite introduced a new finding elsewhere"
-                    if introduced else
-                    "re-scanning did not clear the finding — discarded"),
-                before=prop.before.rstrip("\n"),
-                after=prop.after.rstrip("\n"),
-                behaviour_note=prop.behaviour_note or (
-                    f"resolved; a lower-severity advisory "
-                    f"({', '.join(sorted({k[0] for k in downgrades}))}) remains, "
-                    f"which is expected for any subprocess call"
-                    if verified and downgrades
-                    and prop.test_id in EXPECTED_SUCCESSORS else None),
-            ))
+        before_counts, after_counts, introduced, downgrades = _evaluate_counts(sandbox_before, after, proposals, sandbox)
+        report.outcomes = _build_outcomes(sandbox_before, before_counts, after_counts, introduced, downgrades, proposals, sandbox)
 
         if apply and report.fixed:
-            for rel in {o.file for o in report.fixed}:
-                try:
-                    src = _contained(sandbox / rel, sandbox)
-                    dest = _contained(root / rel, root)
-                except ValueError:
-                    continue        # never copy out of, or into, an unexpected path
-                shutil.copy2(src, dest)
-            report.applied = True
+            report.applied = _apply_fixes(root, sandbox, report.fixed)
 
     return report

@@ -143,9 +143,27 @@ function render(r){
     const na = m.value === null || m.value === undefined;
     const el = document.createElement('div');
     el.className = 'card ' + (na ? 'na' : m.band);
-    el.innerHTML = `<span class="rail"></span><h3>${m.label}</h3>`
-      + (na ? `<div class="val">n/a</div><div class="why">${m.skipped}</div>`
-            : `<div class="val">${fmt(m.value)}</div><span class="unit">${m.unit}</span>`);
+    
+    let inner = `<span class="rail"></span><h3>${m.label}</h3>`;
+    if (na) {
+      inner += `<div class="val">n/a</div><div class="why">${m.skipped}</div>`;
+    } else {
+      inner += `<div class="val">${fmt(m.value)}</div><span class="unit">${m.unit}</span>`;
+      if (m.name === 'hallucinations' && m.details && m.details.length > 0) {
+        inner += `<div style="margin-top: 1rem; border-top: 1px solid var(--line); padding-top: 0.5rem;">`;
+        inner += `<div style="font-size: 0.75rem; color: var(--muted); margin-bottom: 0.5rem;">Drift Detected:</div>`;
+        for (const item of m.details) {
+          inner += `<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">`;
+          inner += `<span style="font-family: var(--mono); font-size: 0.75rem; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 60%;" title="${item}">${item}</span>`;
+          inner += `<div style="display: flex; gap: 0.25rem;">`;
+          inner += `<button onclick="handleDrift('${item}', 'acknowledge', this)" style="background: var(--bg-2); color: var(--good); border: 1px solid var(--line); border-radius: 4px; padding: 0.15rem 0.3rem; font-size: 0.7rem; cursor: pointer;" title="Acknowledge (Add to Spec)">Ack</button>`;
+          inner += `<button onclick="handleDrift('${item}', 'strip', this)" style="background: var(--bg-2); color: var(--bad); border: 1px solid var(--line); border-radius: 4px; padding: 0.15rem 0.3rem; font-size: 0.7rem; cursor: pointer;" title="Strip (Remove from Code)">Strip</button>`;
+          inner += `</div></div>`;
+        }
+        inner += `</div>`;
+      }
+    }
+    el.innerHTML = inner;
     if (!na && prev[m.name] !== undefined && prev[m.name] !== m.value) el.classList.add('bump');
     cards.appendChild(el);
     prev[m.name] = na ? undefined : m.value;
@@ -209,6 +227,32 @@ btn.onclick = async () => {
     document.getElementById('briefHint').textContent = data.error;
   }
 };
+
+async function handleDrift(item, action, btn) {
+  btn.disabled = true;
+  const originalText = btn.textContent;
+  btn.textContent = '...';
+  try {
+    const res = await fetch(`/api/drift/${action}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ item })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      btn.textContent = 'Done';
+      btn.style.color = 'white';
+      btn.style.background = 'var(--good)';
+    } else {
+      btn.textContent = 'Error';
+      btn.style.background = 'var(--bad)';
+      btn.title = data.message || 'Error occurred';
+    }
+  } catch (err) {
+    btn.textContent = 'Failed';
+    btn.style.background = 'var(--critical)';
+  }
+}
 
 fetch('/api/state').then(r => r.json()).then(s => render(s.report));
 </script>

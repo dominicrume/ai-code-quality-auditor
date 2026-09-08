@@ -20,8 +20,11 @@ from pathlib import Path
 from flask import Flask, abort, jsonify, render_template
 
 from auditor.core.calibration import BANDS
+from auditor.remediation.engine import remediate
 
-ROOT = Path(__file__).resolve().parent.parent.parent
+import os
+
+ROOT = Path(os.environ.get("AUDITOR_ROOT", Path.cwd())).resolve()
 REPORTS_DIR = ROOT / "data" / "reports"
 
 # Each metric's polarity: True = lower is better.
@@ -126,7 +129,7 @@ def _list_reports() -> list[dict]:
     return out
 
 
-def _load_report(run_id: str) -> dict:
+def _read_csv_rows(run_id: str) -> list[dict]:
     csv_path = REPORTS_DIR / f"{run_id}.csv"
     if not csv_path.exists():
         abort(404)
@@ -136,29 +139,18 @@ def _load_report(run_id: str) -> dict:
         required = {"metric", "condition", "value"}
         missing = required - header
         if missing:
-            # Not a long-format experiment CSV (e.g. the wide human_vs_ai
-            # comparison view). Fail with a clear 400 instead of a 500.
-            abort(
-                400,
-                description=(
-                    f"'{run_id}.csv' is not a long-format report — it is missing "
-                    f"column(s): {', '.join(sorted(missing))}. The dashboard renders "
-                    "long-format CSVs (one row per metric × condition × rep, with a "
-                    "'value' column). Wide comparison tables like "
-                    "'human_vs_ai_comparison.csv' should be opened as a file, not via "
-                    "/report/."
-                ),
-            )
+            abort(400, description=f"Missing columns: {', '.join(sorted(missing))}")
         rows = []
         for r in reader:
             try:
                 r["value"] = float(r["value"])
+                rows.append(r)
             except (TypeError, ValueError):
-                continue
-            rows.append(r)
+                pass
+    return rows
 
-    # Aggregate by (metric, condition) as the MEAN across specs/reps, not the
-    # last value seen (the previous behaviour silently dropped all but one row).
+
+def _compute_pivot_and_units(rows: list[dict]) -> tuple[dict, dict]:
     agg: dict[str, dict[str, list]] = defaultdict(lambda: defaultdict(list))
     units: dict[str, str] = {}
     for r in rows:
@@ -168,48 +160,35 @@ def _load_report(run_id: str) -> dict:
         m: {c: sum(v) / len(v) for c, v in conds.items()}
         for m, conds in agg.items()
     }
+    return pivot, units
 
-    conditions = sorted({r["condition"] for r in rows})
-    metrics = sorted(pivot)
 
-    # Calibrated scores from [0, 1] where 1 = best, based on metric-specific
-    # decision thresholds rather than a pure within-report min-max rescale.
+def _compute_normalized_scores(pivot: dict, conditions: list[str], metrics: list[str]) -> dict:
     norm: dict[str, dict[str, float]] = {}
     for metric in metrics:
         cfg = METRIC_CALIBRATION.get(metric, {"ideal": 0.0, "warning": 1.0, "critical": 2.0})
-        ideal = cfg["ideal"]
-        warning = cfg["warning"]
-        critical = cfg["critical"]
+        ideal, critical = cfg["ideal"], cfg["critical"]
         norm[metric] = {}
         for c in conditions:
             v = pivot[metric].get(c, 0.0)
             if not METRIC_LOWER_BETTER.get(metric, True):
-                if v <= ideal:
-                    score = 1.0
-                elif v >= critical:
-                    score = 0.0
-                else:
-                    score = 1.0 - ((v - ideal) / (critical - ideal))
+                if v <= ideal: score = 1.0
+                elif v >= critical: score = 0.0
+                else: score = 1.0 - ((v - ideal) / (critical - ideal))
             else:
-                if v <= ideal:
-                    score = 1.0
-                elif v >= critical:
-                    score = 0.0
-                else:
-                    score = max(0.0, 1.0 - ((v - ideal) / max(critical - ideal, 1e-6)))
+                if v <= ideal: score = 1.0
+                elif v >= critical: score = 0.0
+                else: score = max(0.0, 1.0 - ((v - ideal) / max(critical - ideal, 1e-6)))
             norm[metric][c] = round(score, 4)
+    return norm
 
-    # Per-metric ranking (1 = best). Ties share a rank.
+
+def _compute_ranks(pivot: dict, conditions: list[str], metrics: list[str]) -> dict:
     ranks: dict[str, dict[str, int]] = {}
     for metric in metrics:
-        ordered = sorted(
-            conditions,
-            key=lambda c: pivot[metric].get(c, 0.0),
-            reverse=not METRIC_LOWER_BETTER.get(metric, True),
-        )
+        ordered = sorted(conditions, key=lambda c: pivot[metric].get(c, 0.0), reverse=not METRIC_LOWER_BETTER.get(metric, True))
         rank_map: dict[str, int] = {}
-        prev_value = None
-        rank = 0
+        prev_value, rank = None, 0
         for i, c in enumerate(ordered, start=1):
             v = pivot[metric].get(c, 0.0)
             if v != prev_value:
@@ -217,8 +196,10 @@ def _load_report(run_id: str) -> dict:
                 prev_value = v
             rank_map[c] = rank
         ranks[metric] = rank_map
+    return ranks
 
-    # Composite leaderboard: lowest sum of ranks wins.
+
+def _build_leaderboard(ranks: dict, conditions: list[str], metrics: list[str]) -> list[dict]:
     leaderboard = []
     for c in conditions:
         total = sum(ranks[m][c] for m in metrics)
@@ -231,76 +212,61 @@ def _load_report(run_id: str) -> dict:
     leaderboard.sort(key=lambda x: x["rank_sum"])
     for i, row in enumerate(leaderboard, start=1):
         row["overall_rank"] = i
+    return leaderboard
 
-    # Best / worst per metric (for hero cards).
+
+def _build_summary(pivot: dict, units: dict, conditions: list[str], metrics: list[str]) -> list[dict]:
     summary = []
     for metric in metrics:
         items = [(c, pivot[metric].get(c, 0.0)) for c in conditions]
-        reverse = not METRIC_LOWER_BETTER.get(metric, True)
-        items.sort(key=lambda x: x[1], reverse=reverse)
+        items.sort(key=lambda x: x[1], reverse=not METRIC_LOWER_BETTER.get(metric, True))
         summary.append({
-            "metric": metric,
-            "unit": units.get(metric, ""),
-            "blurb": METRIC_BLURB.get(metric, ""),
-            "best_condition": items[0][0],
-            "best_value": items[0][1],
-            "worst_condition": items[-1][0],
-            "worst_value": items[-1][1],
+            "metric": metric, "unit": units.get(metric, ""), "blurb": METRIC_BLURB.get(metric, ""),
+            "best_condition": items[0][0], "best_value": items[0][1],
+            "worst_condition": items[-1][0], "worst_value": items[-1][1],
             "values": {c: pivot[metric].get(c, 0.0) for c in conditions},
         })
+    return summary
 
-    prov_path = REPORTS_DIR / f"{run_id}.provenance.json"
-    provenance = json.loads(prov_path.read_text()) if prov_path.exists() else None
-    spec_summary = _describe_spec_context(provenance)
 
-    # Auto-classify pilot vs dissertation per protocol §4: dissertation
-    # threshold is N >= 5 reps per condition. Computed from the CSV itself,
-    # so a report graduates automatically once enough data lands.
+def _determine_banner(rows: list[dict], conditions: list[str], provenance: dict | None) -> tuple[str, str, dict]:
     reps_per_condition: dict[str, int] = {}
     for cond in conditions:
         cond_rows = [r for r in rows if r["condition"] == cond]
-        per_metric_counts = defaultdict(int)
-        for r in cond_rows:
-            per_metric_counts[r["metric"]] += 1
-        reps_per_condition[cond] = (
-            min(per_metric_counts.values()) if per_metric_counts else 0
-        )
+        counts = defaultdict(int)
+        for r in cond_rows: counts[r["metric"]] += 1
+        reps_per_condition[cond] = min(counts.values()) if counts else 0
     min_n = min(reps_per_condition.values()) if reps_per_condition else 0
     declared_kind = (provenance or {}).get("kind", "unknown")
     if min_n >= 5 or declared_kind == "main_study":
-        banner_kind = "dissertation"
-        banner_text = (
-            f"Dissertation result. N = {min_n} runs per condition "
-            f"(across {len(conditions)} conditions)."
-        )
-    elif declared_kind == "pilot" or min_n < 5:
-        banner_kind = "pilot"
-        banner_text = (
-            f"Pilot data — N = {min_n} run(s) per condition. "
-            "Dissertation threshold is N ≥ 5 per protocol §4."
-        )
-    else:
-        banner_kind = "unknown"
-        banner_text = "Provenance unknown — see provenance metadata at the foot of this report."
+        return "dissertation", f"Dissertation result. N = {min_n} runs per condition (across {len(conditions)} conditions).", reps_per_condition
+    if declared_kind == "pilot" or min_n < 5:
+        return "pilot", f"Pilot data — N = {min_n} run(s) per condition. Dissertation threshold is N ≥ 5 per protocol §4.", reps_per_condition
+    return "unknown", "Provenance unknown — see provenance metadata at the foot of this report.", reps_per_condition
+
+
+def _load_report(run_id: str) -> dict:
+    rows = _read_csv_rows(run_id)
+    pivot, units = _compute_pivot_and_units(rows)
+    conditions = sorted({r["condition"] for r in rows})
+    metrics = sorted(pivot)
+    
+    norm = _compute_normalized_scores(pivot, conditions, metrics)
+    ranks = _compute_ranks(pivot, conditions, metrics)
+    leaderboard = _build_leaderboard(ranks, conditions, metrics)
+    summary = _build_summary(pivot, units, conditions, metrics)
+
+    prov_path = REPORTS_DIR / f"{run_id}.provenance.json"
+    provenance = json.loads(prov_path.read_text()) if prov_path.exists() else None
+    
+    banner_kind, banner_text, reps_per_condition = _determine_banner(rows, conditions, provenance)
 
     return {
-        "run_id": run_id,
-        "rows": rows,
-        "pivot": {m: pivot[m] for m in metrics},
-        "norm": norm,
-        "ranks": ranks,
-        "summary": summary,
-        "leaderboard": leaderboard,
-        "units": units,
-        "blurbs": METRIC_BLURB,
-        "metric_guidance": METRIC_GUIDANCE,
-        "conditions": conditions,
-        "metrics": metrics,
-        "provenance": provenance,
-        "spec_summary": spec_summary,
-        "banner_kind": banner_kind,
-        "banner_text": banner_text,
-        "reps_per_condition": reps_per_condition,
+        "run_id": run_id, "rows": rows, "pivot": {m: pivot[m] for m in metrics}, "norm": norm,
+        "ranks": ranks, "summary": summary, "leaderboard": leaderboard, "units": units,
+        "blurbs": METRIC_BLURB, "metric_guidance": METRIC_GUIDANCE, "conditions": conditions,
+        "metrics": metrics, "provenance": provenance, "spec_summary": _describe_spec_context(provenance),
+        "banner_kind": banner_kind, "banner_text": banner_text, "reps_per_condition": reps_per_condition,
     }
 
 
@@ -347,7 +313,7 @@ def _notify_operator(entry: dict) -> None:
         msg = EmailMessage()
         msg["Subject"] = f"[auditor waitlist] {entry.get('company','?')} — {entry.get('name','?')}"
         msg["From"] = os.environ.get("SMTP_FROM", "noreply@auditor.local")
-        msg["To"] = os.environ.get("OPERATOR_EMAIL", "dominicrume@gmail.com")
+        msg["To"] = os.environ.get("OPERATOR_EMAIL", "admin@veritaport.co.uk")
         msg.set_content(json.dumps(entry, indent=2))
         with smtplib.SMTP(host, int(os.environ.get("SMTP_PORT", "587"))) as s:
             s.starttls()
@@ -404,6 +370,94 @@ def api_report(run_id: str):
     # rows is large; the SPA can request it separately if needed.
     data = {k: v for k, v in data.items() if k != "rows"}
     return jsonify(data)
+
+
+@app.route("/api/scan", methods=["POST"])
+def api_scan():
+    """Trigger a headless scan of a directory."""
+    data = request.get_json() or {}
+    target_path = data.get("path", ".")
+    spec_path = data.get("spec", None)
+
+    from auditor.core.scan import scan_directory
+    import yaml
+
+    spec_data = None
+    if spec_path:
+        p = Path(spec_path)
+        if p.exists():
+            spec_data = yaml.safe_load(p.read_text())
+
+    result = scan_directory(Path(target_path), spec_data)
+    
+    return jsonify({
+        "status": "success",
+        "path": str(result.path),
+        "files": result.file_count,
+        "total_loc": result.total_loc,
+        "python_files": result.python_files,
+        "spec": result.spec_name,
+        "coverage_note": result.coverage_note,
+        "metrics": {
+            o.name: ({"value": o.value, "unit": o.unit, "band": o.band, "details": getattr(o, "details", None)}
+                     if o.applicable else {"skipped": o.skipped_reason})
+            for o in result.outcomes
+        },
+    })
+
+
+@app.route("/api/remediate", methods=["POST"])
+def api_remediate():
+    """Trigger the remediation engine."""
+    results = remediate(apply=True)
+    return jsonify({"status": "success", "results": results})
+
+
+@app.route("/api/drift/acknowledge", methods=["POST"])
+def api_drift_acknowledge():
+    """Dynamically add the feature to .auditor/spec.yaml"""
+    from flask import request
+    import yaml
+    
+    data = request.get_json() or {}
+    item = data.get("item")
+    if not item:
+        return jsonify({"status": "error", "message": "No item provided"}), 400
+
+    spec_path = ROOT / ".auditor" / "spec.yaml"
+    if not spec_path.exists():
+        return jsonify({"status": "error", "message": "spec.yaml not found"}), 404
+
+    spec = yaml.safe_load(spec_path.read_text())
+    
+    features = spec.setdefault("features", [])
+    # Only add if not exists
+    if not any(f.get("id") == f"feature.{item}" for f in features):
+        features.append({
+            "id": f"feature.{item}",
+            "description": f"User explicitly acknowledged: {item}"
+        })
+        spec_path.write_text(yaml.dump(spec, sort_keys=False))
+
+    return jsonify({"status": "success", "message": f"Acknowledged {item}"})
+
+
+@app.route("/api/drift/strip", methods=["POST"])
+def api_drift_strip():
+    """Strip the endpoint out of the codebase using the AST parser"""
+    from flask import request
+    from auditor.remediation.ast_stripper import strip_hallucinated_endpoint
+    
+    data = request.get_json() or {}
+    item = data.get("item")
+    if not item:
+        return jsonify({"status": "error", "message": "No item provided"}), 400
+
+    success = strip_hallucinated_endpoint(ROOT, item)
+    if success:
+        return jsonify({"status": "success", "message": f"Stripped {item}"})
+    else:
+        return jsonify({"status": "error", "message": f"Could not find or strip {item}"}), 404
 
 
 if __name__ == "__main__":

@@ -1,0 +1,37 @@
+name: AI Code Quality Gate
+
+on:
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install .
+
+      - name: Run Deterministic AI Code Quality Audit
+        run: |
+          # Fails the build (exit 1) if critical thresholds are breached
+          # Writes a cryptographically immutable Decision Record snapshot for legal/audit
+          auditor scan . \
+            --fail-on critical \
+            --decision-record provenance.json
+
+      - name: Archive Decision Record
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-decision-record
+          path: provenance.json

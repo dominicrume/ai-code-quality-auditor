@@ -39,6 +39,7 @@ def _serialise(result: ScanResult, changed: list[str] | None = None) -> dict:
             {
                 "name": o.name, "label": o.label, "value": o.value,
                 "unit": o.unit, "band": o.band, "skipped": o.skipped_reason,
+                "details": getattr(o, "details", None)
             }
             for o in result.outcomes
         ],
@@ -182,6 +183,72 @@ def create_app(session: LiveSession) -> Flask:
         if not text:
             return jsonify({"error": "Type what you asked the agent to build."}), 400
         return jsonify(session.apply_brief(text))
+
+    @app.post("/api/scan")
+    def api_scan():
+        """Headless scan trigger for enterprise integration."""
+        data = request.get_json() or {}
+        target_path = data.get("path", ".")
+        spec_path = data.get("spec", None)
+
+        import yaml
+        spec_data = None
+        if spec_path:
+            p = Path(spec_path)
+            if p.exists():
+                spec_data = yaml.safe_load(p.read_text())
+
+        result = scan_directory(Path(target_path), spec_data)
+        
+        return jsonify({
+            "status": "success",
+            "path": str(result.path),
+            "files": result.file_count,
+            "total_loc": result.total_loc,
+            "python_files": result.python_files,
+            "spec": result.spec_name,
+            "coverage_note": result.coverage_note,
+            "metrics": {
+                o.name: ({"value": o.value, "unit": o.unit, "band": o.band}
+                         if o.applicable else {"skipped": o.skipped_reason})
+                for o in result.outcomes
+            },
+        })
+
+    @app.post("/api/remediate")
+    def api_remediate():
+        """Trigger the remediation engine."""
+        from auditor.remediation.engine import remediate
+        results = remediate(session.project, apply=True)
+        # We don't need to manually update session.latest because the watch loop 
+        # will naturally pick up the file changes and broadcast them.
+        return jsonify({"status": "success", "results": results.applied, "fixed": len(results.fixed)})
+
+    @app.post("/api/drift/acknowledge")
+    def api_drift_acknowledge():
+        data = request.get_json() or {}
+        item = data.get("item")
+        if not item: return jsonify({"status": "error", "message": "No item"}), 400
+        import yaml
+        spec_path = session.project / ".auditor" / "spec.yaml"
+        if not spec_path.exists(): return jsonify({"status": "error", "message": "spec.yaml not found"}), 404
+        spec = yaml.safe_load(spec_path.read_text())
+        features = spec.setdefault("features", [])
+        if not any(f.get("id") == f"feature.{item}" for f in features):
+            features.append({"id": f"feature.{item}", "description": f"User explicitly acknowledged: {item}"})
+            spec_path.write_text(yaml.dump(spec, sort_keys=False))
+        # The watch loop will pick up the spec.yaml change automatically.
+        return jsonify({"status": "success", "message": f"Acknowledged {item}"})
+
+    @app.post("/api/drift/strip")
+    def api_drift_strip():
+        data = request.get_json() or {}
+        item = data.get("item")
+        if not item: return jsonify({"status": "error", "message": "No item"}), 400
+        from auditor.remediation.ast_stripper import strip_hallucinated_endpoint
+        success = strip_hallucinated_endpoint(session.project, item)
+        if success: return jsonify({"status": "success", "message": f"Stripped {item}"})
+        return jsonify({"status": "error", "message": f"Could not find or strip {item}"}), 404
 
     @app.get("/api/stream")
     def stream():

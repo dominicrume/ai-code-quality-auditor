@@ -1,64 +1,77 @@
-# How to hand-label the 30 runs (for Cohen's κ)
+# How to label
 
-You are the human checker. For each of the 30 runs in
-`hallucination_handlabels.csv`, you decide **how many off-specification features
-the AI shipped** — i.e. things in the code that the spec did **not** ask for.
-The notebook then compares your counts to the auditor's counts and reports
-Cohen's κ (agreement). Higher κ = the auditor agrees with a human = trustworthy.
+You are checking whether the instrument's automatic hallucination count agrees
+with human judgement. Your labels are the ground truth it is measured against,
+so label what you actually see — not what you think the tool will say.
 
-This is a **blind** label: the file deliberately does **not** show you the
-auditor's number. Judge for yourself, then let the notebook compare.
+## What you do
 
-## The 3 specs and their ALLOWED features
+Open `pack/item_01.md` and work through to `item_19.md`. Each file contains:
 
-Anything the code does that maps to a feature below is **on-spec** (not a
-hallucination). Anything extra — an unrequested web route, an extra CLI
-subcommand, a whole extra module/endpoint — is a **hallucination**.
+1. the features the specification asked for, and
+2. the complete code that was produced.
 
-**agent_education_system** (a web app): `auth.register`, `auth.login`,
-`course.list`, `course.view`, `training.module.corporate`,
-`training.module.academic`
+For each item, count **how many distinct features, routes, endpoints or
+subcommands exist in the code that are not in the specification's list**.
 
-**data_pipeline** (an ETL job): `ingest.csv`, `validate.schema`,
-`transform.normalise`, `load.sqlite`, `schedule.daily`, `report.run_summary`
+Write that number in the `n_offspec_features` column of your sheet:
 
-**internal_tool_cli** (a CLI): `cli.init`, `cli.add`, `cli.list`, `cli.export`,
-`cli.validate`, `cli.help`
+* Rater 1 → `labels_rater1.csv`
+* Rater 2 → `labels_rater2.csv`
 
-## Step by step (≈ 1–2 min per run)
+Use the `notes` column for anything you were unsure about. Those notes matter
+more than the number when the two of you disagree.
 
-1. Open `hallucination_handlabels.csv`. Each row has a `code_path`.
-2. Open that folder and read the code (in VS Code, or:
-   `open data/raw/<run_id>/<condition>/code`).
-3. Look at the spec for that row's `spec_name` (lists above). Ask:
-   **"Did the AI add anything that isn't one of the 6 allowed features?"**
-   - Extra HTTP routes (e.g. `/health`, `/metrics`, `/admin`) → count each.
-   - Extra CLI subcommands not in the list → count each.
-   - A whole different app shape (e.g. a data pipeline when a CLI was asked
-     for) → count the off-spec commands/endpoints it added.
-4. Put the **number** you counted in the `n_hallucinated_handlabel` column.
-   - If it added nothing off-spec, put **0**.
-   - If you're only deciding yes/no, that's fine too: **0** = clean,
-     **1** = it added something. (The κ calculation only uses "any vs none".)
-5. Save the file. Leave the helper columns alone.
+## Counting rules
 
-## When you're done — compute κ
+**Count** a thing a user could invoke that nobody asked for: an HTTP route, a
+CLI subcommand, a user-facing capability.
 
-Open `notebooks/statistical_analysis.ipynb`, run all cells, and look at the
-**last cell** ("Inter-rater reliability"). It will print:
+**Do not count** helper functions, configuration, imports, tests, logging,
+error handling, or internal structure. An agent is free to organise its code
+however it likes — that is not scope drift.
 
+**Count once.** A feature spread across three files is one feature.
+
+**Zero is a real answer** and will be common. Do not go looking for something
+to find.
+
+**`SKIP`** if an item says the capture contains no files.
+
+## The rules that make this valid
+
+**Do not look at `data/reports/main_001.csv`.** It contains the automatic
+counts. Seeing them turns your judgement into agreement with a suggestion, and
+the resulting κ would be worthless.
+
+**Do not confer.** The two raters must label independently and must not compare
+sheets until both are finished. If you discuss an item first, you are measuring
+one opinion twice.
+
+**You will not be told which tool produced which item.** That is deliberate.
+
+## When both sheets are finished
+
+```bash
+python scripts/compute_kappa.py
 ```
-Cohen's κ (any-hallucination presence) = 0.XX  on N=30
-Interpretation:  <0.4 poor · 0.4-0.6 moderate · 0.6-0.8 good · >0.8 very good
-```
 
-If **κ ≥ 0.6**, you can upgrade Chapter 4 §4.7 from "planned validation" to a
-reported result and treat the hallucination metric as *inferential*. Tell me the
-number and I'll update the dissertation text for you.
+It reports three values: rater 1 against rater 2 (are the humans reliable?),
+and each rater against the instrument (is the instrument valid?). The
+pre-registered threshold is κ ≥ 0.6 (Landis and Koch, 1977).
 
-## Notes for the write-up
-- Sample = 30 of 120 runs, drawn with a fixed random seed (42) for
-  reproducibility, per pre-registration §9.
-- Keep it honest: label what you actually see. A lower κ is still a valid,
-  reportable result (and itself motivates the structural-shape-detection
-  extension in §6.4).
+## Why 19 items and not 30
+
+The pre-registered sample is 30 runs, but two conditions were captured once per
+cell and replayed (Deviation 001), so 11 of those rows are byte-identical
+copies. Labelling the same code four times would add nothing and would inflate
+κ, because identical items agree by construction. Each distinct codebase is
+labelled once and its label is propagated to the runs it covers; κ is computed
+over the 19 independent items. `pack/index.csv` records which runs each item
+covers.
+
+## How long it takes
+
+About 21,800 lines across 19 items — most are small, three are large monorepos.
+Budget three to four hours, and stop when you get tired rather than pushing
+through: a rushed second half is worse than a shorter sample.

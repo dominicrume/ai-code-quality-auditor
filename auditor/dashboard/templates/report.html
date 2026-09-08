@@ -203,6 +203,13 @@
       font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: var(--muted); overflow-x: auto; }
 
     .arrow-back { display: inline-flex; align-items: center; gap: 0.4rem; }
+    .btn-primary {
+      background: var(--accent); color: #fff; border: none; padding: 0.4rem 0.8rem;
+      border-radius: 6px; font-weight: 600; font-size: 0.85rem; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 0.4rem; transition: background 120ms;
+    }
+    .btn-primary:hover { background: #6b4cf0; }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
   </style>
 </head>
 <body>
@@ -215,6 +222,7 @@
         AI Code Quality Auditor
       </div>
       <div style="display: flex; align-items: center; gap: 1rem;">
+        <button id="btn-remediate" class="btn-primary">✨ Auto-Fix Issues</button>
         <span class="run-id">{{ run_id }}</span>
         <a class="arrow-back" href="{{ url_for('index') }}">← all reports</a>
       </div>
@@ -536,6 +544,30 @@
       Plotly.Plots.resize(document.getElementById('radar'));
       Plotly.Plots.resize(document.getElementById('heatmap'));
       METRICS.forEach(m => Plotly.Plots.resize(document.getElementById('bar-' + m)));
+    });
+
+    document.getElementById('btn-remediate')?.addEventListener('click', async (e) => {
+      const btn = e.target;
+      btn.disabled = true;
+      btn.innerText = '⏳ Fixing...';
+      try {
+        const res = await fetch('/api/remediate', { method: 'POST' });
+        const data = await res.json();
+        if (data.status === 'success') {
+          const applied = data.results.applied;
+          const fixedCount = data.results.fixed ? data.results.fixed.length : 0;
+          alert(`Auto-fix complete!\nApplied: ${applied}\nFixed: ${fixedCount} issues.`);
+          location.reload();
+        } else {
+          alert('Remediation failed.');
+          btn.disabled = false;
+          btn.innerText = '✨ Auto-Fix Issues';
+        }
+      } catch (err) {
+        alert('Error calling remediation API');
+        btn.disabled = false;
+        btn.innerText = '✨ Auto-Fix Issues';
+      }
     });
   </script>
 </body>

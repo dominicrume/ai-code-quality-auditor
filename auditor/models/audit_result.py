@@ -9,6 +9,7 @@ class MetricScore(BaseModel):
     name: str
     value: float
     unit: str = ""
+    details: list[str] | None = None
 
 
 CONDITIONS = Literal[

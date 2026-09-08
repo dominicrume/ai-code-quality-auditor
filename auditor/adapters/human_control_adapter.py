@@ -77,25 +77,14 @@ class HumanControlAdapter(BaseAdapter):
 
     def __init__(self, code_dir: str | Path, log_path: str | Path,
                  run_id: str | None = None, raw_root: str | Path = "data/raw"):
-        self.code_dir = Path(code_dir)
+        self.work_dir = Path(code_dir)
         self.log_path = Path(log_path)
         self.run_id = run_id or settings.run_id
         self.raw_root = Path(raw_root)
-
-    def _persist(self, codebase: dict, interaction_log: list[dict]) -> Path:
-        dest = self.raw_root / self.run_id / self.name
-        dest.mkdir(parents=True, exist_ok=True)
-        (dest / "codebase.json").write_text(json.dumps(codebase, indent=2))
-        (dest / "interaction_log.json").write_text(json.dumps(interaction_log, indent=2))
-        # Preserve the original source tree alongside the JSON snapshot.
-        code_copy = dest / "code"
-        if code_copy.exists():
-            shutil.rmtree(code_copy)
-        shutil.copytree(self.code_dir, code_copy)
-        return dest
+        self.replay_dir = None
 
     def generate(self, spec: dict) -> tuple[dict, list[dict]]:
-        codebase = load_codebase(self.code_dir)
+        codebase = load_codebase(self.work_dir)
         interaction_log = load_interaction_log(self.log_path)
-        self._persist(codebase, interaction_log)
+        self._persist(codebase, interaction_log, raw_events=[])
         return codebase, interaction_log
