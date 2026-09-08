@@ -24,14 +24,12 @@
 > the Aston enrolment record on 8 September 2026 — "Uririe, Orume Dominic",
 > MSc Artificial Intelligence and Business Strategy — and applied to the title
 > page and §1.5; (b) confirm the Harvard citation variant against the marking rubric;
-> (c) **check the word count in Word against the actual limit** — recounted
-> 8 September 2026 after the §4.7 rewrite: **≈13,810 words of main text
-> including tables (≈13,460 excluding them)**, ≈14,680 for the whole file once
-> these notices are deleted. This is ≈1,300 more than the previous note claimed,
-> because §4.7 grew from a placeholder into a reported result. If the limit is a
-> hard 12,000 for main text you now need to cut ≈1,800 words: §5.1/§5.5 remain
-> the least load-bearing candidates, and §4.5.2's Level 1 exposition can be
-> compressed without losing the argument;
+> (c) **word count, recut 8 September 2026 against the hard 12,000 limit.**
+> Chapters 1–6 now total **11,996 words including tables**. With the abstract,
+> acknowledgements and contents added the file is 12,781, so if your handbook
+> counts those too you need ≈790 more out — take it from §2.2–2.5 and §3.1,
+> which were not touched in this pass. Verify in Word: its counter differs
+> slightly from a whitespace split.
 > (d) the Cohen's κ validation is **complete** (8 September 2026): two raters,
 > 19 deduplicated items, κ = 0.870 / 0.853 / 0.727, all above the 0.6 threshold
 > (§4.7, docs/KAPPA_RESULTS_001.md). It also exposed a false negative in the
@@ -53,66 +51,58 @@
 
 ## Abstract
 
-Agentic AI coding tools — systems that accept a natural-language or
-specification-level brief and autonomously produce a working codebase — have
-moved from research demonstrations to mainstream developer infrastructure in
-under three years. Their adoption in enterprise settings is, however,
-outpacing the evidence base required to govern them: procurement and
-engineering-leadership decisions are routinely made on the basis of vendor
-benchmarks that measure *functional* success (does the generated code pass
-tests?) while remaining silent on the *quality and governance* properties that
-determine an artefact's cost of ownership — security exposure, structural
-complexity, redundancy, and, most consequentially, fidelity to the
-specification that was actually requested.
+Agentic AI coding tools — systems that accept a specification-level brief and
+autonomously produce a working codebase — have moved from research
+demonstrations to mainstream developer infrastructure in under three years.
+Their enterprise adoption is outpacing the evidence needed to govern them:
+procurement decisions rest on vendor benchmarks that measure *functional*
+success (does the code pass tests?) while remaining silent on the *quality and
+governance* properties that determine cost of ownership — security exposure,
+structural complexity, redundancy, and, most consequentially, fidelity to the
+specification actually requested.
 
 This dissertation designs, builds and applies an empirical instrument — the *AI
-Code Quality Auditor* — that quantifies five code-quality and process metrics
-(security-vulnerability density, cyclomatic complexity, code duplication,
-specification-hallucination count, and keystroke-correction frequency) across
-five workflow conditions (a hand-coded human baseline and four commercial
-agentic tools: Anthropic Claude Code, Cursor Agent, Replit Agent, and Google
-Antigravity) against three fixed specifications spanning distinct task domains
-(a web application, a data pipeline, and a command-line tool). The design is
-pre-registered and the analysis is blinded by construction: a single capture
-contract forces every condition — human keystrokes and agent tool-calls alike —
-into one comparable shape, and metric analysers are prohibited from seeing
+Code Quality Auditor* — quantifying five metrics (security-vulnerability
+density, cyclomatic complexity, code duplication, specification-hallucination
+count, keystroke-correction frequency) across five conditions (a hand-coded
+human baseline and four commercial agentic tools: Anthropic Claude Code, Cursor
+Agent, Replit Agent, Google Antigravity) against three fixed specifications
+spanning distinct task domains. The design is pre-registered and blinded by
+construction: one capture contract forces every condition — human keystrokes and
+agent tool-calls alike — into a comparable shape, and analysers never see
 condition labels.
 
-Across 600 metric observations from the four agentic conditions
-(four conditions × three specifications × ten replications × five metrics;
-the two IDE-bound conditions were captured once per cell and replayed,
-so their cells are effective singletons — Deviation 001),
-the analysis is deliberately stratified by what the design can support. Between
-the two conditions captured live with genuine replication, Claude Code produces
+The analysis is deliberately stratified by what the design supports. Between the
+two conditions captured live with genuine replication, Claude Code produces
 significantly less duplicated code (*p* = 0.003) and significantly more
 control-flow-dense code (*p* = 0.005) than Cursor Agent under Bonferroni
-correction. The four-condition comparison, by contrast, is reported as
-**descriptive**: once the replayed cells are collapsed to their effective sample
-size, no omnibus test reaches significance, and the condition-by-specification
-interaction statistics reported in an earlier draft are withdrawn as undefined
-on this design. The descriptive gaps are nonetheless large and mechanistically
-explained — duplication spans 0.00% to 9.56% and off-spec features 0.00 to 1.00
-per run — and the per-specification pattern shows that no vendor's behaviour is
-constant across task domains: the defensible claim is not "tool *X* is
-better than tool *Y*" but "tool *X* behaved better than tool *Y* *on this task
-type, in these captures*". The single most consequential finding is a measured
-**architectural-prior dominance**: given a CLI specification under a clean,
-contamination-checked workspace with an explicit instruction prohibiting
-pipeline output, Replit Agent shipped a data-pipeline application rather than
-the specified CLI — behaviour confirmed by direct code inspection —
-evidence that a pretrained scaffolding bias can override an unambiguous,
-contradictory specification, a direct governance concern for enterprise
-adoption. A hand-coded human baseline provides an interpretive floor for the
-process metric (keystroke correction ≈ 52 corrections per 1,000 keystrokes on
-the representative session) against which the agentic conditions' structural
-zero is read.
+correction. The four-condition comparison is reported as **descriptive**: the
+two IDE-bound conditions were captured once per cell and replayed
+(Deviation 001), and once those cells are collapsed to their effective sample
+size no omnibus test reaches significance, while the condition-by-specification
+interaction statistics of an earlier draft are withdrawn as undefined on this
+design. The descriptive gaps are nonetheless large and mechanistically explained
+— duplication spans 0.00% to 9.56% and off-spec features 0.00 to 1.33 per run —
+and no vendor's behaviour is constant across task domains, so the defensible
+claim is not "tool *X* is better than tool *Y*" but "tool *X* behaved better
+*on this task type, in these captures*".
+
+The single most consequential finding is a measured **architectural-prior
+dominance**: given a CLI specification under a contamination-checked workspace
+and an explicit instruction prohibiting pipeline output, Replit Agent shipped a
+data-pipeline application rather than the specified CLI — confirmed by direct
+code inspection — evidence that a pretrained scaffolding bias can override an
+unambiguous, contradictory specification. The hallucination metric is validated
+against two independent human raters (Cohen's κ = 0.87 between raters, 0.85 and
+0.73 against the instrument), a process which also exposed and corrected a false
+negative in the instrument itself.
 
 The contribution is threefold: a reusable, vendor-agnostic measurement
 instrument and its capture contract; an empirical, pre-registered cross-vendor
-comparison that foregrounds governance rather than functional success; and a
+comparison foregrounding governance rather than functional success; and a
 governance framing — "spec fidelity as a first-class quality metric" — relevant
-to enterprise AI-coding adoption and to the work of the Aston–Capgemini Centre
-of Excellence for Enterprise AI.
+to enterprise AI-coding adoption and to the Aston–Capgemini Centre of Excellence
+for Enterprise AI.
 
 **Keywords:** agentic AI; code generation; large language models; software
 quality metrics; specification fidelity; AI governance; empirical software
@@ -276,15 +266,12 @@ process property (keystroke correction); it does not measure runtime
 performance, developer satisfaction, or longitudinal maintenance cost, each of
 which is identified as future work (§6.4). It studies four commercial tools and a
 human baseline against three specifications; it does not claim to span the full
-space of tools or tasks, and the significant task interactions reported in
-Chapter 4 caution explicitly against over-generalisation. Chapter 2 reviews the
-relevant literature on code-generation evaluation, security, software-quality
-metrics, and AI governance, and articulates the research gap. Chapter 3 details
-the pre-registered methodology, the capture contract, and the analyser pipeline.
-Chapter 4 reports the results, including the statistical analysis and the human
-baseline. Chapter 5 discusses their interpretation, the governance implications,
-the role of the human baseline, and the threats to validity. Chapter 6 concludes
-and identifies future work.
+space of tools or tasks, and the task-conditional pattern reported in Chapter 4
+cautions explicitly against over-generalisation. Chapter 2 reviews the
+literature and articulates the research gap; Chapter 3 details the
+pre-registered methodology, capture contract and analyser pipeline; Chapter 4
+reports the results; Chapter 5 discusses their interpretation and the threats to
+validity; Chapter 6 concludes.
 
 ---
 
@@ -303,58 +290,47 @@ governance properties that determine the real cost of generated code.
 ## 2.1 The evaluation of code-generating models
 
 The empirical study of large language models (LLMs) for code begins, for
-practical purposes, with the introduction of execution-based functional
-benchmarks. Chen et al. (2021), introducing Codex and the HumanEval benchmark,
-established *pass@k* — the probability that at least one of *k* sampled
-completions passes a hidden unit-test suite — as the field's dominant evaluation
-metric. The benchmark's influence is difficult to overstate: it reframed code
-generation as a measurable engineering problem and catalysed a generation of
-model and benchmark development, including the Mostly Basic Programming Problems
-(MBPP) benchmark (Austin et al., 2021) and, at the level of whole-repository
-tasks, SWE-bench (Jimenez et al., 2024), which evaluates whether a model can
-resolve real GitHub issues against a project's existing test suite. The recent
-comprehensive survey of LLMs for software engineering by Hou et al. (2024)
-catalogues dozens of such benchmarks and confirms that execution-based
-functional correctness remains the field's organising metric.
+practical purposes, with execution-based functional benchmarks. Chen et al.
+(2021), introducing Codex and HumanEval, established *pass@k* — the probability
+that at least one of *k* sampled completions passes a hidden unit-test suite —
+as the field's dominant metric. Its influence is difficult to overstate: it
+reframed code generation as a measurable engineering problem and catalysed a
+generation of benchmark development, including MBPP (Austin et al., 2021) and,
+at whole-repository scale, SWE-bench (Jimenez et al., 2024), which evaluates
+whether a model can resolve real GitHub issues against a project's existing
+tests. The survey of Hou et al. (2024) confirms that execution-based functional
+correctness remains the field's organising metric.
 
-Yet the scope of this paradigm is deliberately narrow. Pass@k and its
-descendants measure whether generated code is *functionally* correct against a
-test oracle; they say little about the security, maintainability, structural
-quality, or specification fidelity of the code. Even SWE-bench, which advances
-the unit of analysis from a single function to a repository-scale patch, defines
-success as test-suite resolution rather than as adherence to a stated
-specification or freedom from off-brief additions. The functional paradigm also
-assumes the existence of a comprehensive test oracle, which is precisely what is
-absent in the green-field, specification-driven setting that agentic tools
-target: when an agent builds an application from a brief, there is no pre-existing
-test suite against which to score it, and the relevant question shifts from "does
-it pass the tests?" to "did it build what was asked, well?". This is the gap the
-present instrument is designed to occupy.
+The paradigm's scope is deliberately narrow. Pass@k and its descendants measure
+whether code is *functionally* correct against a test oracle; they say little
+about security, maintainability, structural quality, or specification fidelity.
+Even SWE-bench, which advances the unit of analysis from a function to a
+repository-scale patch, defines success as test-suite resolution rather than
+adherence to a stated specification or freedom from off-brief additions. The
+paradigm also assumes a comprehensive test oracle — precisely what is absent in
+the green-field, specification-driven setting agentic tools target. When an
+agent builds an application from a brief there is no pre-existing suite to score
+it against, and the question shifts from "does it pass the tests?" to "did it
+build what was asked, well?". That is the gap this instrument occupies.
 
-A parallel strand of literature evaluates AI coding assistance through the lens
-of the *developer* rather than the artefact. Vaithilingam, Zhang and Glassman
-(2022) found that programmers using LLM-based completion tools did not complete
-tasks faster but did report higher satisfaction, and frequently struggled to
-detect and repair incorrect suggestions — an early signal that the *human
-verification burden* shifts rather than disappears. Sarkar et al. (2022), in a
-synthesis of what programming with AI is "like", argued that AI assistance
-reframes programming as a task of specification and review rather than authorship,
-which makes the *fidelity of generated artefacts to the programmer's intent* the
-critical variable — a conceptual anticipation of this study's central metric.
-Barke, James and Polikarpova (2023), through a grounded-theory study,
-characterised two interaction modes — *acceleration* (the programmer knows what
-they want) and *exploration* (the programmer uses the model to discover an
-approach) — and observed that the quality cost of AI assistance concentrates in
-the exploration mode. On the productivity side, Peng et al. (2023) reported a
-substantial speed benefit (~55% faster task completion) from GitHub Copilot in a
-controlled experiment, consistent with the telemetry-based productivity findings
-of Ziegler et al. (2022); Liang, Yang and Myers (2024) surveyed usability at
-scale and documented persistent friction around trust and control. The
-collective finding of this developer-centric strand is that AI assistance
-reliably changes *process* — speed, satisfaction, the locus of effort — but does
-not reliably improve, and may degrade, *artefact quality*. This dissociation
-between process gains and artefact quality is the empirical warrant for an
-instrument that measures the artefact directly.
+A parallel strand evaluates AI assistance through the *developer* rather than
+the artefact. Vaithilingam, Zhang and Glassman (2022) found that programmers
+using LLM completion tools did not complete tasks faster but reported higher
+satisfaction, and struggled to detect and repair incorrect suggestions — an
+early signal that the human verification burden shifts rather than disappears.
+Sarkar et al. (2022) argued that AI assistance reframes programming as
+specification and review rather than authorship, making *fidelity to the
+programmer's intent* the critical variable — a conceptual anticipation of this
+study's central metric. Barke, James and Polikarpova (2023) characterised two
+interaction modes, *acceleration* and *exploration*, and observed that the
+quality cost concentrates in the latter. On productivity, Peng et al. (2023)
+reported ~55% faster task completion with GitHub Copilot, consistent with the
+telemetry findings of Ziegler et al. (2022), while Liang, Yang and Myers (2024)
+documented persistent friction around trust and control. The collective finding
+is that AI assistance reliably changes *process* — speed, satisfaction, the
+locus of effort — but does not reliably improve, and may degrade, *artefact
+quality*. That dissociation is the empirical warrant for measuring the artefact
+directly.
 
 ## 2.2 Security of AI-generated code
 
@@ -627,18 +603,15 @@ and reported as a partial-capture outlier.
 
 ## 3.4 Analyser pipeline
 
-Each metric is implemented as a single Python function with a uniform signature
-— `analyze(codebase, interaction_log, spec) -> MetricScore`. This signature does
-two things at once. It *formalises the capture contract* (whatever an analyser
-sees is exactly what the contract defines, no more), and it *blinds the analyser
-by construction*: no analyser receives a condition label, so no metric can be
-computed with vendor-specific knowledge, and condition identity is attached only
-by the orchestrator after scoring. The pipeline is therefore blinded not by
-discipline but by interface design — a deliberate guard against the
-vendor-favouring bias that unblinded, hand-tuned evaluation harnesses are prone
-to. The five analysers are as follows.
-
-Figure 3.3 shows the decision bands each metric is read against.
+Each metric is a single Python function with a uniform signature —
+`analyze(codebase, interaction_log, spec) -> MetricScore`. This does two things
+at once. It *formalises the capture contract* (an analyser sees exactly what the
+contract defines, no more), and it *blinds the analyser by construction*: no
+analyser receives a condition label, so no metric can be computed with
+vendor-specific knowledge, and condition identity is attached only by the
+orchestrator after scoring. The pipeline is blinded by interface design rather
+than by discipline — a deliberate guard against the vendor-favouring bias that
+hand-tuned evaluation harnesses are prone to.
 
 ![Decision bands for each metric](figures/fig_3_3_metric_bands.png)
 
@@ -649,47 +622,45 @@ dashboard and the reporting client cannot report different verdicts for the same
 number. They bound the reading of a value; they do not affect its measurement.
 
 *Security density (§3.4.1).* The analyser materialises the captured codebase to
-a temporary directory and invokes the Bandit static analyser, counting only
-findings carrying a non-null CWE identifier (preserving the OWASP/MITRE framing
-of §2.2–2.3) and dividing by the codebase's line count, scaled to one thousand
-lines. An earlier instrument design queried the SonarCloud REST API; it was
-abandoned during the pilot (documented in the pilot report, §4.1 of
-docs/PILOT_RESULTS.md) because SonarCloud's per-project
-scoping shared a single numerator across conditions while the denominator
-varied, producing artefactually large per-kLOC figures for small codebases.
-Local, per-condition Bandit scoping restores soundness by scoping numerator and
-denominator to the same captured artefact.
+a temporary directory and invokes Bandit, counting only findings carrying a
+non-null CWE identifier (preserving the OWASP/MITRE framing of §2.2–2.3) and
+dividing by line count, scaled to one thousand lines. Assertion findings
+(`B101`) inside test files are excluded — see §4.3 and Erratum 001. An earlier
+design queried the SonarCloud REST API; it was abandoned during the pilot
+(docs/PILOT_RESULTS.md §4.1) because per-project scoping shared one numerator
+across conditions while the denominator varied, producing artefactually large
+per-kLOC figures for small codebases.
 
-*Cyclomatic complexity (§3.4.2).* The analyser uses `radon`'s control-flow
-visitor to enumerate every function's McCabe number and reports the arithmetic
-mean. Files outside the source-suffix whitelist and inside excluded directories
+*Cyclomatic complexity (§3.4.2).* `radon`'s control-flow visitor enumerates
+every function's McCabe number and the analyser reports the arithmetic mean.
+Files outside the source-suffix whitelist and inside excluded directories
 (virtual environments, caches, vendored packages) are removed by the codebase
-loader before the analyser runs, so the metric reflects produced code rather than
-transitive dependencies. As §5.5 discusses, the per-function basis is the source
-of the human-baseline CLI's zero score and a known cross-style confound.
+loader first, so the metric reflects produced code rather than transitive
+dependencies. As §5.5 discusses, the per-function basis is the source of the
+human baseline's CLI zero and a known cross-style confound.
 
-*Duplication (§3.4.3).* The analyser builds a hash set of every six-consecutive-
-line shingle across all source files (six lines being the conventional
-near-duplication window), counts the source lines participating in any shingle of
-cardinality two or more, and divides by total source lines, reported as a
-percentage. The measure captures structural redundancy — including the
+*Duplication (§3.4.3).* The analyser hashes every six-consecutive-line shingle
+across all source files (six being the conventional near-duplication window),
+counts the lines participating in any shingle of cardinality two or more, and
+divides by total source lines. It captures structural redundancy — including the
 repeated-template scaffolding that drives the Replit result — rather than merely
 verbatim copy-paste.
 
 *Hallucination (§3.4.4).* The analyser defers to a `manifest_deriver` that scans
-the codebase for evidence of each declared spec feature and for web routes
-(FastAPI/Flask) and CLI subcommands (argparse/Click) that map to *no* declared
-feature; the count of unmapped routes and commands is the hallucination score.
-The CLI-subcommand detector was added after the main study revealed the Replit
-behaviour, a change logged transparently (analytical note 001). The deriver is a
-token-matching heuristic, and its validation against human judgement is reported
-conservatively as a planned step (§4.7).
+for evidence of each declared spec feature and for web routes and CLI
+subcommands mapping to *no* declared feature; the count of unmapped routes and
+commands is the score. Route detection covers both the Python decorator form
+(FastAPI/Flask) and the JavaScript/TypeScript call form (Express) — the latter
+added after the κ validation found the detector blind to it (Erratum 002).
+Subcommand detection (argparse/Click) was added after the main study revealed
+the Replit behaviour, logged as analytical note 001. The deriver is a
+token-matching heuristic; its validation against human judgement is reported in
+§4.7.
 
-*Keystroke correction (§3.4.5).* The analyser counts events of type `backspace`
-or `delete`, divides by the total `keystroke` count, and scales to one thousand.
-It is structurally zero for the four agentic conditions and is the only metric
-for which the human baseline produces a non-zero value by construction; its
-interpretive role is developed in §4.6 and §5.5.
+*Keystroke correction (§3.4.5).* The analyser counts `backspace` and `delete`
+events, divides by total `keystroke` count, and scales to one thousand. It is
+structurally zero for the four agentic conditions and is the only metric for
+which the human baseline produces a non-zero value by construction (§4.6, §5.5).
 
 ## 3.5 Pre-registration
 
@@ -767,9 +738,9 @@ numbers below are computed by `notebooks/statistical_analysis.ipynb` against
 ## 4.1 Overview
 
 The four agentic conditions produced 600 metric observations (4 conditions ×
-3 specs × 10 reps × 5 metrics). The `human_control` baseline is reported
-separately (§4.6) as a single-rep reference point. The four-condition AI
-comparison is the primary analysis.
+3 specs × 10 reps × 5 metrics), and their comparison is the primary analysis.
+The `human_control` baseline is reported separately (§4.6) as a single-rep
+reference point.
 
 ## 4.2 Headline cross-vendor comparison
 
@@ -787,7 +758,7 @@ N = 30 per condition (10 replications × 3 specifications).
 | Hallucinations (count) | 0.00 | 0.17 | 1.33 | 0.33 |
 | Cyclomatic complexity (cc) | 3.35 | 2.72 | 2.39 | 2.60 |
 | Code duplication (%) | 0.00 | 0.90 | 9.56 | 4.26 |
-| Security density (per kLOC) | 42.05 | 43.67 | 0.00 | 1.48 |
+| Security density (per kLOC) | 9.65 | 5.93 | 0.00 | 1.47 |
 | Keystroke correction (per 1k) | 0.00 | 0.00 | 0.00 | 0.00 |
 
 ![Forest plot of per-condition means](../../notebooks/forest_plots.png)
@@ -821,93 +792,84 @@ before the statistical tests in §4.5 establish their significance.
 
 **Hallucinations.** Claude Code shipped zero off-spec features across all 30
 runs; Cursor averaged 0.17 (occasional "helpful" `/health` or `/metrics`
-endpoints on the web-app spec); Antigravity 0.33 (concentrated in the web-app
-spec); and Replit Agent 1.33 — the largest condition-level gap in the table and
-the study's most consequential finding (§4.3.1, below).
+endpoints on the web-app spec); Antigravity 0.33 (localised to the same spec, as
+unrequested root and admin-style routes); and Replit Agent 1.33 — the largest
+condition-level gap in the table and the study's most consequential finding.
+Cursor's and Antigravity's figures are *helpful overreach*; Replit's are
+*architectural substitution*, a qualitative distinction the bare count obscures
+and the per-spec breakdown (§4.4) makes visible.
 
 *4.3.1 The Replit architectural-prior finding.* Given the `internal_tool_cli`
 specification — a CLI with six declared subcommands (`init`, `add`, `list`,
 `export`, `validate`, `help`) — under a fresh, isolated workspace and an explicit
-instruction stem prohibiting pipeline output, Replit Agent shipped a *data-pipeline
-CLI* in its captured session for that cell, defining `cmd_run` and `cmd_schedule`
-invoking a `run_pipeline` routine rather than the spec's structure. The
-behaviour is significant precisely because of the controls placed around it: the
+instruction stem prohibiting pipeline output, Replit Agent shipped a
+*data-pipeline CLI* in its captured session for that cell, defining `cmd_run` and
+`cmd_schedule` invoking a `run_pipeline` routine rather than the spec's
+structure. The behaviour matters because of the controls around it: the
 workspace was confirmed clean before capture and the prompt explicitly forbade
-the pipeline shape, so the result cannot be attributed to contamination or to an
-ambiguous brief. It is therefore documented as a *measured architectural-prior
-dominance* (analytical note 001): the agent's pretrained scaffolding bias toward
-pipeline and monorepo shapes is strong enough to override an unambiguous,
-contradictory specification. This is the single result that most sharply
-illustrates the dissertation's thesis — that functional benchmarks, which would
-simply record whether the produced pipeline's tests passed, are structurally
-incapable of detecting that the wrong artefact was built — and it is the result
-on which the governance argument of Chapter 5 principally rests. One caveat is
-carried explicitly: because this cell is an effective singleton under the replay
-design (Deviation 001), its ten listed replications are mechanical copies of one
-captured session and contribute no independent evidence of stability. The
-finding rests on the controlled conditions of the capture and on direct code
-inspection; a live multi-session re-capture (§5.7) is the stated next step to
-establish whether the behaviour is a stable property of the tool rather than a
-single-session occurrence.
+the pipeline shape, so the result cannot be attributed to contamination or an
+ambiguous brief. It is documented as a *measured architectural-prior dominance*
+(analytical note 001): the agent's pretrained scaffolding bias is strong enough
+to override an unambiguous, contradictory specification. This is the result that
+most sharply illustrates the dissertation's thesis — functional benchmarks,
+which would record only whether the produced pipeline's tests passed, are
+structurally incapable of detecting that the wrong artefact was built — and on
+which the governance argument of Chapter 5 principally rests. One caveat is
+carried explicitly: this cell is an effective singleton under the replay design
+(Deviation 001), so its ten listed replications are mechanical copies of one
+session and contribute no independent evidence of stability. The finding rests
+on the controlled capture conditions and on direct code inspection; a live
+multi-session re-capture (§5.7) is the stated next step.
 
-The remaining hallucination detail completes the picture: Cursor's 0.17 amounts
-to roughly one off-spec endpoint every six runs, typically a `/health` or
-`/metrics` route added "helpfully" to an otherwise on-spec web implementation,
-and Antigravity's 0.33 is similarly localised to the web-app spec, taking the
-form of unrequested root and admin-style routes. The qualitative character of the
-two median vendors' hallucinations — *helpful overreach* — is therefore
-categorically different from Replit's *architectural substitution*, a distinction
-the bare count obscures and the per-spec breakdown (§4.4) makes visible.
+**Cyclomatic complexity.** Claude Code produced the densest code (mean McCabe
+3.35) and Replit the least (2.39), a gap of roughly one cc unit that is
+consistent across the three specifications. The reading is "denser, not worse":
+complexity is a two-sided dimension, and Claude's single-file style inlines
+control flow that other vendors distribute across modules, raising the
+per-function path count without necessarily harming quality. A moderate
+complexity paired with zero duplication is arguably healthier than a low
+complexity achieved by scattering logic across duplicated scaffolding. The
+metric is most informative read alongside duplication.
 
-**Cyclomatic complexity.** Claude Code produced the structurally densest code
-(mean McCabe 3.35) and Replit the least (2.39), a difference of roughly one cc
-unit between the most and least complex agents that is consistent across the
-three specifications. The interpretation is deliberately *not* "Claude is worse":
-cyclomatic complexity is a two-sided quality dimension, and the appropriate
-reading is "denser, not worse". Claude's tendency toward single-file
-implementations inlines control flow that the other vendors distribute across
-modules, which raises the per-function path count without necessarily harming
-quality; indeed, a moderate complexity paired with zero duplication (Claude's
-profile) is arguably healthier than a low complexity achieved by scattering logic
-across heavily duplicated scaffolding (closer to Replit's profile). The metric is
-therefore most informative when read alongside duplication rather than in
-isolation.
+**Duplication.** Claude Code produced zero duplication across all 30 runs;
+Cursor averaged 0.9%, Antigravity 4.3%, and **Replit Agent 9.56%** — by far the
+largest ratio in the table. Inspection identifies the source unambiguously:
+Replit ships enterprise monorepo scaffolding (workspace configuration
+hierarchies, shared-utility libraries, OpenAPI/ORM code generation) regardless of
+the spec's domain, and that scaffolding repeats template fragments across
+packages. The metric is doing exactly what it should — measuring the agent's
+*architectural footprint* rather than the bare logic the spec demanded. A buyer
+should expect roughly a tenth of the produced code to be scaffolding redundancy
+before any feature work begins.
 
-**Duplication.** Claude Code produced zero duplication across all 30 runs,
-consistent with its single-file style; Cursor averaged 0.9%, Antigravity 4.3%,
-and **Replit Agent 9.56%** — by far the largest ratio in the table. Inspection of
-the Replit captures identifies the source unambiguously: the agent ships
-enterprise-grade monorepo scaffolding (workspace configuration hierarchies,
-shared-utility libraries, OpenAPI/ORM code generation) regardless of the spec's
-domain, and that scaffolding repeats template fragments across packages. This is
-methodologically important because it demonstrates the metric doing exactly what
-it should — measuring the agent's *architectural footprint*, not merely the bare
-logic the spec demanded. A buyer evaluating Replit Agent for an enterprise
-codebase should, on this evidence, expect roughly a tenth of the produced code to
-be scaffolding redundancy from the outset, a maintenance cost incurred before any
-feature work begins.
+**Security density.** The figures below exclude Bandit's `B101` (assertion)
+findings inside test files, which the analyser originally counted: `B101` exists
+because assertions vanish under `python -O`, and that reasoning does not apply
+where the assertion *is* the test. Counting them meant the metric penalised the
+conditions that tested their own output most thoroughly, inflating claude_code
+from 9.65 to 42.05 and cursor_agent from 5.93 to 43.67. The correction is
+recorded as Erratum 001; it reverses no conclusion, and the corrected values are
+used throughout.
 
-**Security density.** The pattern here inverts that of the other metrics, which
-makes it the clearest illustration of why an artefact-level, transparently-
-reported instrument is necessary. The two feature-dense vendors — Claude Code
-(42.05) and Cursor Agent (43.67 CWE-tagged Bandit findings per kLOC) — score
-*highest*, while Replit Agent records 0.00 and Antigravity 1.48. The Replit zero
-does not indicate more secure output; it is a denominator artefact. Bandit scans
-the Python files produced, and Replit's output is dominated by TypeScript
-monorepo scaffolding with comparatively little Python, so the few Python security
-issues that exist are diluted across a large non-Python project. The
-dissertation's recommended reading, developed in §5.2, is that `security_density`
-is best understood as a *per-language* vulnerability density rather than a
-total-vulnerability count, and that a companion metric — total CWE-tagged findings
-per run — would be required to support a whole-project security claim. Reporting
-this artefact openly, rather than allowing Replit's 0.00 to read as a security
-win, is precisely the behaviour the instrument exists to enforce.
+The pattern inverts that of the other metrics, which makes it the clearest
+illustration of why an artefact-level, transparently-reported instrument is
+necessary. The two feature-dense vendors — Claude Code (9.65) and Cursor Agent
+(5.93 CWE-tagged findings per kLOC) — score *highest*, while Replit records 0.00
+and Antigravity 1.47. Replit's zero does not indicate more secure output; it is a
+denominator artefact. Bandit scans Python, and Replit's output is dominated by
+TypeScript scaffolding with comparatively little Python, so the few Python issues
+are diluted across a large non-Python project. `security_density` is therefore
+best read as a *per-language* density rather than a total-vulnerability count,
+and a companion metric — total CWE-tagged findings per run — would be needed to
+support a whole-project security claim (§5.2). Reporting this openly, rather than
+allowing Replit's 0.00 to read as a security win, is precisely the behaviour the
+instrument exists to enforce.
 
 **Keystroke correction.** Structurally zero for every AI condition, because
 agents do not press keys. The metric exists for the `human_control` comparison
-and is interpreted against the human baseline in §4.6; its inclusion is justified
-by the need for an empirical floor against which the agentic zero can be read as
-a category difference rather than an absence (§5.5).
+(§4.6); its inclusion is justified by the need for an empirical floor against
+which the agentic zero reads as a category difference rather than an absence
+(§5.5).
 
 ## 4.4 Per-specification breakdown
 
@@ -934,7 +896,7 @@ per run, against at most one anywhere else — is the study's most consequential
 result, and the unevenness of the surrounding cells is the clearest available
 statement that tool behaviour is task-conditional rather than uniform.
 
-Figure 4.3 renders the same data as a heatmap, in which the pattern is immediate. Three patterns are visible by inspection. Cursor's hallucinations are confined to
+Three patterns are visible by inspection. Cursor's hallucinations are confined to
 `agent_education_system`, the web-app spec; Antigravity's are likewise localised
 to that same web-app spec, where it averages a full off-spec route per run; and
 and Replit's are *heaviest by far on the CLI spec* — three off-spec subcommands
@@ -976,16 +938,15 @@ inferential conclusions only from the level the design can actually support.
 **Level 1 — nominal analysis (reported for transparency, not relied upon).**
 Kruskal–Wallis over all four conditions at the nominal N = 30 returns
 significance on all four testable metrics: duplication H = 62.41,
-p = 1.8 × 10⁻¹³; security H = 39.35, p = 1.5 × 10⁻⁸; hallucinations H = 40.14,
+p = 1.8 × 10⁻¹³; security H = 26.07, p = 9.2 × 10⁻⁶; hallucinations H = 40.14,
 p = 9.9 × 10⁻⁹; complexity H = 12.03, p = 7.3 × 10⁻³. **These values are
-inflated by pseudoreplication and are not the study's inferential claim.** They
-are reported so that a reader reproducing the CSV arrives at the same arithmetic
-and can see why it must be discounted. An earlier draft of this chapter also
-reported condition-by-specification interaction *F*-statistics; those are
-**withdrawn**, because with one effective observation per cell in two of the
-four conditions the interaction term has no residual degrees of freedom and the
-statistic is undefined on this design. Their apparent magnitude was an artefact
-of near-zero error variance produced by duplicated rows.
+inflated by pseudoreplication and are not the study's inferential claim**; they
+are reported only so a reader reproducing the CSV arrives at the same arithmetic
+and can see why it must be discounted. Condition-by-specification interaction
+*F*-statistics reported in an earlier draft are **withdrawn**: with one
+effective observation per cell in two conditions the interaction term has no
+residual degrees of freedom and the statistic is undefined on this design, its
+apparent magnitude an artefact of near-zero error variance from duplicated rows.
 
 **Level 2 — the inferential core (live conditions only).** Only `claude_code`
 and `cursor_agent` were captured live with genuine per-replication variance
@@ -1001,7 +962,7 @@ Mann–Whitney *U* on each metric with rank-biserial effect sizes.
 | Duplication (%) | 330.0 | 0.0028 | 0.267 | 0.00 | 0.90 |
 | Complexity (cc) | 641.5 | 0.0047 | −0.426 | 3.35 | 2.72 |
 | Hallucinations (count) | 390.0 | 0.0419 | 0.133 | 0.00 | 0.17 |
-| Security density (per kLOC) | 415.0 | 0.5995 | 0.078 | 42.05 | 43.67 |
+| Security density (per kLOC) | 508.0 | 0.3668 | −0.129 | 9.65 | 5.93 |
 
 Under Bonferroni correction across the four metrics at α = 0.05
 (threshold 0.0125), **duplication and complexity differ significantly**;
@@ -1030,7 +991,7 @@ made explicit here rather than left for a reader to derive.
 **Level 3 — pseudoreplication-corrected omnibus (all four conditions).**
 Collapsing every condition to one value per specification — the honest unit of
 analysis, giving N = 3 per condition — no metric reaches significance:
-duplication H = 6.34, p = 0.096; security H = 6.62, p = 0.085; hallucinations
+duplication H = 6.34, p = 0.096; security H = 5.30, p = 0.151; hallucinations
 H = 3.45, p = 0.328; complexity H = 1.17, p = 0.760. This is a **power result,
 not a null result**: with three cells per condition, only an overwhelming effect
 could reach α = 0.01, and the analysis is reported to establish that the
@@ -1070,7 +1031,7 @@ inferential comparison is made.
 
 | Metric | Web app (human / AI) | Pipeline (human / AI) | CLI (human / AI) |
 |---|---:|---:|---:|
-| Security density (per kLOC) | 0.00 / 41.31 | 0.00 / 11.50 | 0.00 / 12.59 |
+| Security density (per kLOC) | 0.00 / 10.48 | 0.00 / 1.09 | 0.00 / 1.23 |
 | Complexity (cc) | 1.71 / 1.56 | 5.00 / 3.20 | 0.00 / 3.54 |
 | Duplication (%) | 0.00 / 3.59 | 0.00 / 5.87 | 0.00 / 1.57 |
 | Hallucinations (count) | 0.00 / 0.62 | 0.00 / 0.00 | 0.00 / 0.75 |
@@ -1149,50 +1110,40 @@ conferring; neither fact establishes that Rater 1 was blind to the hypotheses.
 
 ## 4.8 Summary of findings
 
-The chapter's findings can be summarised in six points.
-
 1. **Hallucination is the most discriminating governance metric.** The four
-   conditions span 0.00 to 1.33 hallucinations per run — a range that is
-   meaningful in any deployment evaluation, and one that functional benchmarks do
-   not surface at all.
+   conditions span 0.00 to 1.33 off-spec features per run — a range meaningful in
+   any deployment evaluation, and one functional benchmarks do not surface.
 
 2. **Replit Agent's architectural prior dominates the specification.** Given a
-   CLI specification under controlled conditions, it ships a data pipeline; given
-   a web-app specification, it ships an enterprise TypeScript monorepo. The
-   hallucination metric, the duplication metric (9.56%), and the
-   security-density artefact (0.00 by Python dilution) are three readings of this
-   single underlying behaviour, triangulated by direct code inspection;
-   establishing its stability across independent sessions awaits the live
-   re-capture (§5.7).
+   CLI specification under controlled conditions it ships a data pipeline; given
+   a web-app specification, an enterprise TypeScript monorepo. The hallucination
+   count, the duplication figure (9.56%) and the security-density artefact (0.00
+   by Python dilution) are three readings of one underlying behaviour,
+   triangulated by direct code inspection; its stability across independent
+   sessions awaits the live re-capture (§5.7).
 
 3. **Claude Code produces the most disciplined output** — zero hallucinations and
-   zero duplication across all 30 live runs — at the cost of the highest structural
-   density (mean complexity 3.35), which is interpreted as denser, not worse.
-   This is the one cross-vendor contrast that rests on two fully live
-   conditions. Of its two components, the greater control-flow density relative
-   to Cursor Agent is the study's single result supported by genuine replication
-   in both arms; the duplication gap is large and consistent but rests on an arm
-   with no within-cell variance, and is reported as descriptive (§4.5.2).
+   zero duplication across all 30 runs — at the cost of the highest structural
+   density (mean complexity 3.35), read as denser rather than worse. Of its two
+   components, the greater control-flow density relative to Cursor is the study's
+   single result supported by genuine replication in both arms; the duplication
+   gap is large and consistent but rests on an arm with no within-cell variance
+   and is reported descriptively (§4.5.2).
 
-4. **Cursor Agent is the median performer** across all five metrics, neither best
-   nor worst on any single one; its modest hallucinations are confined to the
-   web-app spec and take the form of helpful overreach (`/health`, `/metrics`).
+4. **Cursor Agent is the median performer**, neither best nor worst on any single
+   metric; its modest hallucinations are confined to the web-app spec as helpful
+   overreach (`/health`, `/metrics`).
 
-5. **Antigravity shows the highest hallucination concentration in the web-app
-   spec** (1.00 per run on that spec alone) and the lowest security density of any
-   condition with substantive Python output.
+5. **Antigravity's hallucinations fall entirely in the web-app spec** (1.00 per
+   run there, none elsewhere, tying Replit on that specification), and it records
+   the lowest security density of any condition with substantive Python output.
 
 6. **Tool behaviour is not constant across task domains.** Every vendor's
    hallucination profile changes with the specification (Table 4.2), so the
-   dissertation's strongest external-validity claim is not "agent X is better
-   than agent Y" but "agent X behaved better than agent Y *for this task type*."
-   This is established descriptively rather than by an interaction test, which
-   the replay design cannot support (§4.5.3); it nonetheless reframes how the
-   findings should be read and how the tools should be procured (Chapter 5).
-
-The implications of these findings for enterprise AI-coding adoption — profile-
-based selection, fidelity gating, and scaffolding-debt budgeting — are the
-subject of Chapter 5.
+   strongest external-validity claim is not "agent X is better than agent Y" but
+   "agent X behaved better *for this task type*." This is established
+   descriptively rather than by an interaction test, which the replay design
+   cannot support (§4.5.3).
 
 ---
 
@@ -1200,36 +1151,29 @@ subject of Chapter 5.
 
 ## 5.1 Interpreting the cross-vendor differences
 
-The headline result of this study is not that one tool is uniformly "best", but
-that the four leading agentic tools occupy *distinct and measurable quality
-profiles*, and that those profiles **trade off against one another** rather than
-forming a single quality ranking. Claude Code's profile is *disciplined density*:
-it ships exactly what the specification requests (zero hallucinations, zero
-duplication) but concentrates logic into structurally denser single-file
-implementations (highest complexity) that also surface the most CWE-tagged
-findings per kLOC — a direct consequence of having the most production-feature
-Python to scan. Replit Agent's profile is the inverse: an *architectural-prior
-maximiser* that ships extensive enterprise scaffolding (highest duplication) and,
-most consequentially, overrides the specification itself when its prior
-conflicts with the brief (highest hallucination, concentrated entirely in the
-CLI spec). Cursor occupies a *median* position — neither best nor worst on any single
-metric, with its modest hallucinations confined to the web-app spec and taking
-the recognisable form of helpful overreach (`/health`, `/metrics` endpoints) —
-and Antigravity a *web-app-biased* one, concentrating its hallucinations in the
-`agent_education_system` spec. For an enterprise buyer, the implication is that
-tool selection is a *profile-matching* exercise, not a leaderboard lookup: the
-right question is not "which tool is best?" but "which tool's measured profile
-best fits the tasks, risk tolerance, and review capacity of this team?". A team
-shipping security-sensitive web services and a team maintaining a lean
-internal-tooling estate should, on this evidence, reach different conclusions
-from the same data — and the instrument exists precisely to let them compute that
-conclusion rather than infer it from a vendor leaderboard. This profile-not-rank
-finding is the practical counterpart of the per-specification non-uniformity
-documented in Table 4.2: because tool behaviour is not stable across task
-domains, no single ranking can be valid across an organisation's full task
-portfolio. It should be read as a hypothesis generated by these captures and
-warranting confirmation under the fully live design of §6.4, not as an
-established inferential result — the distinction §4.5 draws deliberately.
+The headline result is not that one tool is uniformly "best", but that the four
+agentic tools occupy *distinct and measurable quality profiles* which **trade
+off against one another** rather than forming a single ranking. Claude Code's
+profile is *disciplined density*: it ships exactly what the specification
+requests (zero hallucinations, zero duplication) but concentrates logic into
+structurally denser single-file implementations (highest complexity) that also
+surface the most CWE-tagged findings per kLOC — a direct consequence of having
+the most production-feature Python to scan. Replit Agent's is the inverse: an
+*architectural-prior maximiser* that ships extensive enterprise scaffolding
+(highest duplication) and, most consequentially, overrides the specification
+when its prior conflicts with the brief (highest hallucination, heaviest by far
+on the CLI spec). Cursor occupies a *median* position, its modest hallucinations
+confined to the web-app spec as helpful overreach (`/health`, `/metrics`); and
+Antigravity a *web-app-biased* one.
+
+For an enterprise buyer the implication is that tool selection is a
+*profile-matching* exercise, not a leaderboard lookup: the right question is
+which tool's measured profile fits this team's tasks, risk tolerance and review
+capacity. Because tool behaviour is not stable across task domains (Table 4.2),
+no single ranking can be valid across an organisation's full task portfolio.
+This should be read as a hypothesis generated by these captures and warranting
+confirmation under the fully live design of §6.4, not as an established
+inferential result.
 
 ## 5.2 The security-density artefact and the per-language reading
 
@@ -1287,155 +1231,127 @@ shows can be tested.
 
 ## 5.4 Methodological reflection
 
-Three methodological points warrant reflection. First, the *capture contract*
-succeeded in its purpose (RQ1): structurally heterogeneous workflows were scored
-on a common footing, and the blinded analyser design removed a class of
-vendor-favouring bias by construction. Second, the *replay-mode constraint*
-(Deviation 001) is a genuine limitation: the IDE-bound vendors contribute zero
-within-cell variance, so their cells are effective singletons and the omnibus
-tests rest on the two CLI-driven conditions' variance plus the between-condition
-gaps; the large descriptive gaps mitigate but do not eliminate this — the
-replayed cells' internal consistency is a property of the replay mechanism and
-adds no independent evidence. Third,
-the *hallucination heuristic* is token-based and was not validated against human
-labels in this submission (§4.7); the recommended extension is structural-shape
-detection, and the metric is reported conservatively until that validation is
-completed. The transparent logging of these limitations — and of the
-human-control data-loss event (Deviation 003) — is itself a methodological
-position: an instrument whose purpose is to surface uncomfortable truths about
-generated code must hold itself to the same standard.
+Three points warrant reflection. First, the *capture contract* succeeded in its
+purpose (RQ1): structurally heterogeneous workflows were scored on a common
+footing, and the blinded analyser design removed a class of vendor-favouring
+bias by construction. Second, the *replay-mode constraint* (Deviation 001)
+is a genuine limitation: the IDE-bound vendors contribute zero within-cell
+variance, so their cells are effective singletons and the replayed cells'
+internal consistency is a property of the replay mechanism rather than
+independent evidence. Third, the *hallucination heuristic* is token-based, and
+although it now clears its validation threshold (§4.7) that validation covers
+detection rather than magnitude; structural-shape detection remains the
+recommended extension.
 
-Beyond these three points, the *capture contract* deserves reflection as a
-transferable methodological contribution rather than an implementation detail of
-this study. The recurring difficulty in cross-vendor evaluation is that the
-objects being compared are not commensurable in their native form: a human
-session is a stream of keystrokes, a CLI agent emits a stream of JSON tool-calls,
-and a browser-IDE agent leaves only files and an event log. Prior evaluation work
+The capture contract deserves reflection as a transferable contribution rather
+than an implementation detail. The recurring difficulty in cross-vendor
+evaluation is that the objects compared are not commensurable in their native
+form: a human session is a stream of keystrokes, a CLI agent emits JSON
+tool-calls, a browser-IDE agent leaves only files and an event log. Prior work
 sidesteps this by comparing only commensurable objects — model completions
 against a test oracle — which is precisely why it cannot study whole-workflow
-properties. The capture contract resolves the incommensurability by defining a
-*minimal common shape* (a codebase plus a typed interaction log) to which every
-workflow can be losslessly projected for the purpose of the metrics, while
-vendor-native detail is retained in sibling fields for forensics. The design
-generalises beyond the four tools studied here: any future agentic product,
-however it is surfaced, can be brought into the comparison by writing a single
-adapter, and the metric code — being blind to condition — need not change. This
-*blinding-by-construction* is a stronger guarantee than the blinding-by-protocol
-common in empirical studies, because it is enforced by the type signature of the
-analyser rather than by the discipline of the analyst, and it directly addresses
-the most obvious criticism of any vendor comparison, namely that the harness was
-tuned to favour a predetermined winner.
+properties. The contract resolves the incommensurability by defining a *minimal
+common shape* (a codebase plus a typed interaction log) to which every workflow
+projects losslessly for the metrics' purposes, while vendor-native detail is
+retained for forensics. It generalises: any future agentic product can be
+brought into the comparison by writing one adapter, and the metric code — being
+blind to condition — need not change. This *blinding-by-construction* is
+stronger than the blinding-by-protocol common in empirical studies, because it
+is enforced by the analyser's type signature rather than the analyst's
+discipline, and it answers the most obvious criticism of any vendor comparison:
+that the harness was tuned to favour a predetermined winner.
 
 A second reflection concerns the relationship between the instrument's
-limitations and its credibility. It would have been possible to present a cleaner
-study — to suppress the data-loss event, to assert a κ before it was earned, to gloss the
-security-density artefact as a Replit security win, or to omit the human
-condition's deviation from pre-registration. Each such choice would have
+limitations and its credibility. It would have been possible to present a
+cleaner study — to suppress the data-loss event, to assert a κ before it was
+earned, to gloss the security-density artefact as a Replit security win, or to
+omit the human condition's deviation from pre-registration. Each would have
 *increased* the apparent strength of the findings while *decreasing* their
-trustworthiness. The decision to do the opposite in every case — to log the loss,
-to hold the κ claim back until the labelling was actually done, to explain the artefact, and to
-record the deviation with its analytical consequence — is the methodological
-heart of the dissertation. An instrument built to audit the trustworthiness of
-generated code earns the right to make that audit only by being demonstrably
-trustworthy itself, and transparency under conditions that are not flattering is
-the operational form of that trustworthiness.
+trustworthiness. Two errata sharpen the point, because both were found by the
+instrument's own validation rather than by an external reader: security density
+was inflated by counting assertions inside test files, penalising the conditions
+that tested most thoroughly (Erratum 001), and the route detector was blind to
+non-Python web frameworks, scoring an entire cell zero by construction rather
+than by judgement (Erratum 002). The second reversed a claim this study had
+previously advanced as its cleanest result. Correcting both in the text, and
+declining to quote the flattering post-repair κ because it is circular, is the
+methodological heart of the dissertation. An instrument built to audit the
+trustworthiness of generated code earns the right to make that audit only by
+being demonstrably trustworthy itself, and transparency under conditions that
+are not flattering is the operational form of that trustworthiness.
 
 ## 5.5 The human baseline in context
 
-The human-control condition is the interpretive keystone of the study rather
-than a fifth competitor, and it repays detailed discussion because each of its
-results carries a distinct methodological lesson. Five points follow.
+The human-control condition is the study's interpretive keystone rather than a
+fifth competitor, and each of its results carries a distinct methodological
+lesson.
 
-*First, the human baseline supplies the only interpretable value for the
-keystroke-correction metric.* The four agentic conditions register a structural
-zero on this metric because agents do not press keys; in isolation that zero is
-uninterpretable, because it could equally mean "no rework occurred" or "rework
-occurred but was invisible to the instrument". The human session resolves the
-ambiguity: on the representative complete capture (`data_pipeline`, 6,619 events)
-the researcher backspaced at a rate of 51.8 corrections per 1,000 keystrokes —
-roughly 5% of all keystrokes were corrective. This is the empirical *floor* the
-metric was designed to establish. It reframes the agentic zero not as a quality
-triumph but as a category difference: the agent's authoring process is
-unobservable through a keystroke lens, and a different process instrument (for
-example, tool-call revision counts) would be required to make a like-for-like
-"rework" comparison. Identifying that requirement is itself a contribution to
-how agentic processes might be measured (§6.4).
+*It supplies the only interpretable value for the keystroke metric.* The agentic
+conditions register a structural zero because agents do not press keys, and in
+isolation that zero could mean either "no rework occurred" or "rework occurred
+but was invisible". The human session resolves the ambiguity: on the
+representative capture (`data_pipeline`, 6,619 events) the researcher backspaced
+at 51.8 corrections per 1,000 keystrokes. That is the empirical floor the metric
+was designed to establish, and it reframes the agentic zero as a category
+difference rather than a quality triumph — measuring agentic rework would
+require a different process instrument, such as tool-call revision counts
+(§6.4).
 
-*Second, the human baseline's "clean sweep" on the artefact metrics — zero
-hallucinations, zero duplication, zero security density across all three specs —
-must be read carefully and is explicitly not claimed as a victory for hand
-coding.* The zeros are the signature of a *minimal, exactly-on-specification*
-implementation: a human under no commercial pressure to over-deliver implements
-the six declared features and stops. The agentic conditions' non-zero figures are
-substantially driven by *over-delivery* — helpful extra endpoints, enterprise
-scaffolding, defensive code — which is a different behaviour, not simply worse
-behaviour. The honest interpretation, therefore, is that the human baseline
-demonstrates what *spec-minimal* output looks like on each metric, providing a
-reference point against which the agents' *spec-plus* tendencies can be measured,
-rather than a demonstration that humans write better code than agents.
+*Its clean sweep on the artefact metrics is not a victory for hand coding.* Zero
+hallucinations, zero duplication and zero security density across all three
+specifications are the signature of a *minimal, exactly-on-specification*
+implementation: a human under no pressure to over-deliver ships the six declared
+features and stops. The agentic figures are substantially driven by
+over-delivery — extra endpoints, enterprise scaffolding, defensive code — which
+is a different behaviour, not simply a worse one. The baseline therefore shows
+what *spec-minimal* output looks like, giving a reference against which
+*spec-plus* tendencies can be read.
 
-*Third, the CLI complexity-of-zero result is the most methodologically valuable
-single data point in the study.* The human implementation of `internal_tool_cli`
-scored a mean cyclomatic complexity of exactly 0.00 — not because it was
-trivially simple, but because it was written as top-level script code with no
-function definitions, and the analyser (in common with the entire McCabe
-tradition) measures complexity *per function*. A function-free module therefore
-has no functions to average over and scores zero, while the agentic conditions,
-which wrapped equivalent logic in functions, scored 3.1–4.1. This exposes a real
-limitation of per-function complexity as a *cross-style* comparator: it is
-confounded with the author's decomposition style. The instrument surfaced this
-confound rather than hiding it, and the appropriate response — recommended in
-§6.4 — is a complementary whole-module complexity measure that is invariant to
-whether logic is placed inside functions.
+*The CLI complexity-of-zero result is the most methodologically valuable single
+data point in the study.* The human `internal_tool_cli` implementation scored a
+mean cyclomatic complexity of exactly 0.00 — not because it was trivial, but
+because it was written as top-level script code with no function definitions,
+and the analyser, in common with the whole McCabe tradition, measures complexity
+*per function*. A function-free module has nothing to average over, while the
+agentic conditions, which wrapped equivalent logic in functions, scored 3.1–4.1.
+Per-function complexity is therefore confounded with the author's decomposition
+style as a *cross-style* comparator. The instrument surfaced the confound rather
+than hiding it; the remedy is a complementary whole-module measure (§6.4).
 
-*Fourth, the single-replication design of the human condition is a genuine
-threat to validity that is carried openly rather than disguised.* Where the
-CLI-driven agentic conditions contribute ten live replications per specification
-(and the IDE-bound conditions one captured session each — Deviation 001), the
-human baseline likewise contributes one (Deviation 003), so it cannot support variance
-estimation and is excluded from all inferential tests. It is reported purely
-descriptively, as a single-rep reference point. This is a deliberate,
-transparently-logged trade-off between the labour cost of hand-coding three
-specifications and the breadth of task coverage; a properly powered human
-condition is identified as future work (§6.4).
-
-*Fifth, the data-integrity event in the human condition is itself a finding about
-instrument design.* The loss of an early ~2,133-event coding segment for
-`agent_education_system` — because the keystroke recorder overwrote its log on
-re-invocation before a segment-archiving procedure existed — produced an
-unrepresentative correction-frequency outlier (829/1,000, computed from a small
-fixing-only segment) that is flagged as such throughout. The remediation, a
-cumulative-log operationalisation in which every capture segment is archived and
-concatenated at scoring time, is a small but reusable contribution to keystroke
-capture methodology, and the transparent reporting of the loss is consistent with
-the study's broader stance (§5.4) that an auditing instrument must hold itself to
-the standard of disclosure it demands of the tools it audits.
+*Two threats are carried openly rather than disguised.* The condition
+contributes one replication per specification (Deviation 003), so it cannot
+support variance estimation and is excluded from all inferential tests. And the
+loss of an early ~2,133-event segment for `agent_education_system` — the
+keystroke recorder overwrote its log on re-invocation before segment archiving
+existed — produced an unrepresentative correction-frequency outlier (829/1,000,
+computed from a small fixing-only segment) that is flagged as such throughout.
+The remediation, a cumulative log in which every segment is archived and
+concatenated at scoring time, is a small reusable contribution to keystroke
+capture methodology.
 
 ## 5.6 Implications for enterprise AI adoption
 
-For the enterprise adopter, three implications follow, each actionable with the
-very instrument this dissertation contributes. First, *select on profile, not
-rank*: because tool effects interact significantly with task domain (§4.5), no
-single ranking is valid across an organisation's task portfolio, and the
-appropriate procurement artefact is a *profile matrix* — measured tool behaviour
-per task type — rather than a leaderboard. Second, *gate on fidelity*: treat
-off-specification output as a first-order governance risk and measure it before
-deployment, adding a fidelity check to the continuous-integration pipeline
-alongside the functional tests that are already standard. The Replit
-architectural-prior result shows that this is not a hypothetical risk: a tool can
-silently substitute an entire application architecture for the one requested, and
-only a fidelity measurement will catch it. Third, *budget for scaffolding debt*:
-a vendor that ships ~10% redundant scaffolding by default imposes a maintenance
-and review cost from the first commit, and that cost should be priced into the
-adoption decision rather than discovered later. More broadly, the study suggests
-that enterprise AI-coding governance should shift from a *trust-then-verify*
-posture, in which a tool is adopted on the basis of functional benchmarks and
-audited later, to a *measure-then-adopt* posture, in which the tool's
-quality-and-governance profile is established empirically — with an instrument
-like this one — before it is placed inside a governance box. This is the
-practical thesis of the dissertation: that the properties which matter most for
-responsible adoption are exactly the ones current evaluation does not measure,
-and that they can be measured.
+Three implications follow for the enterprise adopter, each actionable with the
+instrument this dissertation contributes. First, *select on profile, not rank*:
+because tool behaviour varies with task domain (§4.4), no single ranking is
+valid across an organisation's task portfolio, and the appropriate procurement
+artefact is a *profile matrix* — measured behaviour per task type — rather than a
+leaderboard. Second, *gate on fidelity*: treat off-specification output as a
+first-order governance risk and measure it before deployment, adding a fidelity
+check to continuous integration alongside the functional tests already standard.
+The Replit result shows this is not hypothetical — a tool can silently
+substitute an entire application architecture for the one requested, and only a
+fidelity measurement catches it. Third, *budget for scaffolding debt*: a vendor
+shipping ~10% redundant scaffolding by default imposes review cost from the
+first commit, and that cost should be priced into the adoption decision rather
+than discovered later.
+
+More broadly, governance should shift from a *trust-then-verify* posture, in
+which a tool is adopted on functional benchmarks and audited later, to a
+*measure-then-adopt* posture, in which its quality-and-governance profile is
+established empirically before it is placed inside a governance box. That is the
+practical thesis: the properties mattering most for responsible adoption are
+exactly those current evaluation does not measure, and they can be measured.
 
 ## 5.7 Threats to validity
 
@@ -1458,8 +1374,9 @@ remains — the large descriptive gaps and the mechanism established by code
 inspection — is genuine but is labelled as case evidence, and a fully live
 re-capture is required to convert it into inference. *External validity*: three specifications across three domains, while
 broader than the single-task norm, do not span the full space of software tasks,
-and the significant condition-by-spec interaction warns explicitly against
-over-generalisation — the appropriate inference is task-conditional. *Conclusion
+and the per-specification non-uniformity of Table 4.2 — descriptive, since the
+interaction statistic is undefined on this design — warns against
+over-generalisation: the appropriate inference is task-conditional. *Conclusion
 validity*: free parameters (the shingle window, the α level, the choice of
 non-parametric tests) were fixed by pre-registration before data collection
 (§3.5), constraining the analytic flexibility that would otherwise threaten the
@@ -1488,25 +1405,22 @@ as a first-class, measurable governance metric.
 
 ## 6.2 Contributions revisited
 
-The dissertation's three contributions can now be restated in light of the
-results. The *methodological* contribution is the capture contract and its
-blinded analyser pipeline — a design that solves the comparability problem at
-the heart of cross-vendor agentic evaluation by forcing structurally
-heterogeneous workflows into a single artefact shape and removing condition
-identity from the metric code by interface, not by discipline. The success of
-this design (RQ1) is what makes the rest of the study possible, and it is
-reusable beyond the four tools studied here: any workflow that can be made to
-emit a codebase and an interaction log can be scored on the same footing.
+The *methodological* contribution is the capture contract and its blinded
+analyser pipeline — a design that solves the comparability problem at the heart
+of cross-vendor agentic evaluation by forcing structurally heterogeneous
+workflows into one artefact shape and removing condition identity from the
+metric code by interface, not discipline. Its success (RQ1) is what makes the
+rest of the study possible, and it is reusable: any workflow that can emit a
+codebase and an interaction log can be scored on the same footing.
 
 The *empirical* contribution is the pre-registered, four-vendor, three-domain,
-five-metric comparison and, within it, the identification and characterisation of
-a *measured architectural-prior dominance* in Replit Agent — the finding that an
-agent's pretrained scaffolding bias can override an explicit, contradictory
-specification under controlled conditions. This is, to the author's knowledge,
-the first pre-registered cross-vendor measurement of specification fidelity in
-commercial agentic tools, and the architectural-prior result is a concrete,
-reproducible instance of a governance failure that functional benchmarks are
-structurally unable to detect.
+five-metric comparison and, within it, the characterisation of a *measured
+architectural-prior dominance* in Replit Agent — an agent's pretrained
+scaffolding bias overriding an explicit, contradictory specification under
+controlled conditions. This is, to the author's knowledge, the first
+pre-registered cross-vendor measurement of specification fidelity in commercial
+agentic tools, and a concrete, reproducible instance of a governance failure
+functional benchmarks are structurally unable to detect.
 
 The *governance* contribution is the elevation of specification fidelity to a
 first-class, measurable quality metric, and the consequent recommendation of a
@@ -1514,8 +1428,8 @@ first-class, measurable quality metric, and the consequent recommendation of a
 maps to the specification and nothing more, sitting alongside the functional
 benchmarks that currently dominate. This reframes the adoption question from "is
 the tool capable?" to "can the tool be contained?" — the question that matters
-for the high-trust, governed environments that the Aston–Capgemini Centre's
-enterprise-AI agenda addresses.
+for the high-trust, governed environments the Aston–Capgemini Centre's agenda
+addresses.
 
 ## 6.3 Limitations
 
