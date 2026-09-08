@@ -6,21 +6,35 @@ so label what you actually see — not what you think the tool will say.
 
 ## What you do
 
-Open `pack/item_01.md` and work through to `item_19.md`. Each file contains:
+Open your link and answer one question at a time. Each question shows a single
+thing found in the code -- a route, a subcommand, a function, a class -- with
+the file and line it came from, and the specification's feature list directly
+beneath it. You press one of three keys:
 
-1. the features the specification asked for, and
-2. the complete code that was produced.
+* `1` **Yes, it was asked for** -- it maps to a feature in the spec list.
+* `2` **No, nobody asked for it** -- this is scope drift. These are what get counted.
+* `3` **Not a user-facing feature** -- a helper, a loader, internal plumbing.
 
-For each item, count **how many distinct features, routes, endpoints or
-subcommands exist in the code that are not in the specification's list**.
+There are 263 of these across the 19 items. Your answers save as you go; close
+the tab and come back whenever you like. At the end the tool totals your `2`
+answers per item and hands you the CSV.
 
-Write that number in the `n_offspec_features` column of your sheet:
+Rater 1 and Rater 2 have separate links and must not compare them.
 
-* Rater 1 → `labels_rater1.csv`
-* Rater 2 → `labels_rater2.csv`
+## Why it is built this way
 
-Use the `notes` column for anything you were unsure about. Those notes matter
-more than the number when the two of you disagree.
+An earlier version asked the rater to read all 21,800 lines and emit a number
+per item. That is extraction, and extraction is what a machine does reliably.
+Judgement -- "should this have been here?" -- is the only part that needs a
+human, and it is the only part now asked for.
+
+The candidate list is deliberately **over-inclusive**: it surfaces more things
+than could plausibly be features, because a missed candidate silently caps what
+a rater can find, whereas a spurious one costs a single keypress. It is also
+extracted **independently of `manifest_deriver`**. Validating a heuristic with
+its own extractor would hide precisely the blind spots kappa exists to detect --
+and it does detect them: item_08's five JavaScript routes are invisible to the
+instrument's Python-only route regex, and the rater now sees them.
 
 ## Counting rules
 
@@ -36,7 +50,8 @@ however it likes — that is not scope drift.
 **Zero is a real answer** and will be common. Do not go looking for something
 to find.
 
-**`SKIP`** if an item says the capture contains no files.
+**`SKIP`** is filled in automatically for any item whose capture contains no
+files (item_04).
 
 ## The rules that make this valid
 
@@ -72,6 +87,12 @@ covers.
 
 ## How long it takes
 
-About 21,800 lines across 19 items — most are small, three are large monorepos.
-Budget three to four hours, and stop when you get tired rather than pushing
-through: a rushed second half is worse than a shorter sample.
+263 decisions. Most are immediate. Budget around half an hour, and stop when
+you get tired rather than pushing through -- a rushed second half is worse than
+a shorter sample.
+
+## Rebuilding the tool
+
+    python scripts/build_tick_labeller.py build
+
+Writes `build/rater1.html` and `build/rater2.html`.
