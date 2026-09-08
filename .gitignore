@@ -32,3 +32,9 @@ data/waitlist.jsonl
 
 # Scratch output from demo runs; contains absolute paths.
 test_output.json
+
+# Evidence images are large binaries; the captions and builder are tracked.
+evidence/*.png
+evidence/*.jpg
+evidence/*.jpeg
+evidence/.DS_Store
