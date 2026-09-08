@@ -2,260 +2,245 @@
 <style>
   :root{
     --bg:#f7f6f3; --card:#fff; --ink:#1a1a18; --soft:#6b6a66; --line:#e3e1dc;
-    --yes:#2f7d4f; --yes-bg:#eaf5ee; --no:#b4462a; --no-bg:#fcefeb;
-    --skip:#5a5954; --skip-bg:#f0efec; --accent:#2f5d7d;
+    --flag:#b4462a; --flag-bg:#fcefeb; --ok:#2f7d4f; --accent:#2f5d7d;
   }
-  :root:not([data-theme="light"]){}
   @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
     --bg:#16161a; --card:#202027; --ink:#eceae5; --soft:#9d9b95; --line:#33333c;
-    --yes:#6fce93; --yes-bg:#1d3327; --no:#f0917a; --no-bg:#37211c;
-    --skip:#a5a39d; --skip-bg:#2a2a32; --accent:#8fbede;
+    --flag:#f0917a; --flag-bg:#37211c; --ok:#6fce93; --accent:#8fbede;
   }}
   :root[data-theme="dark"]{
     --bg:#16161a; --card:#202027; --ink:#eceae5; --soft:#9d9b95; --line:#33333c;
-    --yes:#6fce93; --yes-bg:#1d3327; --no:#f0917a; --no-bg:#37211c;
-    --skip:#a5a39d; --skip-bg:#2a2a32; --accent:#8fbede;
+    --flag:#f0917a; --flag-bg:#37211c; --ok:#6fce93; --accent:#8fbede;
   }
   *{box-sizing:border-box}
-  body{background:var(--bg);color:var(--ink);
-    font:16px/1.55 ui-sans-serif,-apple-system,"Segoe UI",Roboto,sans-serif;
-    margin:0;padding:0 16px 80px}
-  .wrap{max-width:940px;margin:0 auto}
-  header{padding:22px 0 14px;position:sticky;top:0;background:var(--bg);z-index:5}
+  body{background:var(--bg);color:var(--ink);margin:0;padding:0 16px 120px;
+    font:16px/1.55 ui-sans-serif,-apple-system,"Segoe UI",Roboto,sans-serif}
+  .wrap{max-width:900px;margin:0 auto}
+  header{position:sticky;top:0;background:var(--bg);padding:18px 0 12px;z-index:9}
   .bar{height:6px;background:var(--line);border-radius:99px;overflow:hidden}
-  .bar i{display:block;height:100%;background:var(--accent);width:0;
-    transition:width .25s ease}
-  .meta{display:flex;justify-content:space-between;gap:12px;
-    font-size:13px;color:var(--soft);margin-top:9px;flex-wrap:wrap}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;
-    padding:26px;margin-top:16px}
-  .kicker{font-size:12px;letter-spacing:.09em;text-transform:uppercase;
-    color:var(--soft);margin:0 0 10px}
-  .thing{font:600 30px/1.25 ui-monospace,SFMono-Regular,Menlo,monospace;
-    word-break:break-word;margin:0}
-  .where{font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;
-    color:var(--soft);margin-top:8px;word-break:break-all}
-  pre{background:var(--bg);border:1px solid var(--line);border-radius:9px;
-    padding:11px 13px;overflow-x:auto;font-size:13px;margin:14px 0 0}
-  .q{font-size:19px;font-weight:600;margin:26px 0 4px}
-  .qsub{color:var(--soft);font-size:14px;margin:0 0 16px}
-  .btns{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:11px}
-  button.choice{font:600 16px/1.3 inherit;padding:17px 14px;border-radius:11px;
-    border:1.5px solid var(--line);background:var(--card);color:var(--ink);
-    cursor:pointer;text-align:left;transition:transform .06s}
-  button.choice:hover{transform:translateY(-1px)}
-  button.choice small{display:block;font-weight:400;font-size:12.5px;
-    color:var(--soft);margin-top:4px}
-  .b-yes:hover{border-color:var(--yes);background:var(--yes-bg)}
-  .b-no:hover{border-color:var(--no);background:var(--no-bg)}
-  .b-skip:hover{border-color:var(--skip);background:var(--skip-bg)}
-  .spec{margin-top:18px;border:1px solid var(--line);border-radius:12px;
-    background:var(--card);padding:0 18px}
-  .spec summary{cursor:pointer;padding:14px 0;font-weight:600;font-size:15px}
-  .spec ul{margin:0 0 16px;padding-left:20px}
-  .spec li{margin:7px 0;font-size:14.5px}
-  .spec code{font-size:13.5px;background:var(--bg);padding:1px 5px;border-radius:4px}
-  .always{margin-top:16px;background:var(--card);border:1px solid var(--line);
-    border-radius:12px;padding:16px 18px}
-  .always h3{margin:0 0 9px;font-size:13px;letter-spacing:.08em;
-    text-transform:uppercase;color:var(--soft)}
+  .bar i{display:block;height:100%;background:var(--accent);width:0;transition:width .25s}
+  .meta{display:flex;justify-content:space-between;font-size:13px;
+    color:var(--soft);margin-top:8px;flex-wrap:wrap;gap:10px}
+  .card{background:var(--card);border:1px solid var(--line);
+    border-radius:14px;padding:22px;margin-top:14px}
+  h2{margin:0 0 4px;font-size:21px}
+  .sub{color:var(--soft);font-size:14px;margin:0}
+  .kick{font-size:12px;letter-spacing:.09em;text-transform:uppercase;
+    color:var(--soft);margin:0 0 11px}
   .chips{display:flex;flex-wrap:wrap;gap:7px}
   .chip{font:13px/1 ui-monospace,Menlo,monospace;background:var(--bg);
     border:1px solid var(--line);border-radius:99px;padding:7px 11px}
-  .nav{display:flex;gap:10px;margin-top:18px;align-items:center;flex-wrap:wrap}
-  .nav button{font:14px/1 inherit;padding:10px 15px;border-radius:9px;
-    border:1px solid var(--line);background:var(--card);color:var(--soft);cursor:pointer}
-  .nav button:hover{color:var(--ink)}
-  .files{margin-top:16px}
-  .files summary{cursor:pointer;font-size:14px;color:var(--soft);padding:9px 0}
-  .file h4{font:600 13.5px/1.4 ui-monospace,Menlo,monospace;margin:16px 0 5px;
+  .chip b{font-weight:600}
+  details.defs{margin-top:12px}
+  details.defs summary{cursor:pointer;font-size:13.5px;color:var(--accent)}
+  details.defs ul{padding-left:20px;margin:9px 0 2px}
+  details.defs li{font-size:14px;margin:6px 0}
+  details.defs code{background:var(--bg);padding:1px 5px;border-radius:4px;font-size:13px}
+  .row{display:flex;gap:13px;align-items:flex-start;padding:13px;
+    border:1.5px solid var(--line);border-radius:10px;margin-top:9px;
+    cursor:pointer;transition:background .12s,border-color .12s}
+  .row:hover{border-color:var(--soft)}
+  .row.on{border-color:var(--flag);background:var(--flag-bg)}
+  .box{flex:none;width:23px;height:23px;border:2px solid var(--soft);
+    border-radius:6px;margin-top:2px;display:grid;place-items:center;
+    font-weight:700;color:transparent;font-size:15px}
+  .row.on .box{border-color:var(--flag);color:var(--flag)}
+  .rname{font:600 15px/1.35 ui-monospace,SFMono-Regular,Menlo,monospace;
+    word-break:break-word}
+  .rdet{font-size:13px;color:var(--soft);margin-top:3px;word-break:break-word}
+  .tagk{font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;
+    color:var(--soft);border:1px solid var(--line);border-radius:4px;
+    padding:2px 6px;margin-left:8px;white-space:nowrap}
+  .none{color:var(--soft);font-size:14.5px;padding:14px 2px}
+  .foot{position:fixed;left:0;right:0;bottom:0;background:var(--card);
+    border-top:1px solid var(--line);padding:13px 16px}
+  .foot .in{max-width:900px;margin:0 auto;display:flex;gap:12px;
+    align-items:center;flex-wrap:wrap}
+  .count{font-size:15px}
+  .count b{font-size:23px;color:var(--flag);vertical-align:-2px}
+  .count.zero b{color:var(--ok)}
+  .grow{flex:1}
+  button{font:600 15px/1 inherit;padding:14px 20px;border-radius:10px;
+    border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
+  button.go{background:var(--accent);color:#fff;border-color:var(--accent)}
+  button.ghost{font-weight:400;color:var(--soft);padding:14px 15px}
+  .files{margin-top:14px}
+  .files summary{cursor:pointer;font-size:13.5px;color:var(--soft);padding:8px 0}
+  .file h4{font:600 13px/1.4 ui-monospace,Menlo,monospace;margin:14px 0 5px;
     color:var(--accent);word-break:break-all}
-  .done{text-align:center;padding:44px 20px}
-  .done h2{font-size:27px;margin:0 0 10px}
-  .num{font:700 62px/1 ui-sans-serif;color:var(--accent);margin:18px 0}
-  textarea{width:100%;min-height:190px;font:13px/1.5 ui-monospace,Menlo,monospace;
-    padding:13px;border-radius:9px;border:1px solid var(--line);
-    background:var(--bg);color:var(--ink);margin-top:14px}
-  .hint{font-size:12.5px;color:var(--soft);margin-top:12px}
-  .tally{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-  .tally span{font-size:12.5px;padding:5px 10px;border-radius:99px;
-    background:var(--bg);border:1px solid var(--line);color:var(--soft)}
-  @media(max-width:600px){.thing{font-size:23px}.card{padding:19px}}
+  pre{background:var(--bg);border:1px solid var(--line);border-radius:8px;
+    padding:11px;overflow-x:auto;font-size:12.5px;margin:0}
+  textarea{width:100%;min-height:210px;margin-top:14px;padding:13px;
+    font:13px/1.5 ui-monospace,Menlo,monospace;border-radius:9px;
+    border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+  .done{text-align:center;padding:34px 18px}
+  .tally{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:18px}
+  .tally span{font-size:13px;padding:6px 11px;border-radius:99px;
+    background:var(--bg);border:1px solid var(--line)}
+  .hint{font-size:12.5px;color:var(--soft)}
 </style>
 
 <div class="wrap">
   <header>
     <div class="bar"><i id="prog"></i></div>
-    <div class="meta">
-      <span id="pos">—</span>
-      <span id="tag">—</span>
-    </div>
+    <div class="meta"><span id="pos">—</span><span id="tag">—</span></div>
   </header>
   <div id="view"></div>
 </div>
+<div class="foot"><div class="in" id="foot"></div></div>
 
 <script id="d" type="application/json">"__DATA__"</script>
 <script>
 const DATA = JSON.parse(document.getElementById("d").textContent);
-const KEY  = "kappa_ticks_rater_" + DATA.rater;
+const KEY = "kappa_v2_rater_" + DATA.rater;
+const ITEMS = DATA.items;
 
-// Flatten every item's candidates into one linear queue of yes/no decisions.
-// One question on screen at a time is the whole point: the rater never has to
-// hold a codebase in their head.
-const Q = [];
-DATA.items.forEach((it, ii) => {
-  it.candidates.forEach((c, ci) => Q.push({item: it, ii, ci, cand: c}));
-});
+let state = {};
+try { state = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch(e){ state = {}; }
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e){} };
 
-let ticks = {};
-try { ticks = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (e) { ticks = {}; }
-const save = () => { try { localStorage.setItem(KEY, JSON.stringify(ticks)); } catch (e) {} };
-const idOf = q => q.item.id + "::" + q.cand.kind + "::" + q.cand.name;
+// state[itemId] = {flags:[rowKey,...], seen:true}
+const rowKey = r => r.kind + "::" + r.name;
+const st = id => (state[id] = state[id] || {flags: [], seen: false});
 
-let at = Q.findIndex(q => !(idOf(q) in ticks));
-if (at < 0) at = Q.length;
+let at = ITEMS.findIndex(i => !(state[i.id] && state[i.id].seen));
+if (at < 0) at = ITEMS.length;
 
 const esc = s => String(s).replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+const KW = {route:"route", command:"subcommand", module:"module"};
 
-function answer(v) {
-  ticks[idOf(Q[at])] = v;
+function toggle(id, key, el) {
+  const s = st(id), i = s.flags.indexOf(key);
+  if (i < 0) s.flags.push(key); else s.flags.splice(i, 1);
   save();
-  at++;
-  draw();
+  el.classList.toggle("on");
+  el.querySelector(".box").textContent = el.classList.contains("on") ? "✓" : "";
+  paintFoot();
 }
 
-function back() { if (at > 0) { at--; draw(); } }
-
-function counts() {
-  const per = {};
-  DATA.items.forEach(it => { per[it.id] = {no: 0, answered: 0, total: it.candidates.length}; });
-  Q.forEach(q => {
-    const v = ticks[idOf(q)];
-    if (v === undefined) return;
-    per[q.item.id].answered++;
-    if (v === "no") per[q.item.id].no++;
-  });
-  return per;
-}
+function next() { st(ITEMS[at].id).seen = true; save(); at++; draw(); }
+function prev() { if (at > 0) { at--; draw(); } }
 
 function csv() {
-  const per = counts();
-  // Column order must match data/labels/labels_rater<N>.csv exactly.
   const rows = ["item_id,spec_name,n_offspec_features,notes"];
-  DATA.items.forEach(it => {
-    const v = it.n_files === 0 ? "SKIP" : per[it.id].no;
+  ITEMS.forEach(it => {
+    const v = it.n_files === 0 ? "SKIP" : st(it.id).flags.length;
     rows.push(`${it.id},${it.spec_name},${v},`);
   });
   return rows.join("\n");
 }
 
+function paintFoot() {
+  const foot = document.getElementById("foot");
+  if (at >= ITEMS.length) { foot.innerHTML = ""; return; }
+  const it = ITEMS[at], n = st(it.id).flags.length;
+  const last = at === ITEMS.length - 1;
+  foot.innerHTML = `
+    <span class="count ${n === 0 ? "zero" : ""}">Off-spec here: <b>${n}</b></span>
+    <span class="grow"></span>
+    ${at > 0 ? '<button class="ghost" onclick="prev()">← Back</button>' : ""}
+    <button class="go" onclick="next()">${
+      n === 0 ? (last ? "Nothing off-spec · Finish" : "Nothing off-spec · Next")
+              : (last ? `Confirm ${n} · Finish` : `Confirm ${n} · Next`)}</button>`;
+}
+
 function draw() {
   const view = document.getElementById("view");
 
-  if (at >= Q.length) {
-    const per = counts();
-    const rows = DATA.items.map(it =>
-      `<span>${it.id}: <b>${it.n_files === 0 ? "SKIP" : per[it.id].no}</b></span>`).join("");
+  if (at >= ITEMS.length) {
+    const tally = ITEMS.map(it => `<span>${it.id}: <b>${
+      it.n_files === 0 ? "SKIP" : st(it.id).flags.length}</b></span>`).join("");
     view.innerHTML = `<div class="card done">
       <h2>Finished</h2>
-      <p style="color:var(--soft);margin:0">You made ${Q.length} decisions.
-      Here is what they add up to.</p>
-      <div class="tally" style="justify-content:center;margin-top:20px">${rows}</div>
-      <p style="margin-top:26px;font-weight:600">Save this as your sheet</p>
+      <p class="sub">All 19 items reviewed.</p>
+      <div class="tally">${tally}</div>
+      <p style="margin-top:24px;font-weight:600">Copy this and paste it back into Claude Code</p>
       <textarea readonly onclick="this.select()">${esc(csv())}</textarea>
-      <div class="nav" style="justify-content:center">
+      <div style="display:flex;gap:10px;justify-content:center;margin-top:12px">
         <button id="cp" onclick="copyOut()">Copy my results</button>
-        <button onclick="at=Q.length-1;draw()">Go back one</button>
+        <button class="ghost" onclick="at=ITEMS.length-1;draw()">Back to last item</button>
       </div>
-      <p class="hint">Copy that text and paste it back into Claude Code.
-      It becomes <b>labels_rater${DATA.rater}.csv</b> and κ is computed for you.</p>
+      <p class="hint" style="margin-top:14px">Saved as
+      <b>labels_rater${DATA.rater}.csv</b>, then κ is computed for you.</p>
     </div>`;
     document.getElementById("prog").style.width = "100%";
-    document.getElementById("pos").textContent = "All " + Q.length + " done";
+    document.getElementById("pos").textContent = "All 19 done";
     document.getElementById("tag").textContent = "";
+    paintFoot();
     return;
   }
 
-  const q = Q[at], it = q.item, c = q.cand;
-  const per = counts();
-  const doneInItem = per[it.id].answered;
-
-  document.getElementById("prog").style.width = (at / Q.length * 100) + "%";
-  document.getElementById("pos").textContent =
-    `Decision ${at + 1} of ${Q.length}`;
+  const it = ITEMS[at], s = st(it.id);
+  document.getElementById("prog").style.width = (at / ITEMS.length * 100) + "%";
+  document.getElementById("pos").textContent = `Item ${at + 1} of ${ITEMS.length}`;
   document.getElementById("tag").textContent =
-    `${it.id} · ${doneInItem}/${it.candidates.length} in this item`;
+    `${it.id} · ${it.n_files} file${it.n_files === 1 ? "" : "s"}`;
 
-  const chips = it.asked_for.map(f => `<span class="chip">${esc(f.id)}</span>`).join("");
-  const specList = it.asked_for.map(f =>
+  if (it.n_files === 0) {
+    view.innerHTML = `<div class="card">
+      <h2>${it.id}</h2>
+      <p class="sub">This capture contains no files, so there is nothing to judge.
+      It is recorded as SKIP automatically.</p></div>`;
+    paintFoot();
+    window.scrollTo(0,0);
+    return;
+  }
+
+  const chips = it.asked_for.map(f =>
+    `<span class="chip"><b>${esc(f.id)}</b></span>`).join("");
+  const defs = it.asked_for.map(f =>
     `<li><code>${esc(f.id)}</code> — ${esc(f.desc)}</li>`).join("");
-  const fileList = Object.entries(it.files).map(([p, body]) =>
-    `<div class="file"><h4>${esc(p)}</h4><pre>${esc(body)}</pre></div>`).join("");
+
+  const rows = it.rows.length ? it.rows.map(r => {
+    const k = rowKey(r), on = s.flags.includes(k);
+    return `<div class="row ${on ? "on" : ""}"
+        onclick="toggle('${it.id}', '${k.replace(/'/g, "\\'")}', this)">
+      <div class="box">${on ? "✓" : ""}</div>
+      <div>
+        <div class="rname">${esc(r.name)}<span class="tagk">${KW[r.kind]}</span></div>
+        <div class="rdet">${esc(r.detail)}</div>
+      </div></div>`;
+  }).join("") : `<p class="none">Nothing invocable was found in this capture.</p>`;
+
+  const fileList = Object.entries(it.files).map(([p, b]) =>
+    `<div class="file"><h4>${esc(p)}</h4><pre>${esc(b)}</pre></div>`).join("");
 
   view.innerHTML = `
     <div class="card">
-      <p class="kicker">The code contains this ${esc(kindWord(c.kind))}</p>
-      <p class="thing">${esc(c.name)}</p>
-      <p class="where">${esc(c.where)}</p>
-      <pre>${esc(c.snippet)}</pre>
-      <p class="q">Did the specification ask for this?</p>
-      <p class="qsub">The full list of what was asked for is just below.</p>
-      <div class="btns">
-        <button class="choice b-yes"  onclick="answer('yes')">Yes, it was asked for
-          <small>press 1</small></button>
-        <button class="choice b-no"   onclick="answer('no')">No, nobody asked for it
-          <small>press 2 — this is what counts</small></button>
-        <button class="choice b-skip" onclick="answer('na')">Not a user-facing feature
-          <small>press 3 — a helper, not a capability</small></button>
-      </div>
-    </div>
-
-    <div class="always">
-      <h3>What the specification asked for (${it.asked_for.length})</h3>
+      <p class="kick">What the specification asked for</p>
       <div class="chips">${chips}</div>
+      <details class="defs"><summary>What each one means</summary>
+        <ul>${defs}</ul></details>
     </div>
 
-    <details class="spec"><summary>Read what each one means</summary>
-      <ul>${specList}</ul></details>
-
-    <details class="files"><summary>Show all ${it.n_files} files of code
-      (only if you need to check something)</summary>${fileList}</details>
-
-    <div class="nav">
-      <button onclick="back()">← Back</button>
-      <span class="hint" style="margin:0">Your answers save automatically.
-      You can close this and come back.</span>
+    <div class="card">
+      <p class="kick">What is actually in the code</p>
+      <h2>Tick anything the spec did not ask for</h2>
+      <p class="sub">Most items have none. Leave a row alone if it was asked
+      for, or if it is a helper rather than something a user can invoke.</p>
+      ${rows}
+      <details class="files"><summary>Show all ${it.n_files} files
+        (only if you need to check something)</summary>${fileList}</details>
     </div>`;
+  paintFoot();
   window.scrollTo(0, 0);
 }
 
-function kindWord(k) {
-  return {route: "HTTP route", command: "CLI subcommand",
-          function: "function or class"}[k] || k;
-}
-
 function copyOut() {
-  // The viewer never grants download permission, so the clipboard (with the
-  // textarea as a manual fallback) is the only way results leave this page.
   const btn = document.getElementById("cp");
-  const done = () => { btn.textContent = "Copied"; setTimeout(() => {
-    btn.textContent = "Copy my results"; }, 1600); };
-  try {
-    navigator.clipboard.writeText(csv()).then(done, manual);
-  } catch (e) { manual(); }
-  function manual() {
-    const t = document.querySelector("textarea");
+  const ok = () => { btn.textContent = "Copied"; setTimeout(() =>
+    btn.textContent = "Copy my results", 1600); };
+  const manual = () => { const t = document.querySelector("textarea");
     t.select(); t.setSelectionRange(0, 99999);
-    btn.textContent = "Selected - press Cmd+C";
-  }
+    btn.textContent = "Selected — press Cmd+C"; };
+  try { navigator.clipboard.writeText(csv()).then(ok, manual); }
+  catch (e) { manual(); }
 }
 
 addEventListener("keydown", e => {
-  if (at >= Q.length) return;
-  if (e.key === "1") answer("yes");
-  if (e.key === "2") answer("no");
-  if (e.key === "3") answer("na");
-  if (e.key === "ArrowLeft") back();
+  if (e.target.tagName === "TEXTAREA") return;
+  if (e.key === "Enter" || e.key === "ArrowRight") { if (at < ITEMS.length) next(); }
+  if (e.key === "ArrowLeft") prev();
 });
 
 draw();

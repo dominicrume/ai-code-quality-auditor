@@ -106,6 +106,36 @@ def spec_features(item_id: str) -> list[dict]:
     return feats
 
 
+def group(cands: list[dict], files: dict) -> list[dict]:
+    """Collapse candidates into the rows a rater actually judges.
+
+    Routes and subcommands stay individual -- each is separately invocable.
+    Everything else is grouped by the file it lives in, because the protocol
+    counts a feature once however many files it spans, and a module is the
+    smallest honest unit of "a capability".
+    """
+    rows = []
+    for c in cands:
+        if c["kind"] in ("route", "command"):
+            # The source fragment reads as noise here; the location is what a
+            # rater would use to go and look.
+            rows.append({"kind": c["kind"], "name": c["name"],
+                         "where": c["where"], "detail": c["where"]})
+
+    mods: dict[str, list[str]] = {}
+    for c in cands:
+        if c["kind"] == "function":
+            mods.setdefault(c["where"].rsplit(":", 1)[0], []).append(c["name"])
+    for path, names in sorted(mods.items()):
+        rows.append({
+            "kind": "module",
+            "name": path,
+            "where": f"{len(files.get(path, '').splitlines())} lines",
+            "detail": "defines " + ", ".join(sorted(names)),
+        })
+    return rows
+
+
 def build() -> list[dict]:
     idx = list(csv.DictReader(open(PACK / "index.csv")))
     sample = {r["run_id"]: r
@@ -120,7 +150,7 @@ def build() -> list[dict]:
             "spec_name": e["spec_name"],
             "n_files": len(files),
             "asked_for": spec_features(e["item_id"]),
-            "candidates": candidates(files),
+            "rows": group(candidates(files), files),
             "files": {p: c for p, c in sorted(files.items())},
         })
     return items
@@ -137,11 +167,11 @@ def render(items: list[dict], rater: str, title: str) -> str:
 
 if __name__ == "__main__":
     items = build()
-    total = sum(len(i["candidates"]) for i in items)
+    total = sum(len(i["rows"]) for i in items)
     out_dir = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / "build"
     out_dir.mkdir(parents=True, exist_ok=True)
     for n in ("1", "2"):
         p = out_dir / f"rater{n}.html"
         p.write_text(render(items, n, f"Rater {n} Ticks"))
         print(f"wrote {p}")
-    print(f"{len(items)} items, {total} decisions")
+    print(f"{len(items)} screens, {total} rows to scan")

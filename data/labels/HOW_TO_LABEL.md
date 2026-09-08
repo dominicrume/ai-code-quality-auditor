@@ -6,35 +6,48 @@ so label what you actually see — not what you think the tool will say.
 
 ## What you do
 
-Open your link and answer one question at a time. Each question shows a single
-thing found in the code -- a route, a subcommand, a function, a class -- with
-the file and line it came from, and the specification's feature list directly
-beneath it. You press one of three keys:
+Open your link. You get **one screen per item, 19 in total**.
 
-* `1` **Yes, it was asked for** -- it maps to a feature in the spec list.
-* `2` **No, nobody asked for it** -- this is scope drift. These are what get counted.
-* `3` **Not a user-facing feature** -- a helper, a loader, internal plumbing.
+Each screen shows two things: the features the specification asked for, and
+every invocable thing found in the code -- routes, subcommands, and modules
+with the functions they define. Tick anything the specification did not ask
+for, then press Next.
 
-There are 263 of these across the 19 items. Your answers save as you go; close
-the tab and come back whenever you like. At the end the tool totals your `2`
-answers per item and hands you the CSV.
+Most items have nothing to tick. When that is the case the button already
+reads "Nothing off-spec - Next", so a clean item costs one press.
+
+Your ticks save as you go; close the tab and come back whenever. At the end
+the tool totals your ticks per item and hands you the CSV to paste back.
 
 Rater 1 and Rater 2 have separate links and must not compare them.
 
 ## Why it is built this way
 
 An earlier version asked the rater to read all 21,800 lines and emit a number
-per item. That is extraction, and extraction is what a machine does reliably.
-Judgement -- "should this have been here?" -- is the only part that needs a
-human, and it is the only part now asked for.
+per item; two of the items (83 and 19 files) were not realistically completable
+by hand. A second version asked one question per candidate, which was easier
+per decision but 263 decisions -- worse in total.
 
-The candidate list is deliberately **over-inclusive**: it surfaces more things
-than could plausibly be features, because a missed candidate silently caps what
-a rater can find, whereas a spurious one costs a single keypress. It is also
-extracted **independently of `manifest_deriver`**. Validating a heuristic with
-its own extractor would hide precisely the blind spots kappa exists to detect --
-and it does detect them: item_08's five JavaScript routes are invisible to the
-instrument's Python-only route regex, and the rater now sees them.
+This version matches the cost of the interface to the base rate of the finding.
+Zero is the common answer, so zero costs one keypress. Extraction is mechanical;
+the rater supplies only the judgement "should this have been here?".
+
+The candidate list is deliberately **over-inclusive**: a missed candidate
+silently caps what a rater can find, whereas a spurious one costs nothing to
+ignore. It is also extracted **independently of `manifest_deriver`**.
+Validating a heuristic with its own extractor would conceal exactly the blind
+spots kappa exists to detect -- and it does detect them: item_08's five
+JavaScript routes are invisible to the instrument's Python-only route regex,
+and the rater now sees them.
+
+## Why the tool does not propose the count
+
+It would be easy to have the instrument, or a language model, pre-fill each
+item and let the rater confirm it. That destroys the measurement. Kappa would
+then record how often a human agrees with a suggestion already on screen, not
+whether human judgement and the instrument independently coincide -- and
+agreement with a suggestion is close to guaranteed. The rater's number has to
+be formed without seeing any candidate answer.
 
 ## Counting rules
 
