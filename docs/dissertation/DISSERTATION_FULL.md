@@ -24,10 +24,14 @@
 > the Aston enrolment record on 8 September 2026 — "Uririe, Orume Dominic",
 > MSc Artificial Intelligence and Business Strategy — and applied to the title
 > page and §1.5; (b) confirm the Harvard citation variant against the marking rubric;
-> (c) **check the word count in Word against the actual limit** — this draft is
-> ≈12,500 words of main text including tables (≈12,350 excluding them),
-> ≈13,780 for the whole file; if the limit is a hard 12,000 for main text you
-> need to cut ≈500 words, and §5.1/§5.5 are the least load-bearing candidates;
+> (c) **check the word count in Word against the actual limit** — recounted
+> 8 September 2026 after the §4.7 rewrite: **≈13,810 words of main text
+> including tables (≈13,460 excluding them)**, ≈14,680 for the whole file once
+> these notices are deleted. This is ≈1,300 more than the previous note claimed,
+> because §4.7 grew from a placeholder into a reported result. If the limit is a
+> hard 12,000 for main text you now need to cut ≈1,800 words: §5.1/§5.5 remain
+> the least load-bearing candidates, and §4.5.2's Level 1 exposition can be
+> compressed without losing the argument;
 > (d) the Cohen's κ validation is **complete** (8 September 2026): two raters,
 > 19 deduplicated items, κ = 0.870 / 0.853 / 0.727, all above the 0.6 threshold
 > (§4.7, docs/KAPPA_RESULTS_001.md). It also exposed a false negative in the
