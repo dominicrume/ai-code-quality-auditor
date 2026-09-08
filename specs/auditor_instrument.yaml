@@ -1,0 +1,26 @@
+# The instrument's own declared scope, transcribed from the pre-registration
+# (docs/EXPERIMENT_PROTOCOL.md) and the standing brief (CLAUDE.md), both of
+# which predate the code being scored. Nothing here is derived from the
+# implementation; that is the point. Used in section 4.9.
+name: "AI Code Quality Auditor (declared research instrument)"
+version: "1.0"
+source: "docs/EXPERIMENT_PROTOCOL.md, CLAUDE.md — dated 30 May 2026"
+features:
+  - id: experiment.run
+    description: Execute the full experiment across every condition, specification and replication.
+  - id: experiment.condition
+    description: Capture one condition-by-specification cell in isolation.
+  - id: metric.security
+    description: Compute CWE-tagged vulnerability density per thousand lines.
+  - id: metric.complexity
+    description: Compute mean cyclomatic complexity per function.
+  - id: metric.duplication
+    description: Compute the percentage of duplicated source lines.
+  - id: metric.hallucination
+    description: Count features present in the code but absent from the specification.
+  - id: metric.correction
+    description: Compute keystroke-correction frequency from a captured session.
+  - id: report.csv
+    description: Emit a provenance-stamped CSV of every metric observation.
+  - id: report.json
+    description: Emit the same observations as JSON for programmatic use.

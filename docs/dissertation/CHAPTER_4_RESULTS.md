@@ -428,6 +428,54 @@ independently and was not otherwise involved in the study, and the single
 human–human disagreement is evidence that the two sheets were produced without
 conferring; neither fact establishes that Rater 1 was blind to the hypotheses.
 
+## 4.9 Application outside the controlled study
+
+The design so far tests the instrument on captures built to be scored. Three
+further audits were run on codebases outside the study. They are descriptive,
+not pre-registered, and carry no inferential weight; they establish only that
+the metrics return meaningful readings on ordinary code.
+
+**Table 4.6** Field audits. Each project was scored against its own
+specification. Scope drift is the hallucination metric applied outside the
+experiment.
+
+| Project | Files | Lines | Python | Security | Complexity | Duplication | Scope drift |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| kya-rails | 43 | 4,620 | 15 | 7.49 | 4.13 | 1.79% | 0.00 |
+| GovSignal | 30 | 1,923 | 17 | 2.26 | 4.79 | 0.89% | 4.00 |
+| This instrument | 141 | 13,136 | 86 | 3.14 | 3.58 | 4.01% | 12 |
+
+Two points follow. Scope drift discriminates: `kya-rails` returns 0.00, the
+reading the metric is designed to produce when output matches its brief, while
+`GovSignal` returns 4. A metric returning the same value on every real project
+would measure nothing. And `GovSignal` was audited by a third party on their own
+machine, so these readings occur in hands other than the author's.
+
+*4.9.1 The instrument audits itself.* The third row is the most uncomfortable
+and the most useful. Scored against its own declared scope, transcribed from the
+pre-registration and the standing brief of 30 May 2026 and reproduced in
+`specs/auditor_instrument.yaml`, the instrument carries twelve capabilities
+nobody specified: four command-line verbs (`scan`, `watch`, `live`, `fix`) and
+eight HTTP endpoints belonging to a local web interface the declared design did
+not contain at all. The declaration described two commands and no web surface.
+Git dates every addition to August 2026, months after the protocol was fixed and
+none of them required by the experiment.
+
+This is the phenomenon the study measures, occurring in the author's own work,
+and it sharpens rather than undermines §5.3. The drift here is *deliberate and
+dated*: each capability was chosen, committed with a message explaining it, and
+is visible to anyone reading the history. Replit's substitution of a pipeline
+for a command-line tool (§4.3.1) was none of those things. The governance
+distinction is therefore not between projects that stay in scope and projects
+that do not, since almost none stay in scope, but between scope expansion a
+reviewer can see and scope substitution a reviewer cannot.
+
+One caveat on provenance. An earlier self-audit, retained in the evidence set,
+reported scope drift of 19. It scored the instrument against the study's
+demonstration specification for a student-course application, under which almost
+everything the instrument contains is off-specification by construction. That is
+an artefact of the wrong brief, not a finding; the figure of record is 12.
+
 ## 4.8 Summary of findings
 
 1. **Hallucination is the most discriminating governance metric.** The four
