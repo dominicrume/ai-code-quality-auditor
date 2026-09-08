@@ -20,9 +20,11 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parent.parent
 EV = ROOT / "evidence"
+PREPARED = EV / "prepared"
 OUT = ROOT / "build" / "evidence_gallery.html"
 MAX_PX = 1500
-GROUP_ORDER = ["Validation", "Adoption", "Process", "Uncaptioned"]
+GROUP_ORDER = ["Validation", "Instrument", "Adoption", "Superseded",
+               "Process", "Uncaptioned"]
 
 
 def thumb(p: Path) -> str:
@@ -52,7 +54,8 @@ def load_captions() -> dict[str, dict]:
 def main() -> None:
     caps = load_captions()
     items = []
-    for p in sorted(EV.iterdir()):
+    src = PREPARED if PREPARED.exists() else EV
+    for p in sorted(src.iterdir()):
         if p.suffix.lower() not in (".png", ".jpg", ".jpeg"):
             continue
         c = caps.get(p.name, {})
@@ -75,9 +78,17 @@ def main() -> None:
         if not rows:
             continue
         blurb = {
-            "Validation": "Evidence bearing on the inter-rater reliability study reported in §4.7.",
-            "Adoption": "Independent evidence that the instrument is in use outside this study.",
-            "Process": "How the work was actually carried out, including what it corrected.",
+            "Validation": "Evidence bearing on the inter-rater reliability study "
+                          "reported in §4.7. Both raters' totals were checked "
+                          "against the sheets used to compute Cohen's κ.",
+            "Instrument": "The auditor running against real codebases, including "
+                          "one it did not produce and one run by someone else.",
+            "Adoption": "Public installation statistics from PyPI, showing use "
+                        "outside this study.",
+            "Superseded": "Kept as a record of what the analysis produced before "
+                          "it was corrected. Not the reported figures.",
+            "Process": "How the work was actually carried out, including what it "
+                       "corrected about itself.",
             "Uncaptioned": "Held in the evidence folder and not yet described. "
                            "Add a row to evidence/captions.tsv to caption one.",
         }[g]
