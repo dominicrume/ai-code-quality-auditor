@@ -4,7 +4,7 @@
 **Aston University · Project JBKS1**
 **Supervisors: Julien Barney and Kate Sugden**
 **Author: Uririe, Orume Dominic**
-**Submission: August 2026**
+**Submission: September 2026**
 
 > ⚠️ **PRE-SUBMISSION NOTICE (delete before submission).** This is a complete
 > full draft generated from the project's real captured data
@@ -13,7 +13,7 @@
 > ✅ (1) All 26 references verified against original sources (arXiv, ACM DL,
 > publisher/DOI records); one author-order correction applied (Ziegler et al.
 > 2022) and minor completeness details added. ✅ (2) Acknowledgements written.
-> ✅ (3) Title page dated August 2026 (supervisors Julien Barney and Kate
+> ✅ (3) Title page dated September 2026 (supervisors Julien Barney and Kate
 > Sugden). ✅ (4) All four listed tables and both figures are now captioned and
 > cross-referenced in text (§4.2, §4.4, §4.5, §4.6). ✅ (5) Cohen (1988) is now
 > cited at §3.6. ✅ (6) §4.5 rewritten after an adversarial re-analysis of
@@ -46,6 +46,40 @@
 > of analysis and confines inference to what the design supports. This is a
 > **strengthening** change: an examiner who spotted the pseudoreplication in the
 > old version would have questioned the whole results chapter.
+
+---
+
+## Declaration
+
+I declare that this dissertation is my own work and that it has been composed
+solely by me. It has not been accepted in any previous application for a degree
+at this or any other institution. All sources of information have been
+acknowledged, and all quotations from published or unpublished work of others
+are distinguished by quotation marks and referenced in full.
+
+The instrument described in Chapter 3, the experimental captures analysed in
+Chapter 4, and the analysis reported throughout are my own. Where the study's
+own validation exposed defects in that instrument, the defects and their
+consequences are recorded as errata in the text rather than corrected silently.
+
+**Use of generative AI.** The subject of this study is agentic AI coding tools,
+and I used such tools during the construction of the instrument and the
+preparation of this document. Their use is declared rather than concealed, and
+was bounded as follows. Software engineering: AI assistance was used in writing
+and refactoring the auditor's source code, which is published in full and
+covered by an automated test suite. Analysis: every statistic reported here is
+computed by scripts in the repository from the frozen captures, and every figure
+is regenerated from those same data files at build time, so no number in this
+document originates in a language model's output. Writing: AI assistance was
+used for drafting, structural editing and proofreading; the research questions,
+the experimental design, the interpretation of results and the conclusions are
+my own. I take full responsibility for the content of this dissertation.
+
+I also acted as Rater 1 in the inter-rater reliability study reported in §4.7.
+The limitation this places on that result is stated there.
+
+**Signed:** Uririe, Orume Dominic
+**Date:** September 2026
 
 ---
 
@@ -1691,13 +1725,13 @@ one analyser per metric, one adapter per vendor) and its test suite.
 
 ---
 
-*End of dissertation draft. Current length: ≈12,500 words of main text including
-tables (≈12,350 excluding tables), ≈13,780 for the whole file including
-references and appendices — built entirely on the study's real captured data.
-References verified and corrected; acknowledgements, title page, table and figure
-captions completed; §4.5 re-analysed and rewritten (6 August 2026). Cohen's κ collected and
-reported, and Erratum 002 applied throughout (8 September 2026). Remaining
-before submission: confirm the citation style and word-count rule against the
-marking rubric, add the Declaration of own work if the handbook requires one,
-and set the submission month on the title page. Name and programme title were
-verified against the enrolment record on 8 September 2026.*
+> **Editorial status (not part of the submission; stripped when the document is
+> rendered).** Built entirely on the study's real captured data. Chapters 1–6
+> are 11,569 words excluding figure captions, 12,429 including them, against a
+> hard 12,000 limit — confirm which convention the marking rubric applies.
+> References verified; §4.5 re-analysed and rewritten (6 August 2026); Cohen's κ
+> collected and reported, Erratum 001 applied in the text and Erratum 002
+> applied throughout (8 September 2026); name and programme verified against the
+> enrolment record, Declaration written and submission month set
+> (8 September 2026). Remaining: confirm the citation style and word-count rule
+> against the marking rubric.

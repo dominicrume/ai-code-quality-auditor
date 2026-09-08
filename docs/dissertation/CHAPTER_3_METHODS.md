@@ -1,327 +1,272 @@
-# Chapter 3 — Methods
-
-> **SUPERSEDED working draft.** The submission artifact is
-> `DISSERTATION_FULL.md`, which contains the current Chapter 3.
-> Kept for drafting history only.
-
-## 3.1 Research design
-
-This study compares five independent AI-coding workflows against one fixed
-specification using five empirical quality metrics. The design is
-between-conditions with replication: each condition produces *K* attempts
-at each of *S* specifications, yielding *N = K × S* observations per
-condition for every metric. The five conditions are pre-registered (see
-[EXPERIMENT_PROTOCOL.md](../EXPERIMENT_PROTOCOL.md)) and held constant
-across the experiment.
-
-The five **conditions** (independent variable, vendor product):
-
-| Condition | Vendor / product | Adapter file |
-|---|---|---|
-| `human_control` | none (hand-typed baseline) | `human_control_adapter.py` |
-| `claude_code`   | Anthropic Claude Code CLI v2.1 | `claude_code_adapter.py` |
-| `cursor_agent`  | Cursor Agent CLI v2026.05 | `cursor_agent_adapter.py` |
-| `replit_agent`  | Replit Agent (web IDE, replay-captured) | `replit_agent_adapter.py` |
-| `antigravity`   | Google Antigravity (desktop IDE, Gemini 3.5 Flash) | `antigravity_adapter.py` |
-
-The five **metrics** (dependent variables, all machine-recorded):
-
-1. **Security vulnerability density** — OWASP/CWE-tagged findings per 1,000 lines of code, computed by Bandit over the captured codebase.
-2. **Cyclomatic complexity** — mean McCabe per function, computed by `radon`.
-3. **Code duplication** — percentage of source lines inside any 6-line repeat shingle.
-4. **Hallucination count** — features shipped that were *not* in the spec, detected by `manifest_deriver` (web routes + CLI subcommands).
-5. **Keystroke correction frequency** — backspace + delete events per 1,000 keystrokes, recorded by `pynput` during the `human_control` condition; structurally zero for agentic conditions.
-
-The **specifications** (treatment stimuli, identical across conditions):
-
-| Spec | Domain | Features | Governance rules |
-|---|---|---|---|
-| `agent_education_system.yaml` | CRUD + auth (web app) | 6 | 3 |
-| `data_pipeline.yaml` | ETL + scheduler (infrastructure) | 6 | 3 |
-| `internal_tool_cli.yaml` | CLI tool with subcommands | 6 | 3 |
-
-Three specifications were used (not one) so external-validity claims could
-be made across task types: the dissertation reports whether the
-condition-level differences hold across all three specifications, or
-interact with task domain.
-
-## 3.2 The capture contract
-
-Every condition must produce two artefacts in a shape the analysers can
-read without per-vendor branching:
-
-```
-codebase        : {"files": {path: content}, "manifest": [feature_ids]}
-interaction_log : [ {"type": str, ...}, ... ]
-                  where type ∈ {keystroke, backspace, delete, agent_action}
-```
-
-This is the **capture contract**. It is the methodological boundary that
-makes the five conditions comparable: vendors that are very different
-(a human typing keystrokes vs an agent streaming JSON tool calls) are
-required to surface their work as the same shape. Adapter code translates
-between the vendor's native output and the contract; analyser code never
-touches a vendor.
-
-For the `human_control` condition, `pynput` captures every key press in
-real time and classifies each as `keystroke`, `backspace`, or `delete`.
-For the four AI conditions, every event the vendor emits (tool call,
-file edit, thinking block where exposed) is normalised to
-`{"type": "agent_action", "subtype": <vendor type>, ...}`. Vendor-native
-detail is preserved in sibling keys for forensics but is invisible to
-the analysers.
-
-The capture contract is enforced by `load_interaction_log` in each
-adapter, which validates every event's type against the permitted set
-and raises `ValueError` on the first malformed entry. Contract violations
-abort the run rather than silently degrade the metric.
-
-## 3.3 Capture procedure
-
-### 3.3.1 Agent conditions (claude_code, cursor_agent)
-
-Both vendors ship a non-interactive CLI that accepts a prompt and
-streams JSON events to stdout. The adapters spawn the CLI with
-`subprocess.run`, capture stdout line by line, parse each line as JSON,
-and persist the raw stream alongside the contract-shaped events for
-forensic re-analysis.
-
-Anthropic Claude Code is invoked with
-`claude -p <prompt> --output-format stream-json --verbose
---dangerously-skip-permissions`; the permission-skip flag is required
-because the adapter runs unattended in a clean per-run working
-directory (no human is present to confirm individual tool calls). The
-agent is sandboxed to `~/sessions/<run_id>/code/`.
-
-Cursor Agent is invoked with
-`cursor-agent -p --output-format stream-json --force --model auto`.
-The `auto` model is a free-tier constraint; named models require a
-paid subscription. The dissertation reports `cursor_agent` results
-under this constraint and discusses the implication in §6 of the
-Discussion chapter.
-
-### 3.3.2 Replay conditions (replit_agent, antigravity)
-
-Replit Agent and Google Antigravity do not expose a scriptable CLI.
-Replit Agent runs inside replit.com's web IDE; Antigravity runs in
-Google's desktop IDE. For these conditions the researcher runs the
-session manually in the vendor's interface, then hands the produced
-files and a captured event log to the adapter's `replay_dir` parameter,
-which loads the artefacts through the same capture contract used by
-the CLI-driven conditions.
-
-Both replay adapters share the same loader and persistence code with
-their CLI-driven counterparts; the only difference is the source of the
-input bytes. The dissertation treats replay-mode captures as
-methodologically equivalent to live captures — the analyser cannot tell
-the difference and the capture contract is identical — but flags the
-within-cell variance constraint discussed in §3.6 below.
-
-### 3.3.3 Human-control condition
-
-The pre-registered design (EXPERIMENT_PROTOCOL.md §6.2) specified 30
-hand-coded sessions (3 specs × 10 reps) of 60 minutes each. The executed
-human-control collection deviated from this plan and is documented as
-**Deviation 003**: a single completed session per specification was
-captured (N = 1 per spec, three sessions total), each run to
-feature-completion rather than capped at 60 minutes. The reduction
-reflects the labour cost of hand-coding relative to the agentic
-conditions and the single-researcher constraint; the human baseline is
-therefore framed throughout as a **single-rep reference point** against
-the AI distribution, not as a variance-bearing condition, and does not
-enter the inferential tests of §3.6 (which remain four-condition,
-AI-only).
-
-In each session the researcher hand-codes the specification in VS Code
-with all in-IDE AI assistance (GitHub Copilot, Cursor tab-complete,
-Claude) disabled and the disabled state verified before coding. A
-`pynput`-backed recorder runs in a parallel terminal and captures every
-key press at the OS level, classifying each as `keystroke`, `backspace`,
-or `delete`. Because the recorder overwrites its output on each
-invocation, multi-attempt sessions are preserved by archiving each
-capture segment and concatenating them at scoring time; the
-human-control interaction log for a rep is therefore the **union of all
-capture segments** for that spec — total typing effort including
-debugging — rather than a single uninterrupted take. The codebase is
-captured by the same loader and scored through the identical
-five-analyser pipeline used for the AI conditions; artefacts are
-persisted under `data/raw/main_001__<spec>__human_control__rep00/`.
-
-One data-integrity event is recorded: for `agent_education_system`, an
-early ~2,133-event coding segment was overwritten before the
-segment-archiving procedure was in place and is unrecoverable. That
-rep's correction-frequency value is computed from the 75-event surviving
-segment and is flagged as a partial-capture outlier in §4.6.
-
-## 3.4 Analyser pipeline
-
-Each metric is implemented as a single Python function with a uniform
-signature:
-
-```python
-def analyze(codebase: dict, interaction_log: list[dict], spec: dict) -> MetricScore
-```
-
-This signature does two things at once: it formalises the capture
-contract (whatever the analyser sees is exactly what the contract
-defines), and it forces analyser independence (no analyser can use any
-condition-specific knowledge). The analyser pipeline is therefore
-*blinded by construction*: condition labels are added by the
-orchestrator, never the analyser.
-
-### 3.4.1 Security density
-
-`security_analyzer.py` materialises the captured codebase to a
-temporary directory and invokes `bandit -r <dir> -f json -q`. Bandit's
-JSON output enumerates findings with stable rule identifiers; the
-analyser counts only findings whose `issue_cwe.id` field is non-null,
-preserving the OWASP/CWE framing required by §3 of the
-[Metrics document](../METRICS.md). The count is divided by the
-codebase's Python line count and multiplied by 1,000 to express the
-result as findings per 1,000 lines of code (`per_kloc`).
-
-The original instrument design queried SonarCloud's REST API instead;
-the switch to local Bandit during the pilot is documented in §4 of
-the Pilot Results document and analytical note 002 of the protocol
-deviations log. The change was made because SonarCloud's per-project
-scoping meant every condition shared a numerator while differing in
-denominator, producing artefactually large per-kloc figures
-(>1000/kloc) for any codebase under 100 lines. Local Bandit scopes
-the numerator to each condition's own captured code, restoring
-methodological soundness.
-
-### 3.4.2 Cyclomatic complexity
-
-`complexity_analyzer.py` uses `radon.complexity.cc_visit` over each
-Python file to enumerate every function/method's McCabe number, then
-reports the arithmetic mean. Files outside the suffix whitelist
-(`.py`, `.js`, `.ts`, etc.) and files inside excluded directories
-(`.venv`, `__pycache__`, `site-packages`, `node_modules`) are skipped
-by the codebase loader before the analyser sees them, so the metric
-reflects the agent's *produced* code, not transitive dependencies.
-
-### 3.4.3 Duplication
-
-`duplication_analyzer.py` builds a hash set of every 6-consecutive-line
-shingle across every source file (k=6 is the conventional plagiarism
-detection window), counts the number of source lines that appear in
-any shingle with cardinality ≥ 2, and divides by total source lines.
-The metric is reported as a percentage.
-
-### 3.4.4 Hallucination
-
-`hallucination_analyzer.py` defers to `manifest_deriver.derive(spec,
-codebase)`, which scans the codebase for evidence of each spec
-feature (token-match on the feature's terminal identifier and its
-plural) and for FastAPI/Flask web routes and argparse/Click CLI
-subcommands. Routes and commands that do not map to any spec feature
-are flagged as **hallucinated**; the metric is their count.
-
-The CLI subcommand detection was added after the main study revealed
-that one vendor shipped a data-pipeline CLI when given a spec asking
-for a different CLI structure. Without CLI detection the metric was
-structurally blind to that finding. Both the spec change and the
-deriver upgrade are documented in the protocol deviations log
-(analytical note 001) so the audit trail is complete.
-
-The deriver is a heuristic, not a verifier, and is documented as such.
-Cohen's κ between the deriver's output and a hand-labelled sample of
-30 runs is reported in the Results chapter; the dissertation treats
-the hallucination metric as inferential only if κ ≥ 0.6.
-
-### 3.4.5 Keystroke correction
-
-`keystroke_analyzer.py` counts every event with `type ∈ {"backspace",
-"delete"}` and divides by the total `keystroke` count, scaling to per
-1,000. The metric is structurally zero for the four AI conditions
-(agents do not press keys) and is the only metric for which the
-`human_control` condition produces a non-zero value by construction.
-Its inclusion is justified by §2.2 of the Metrics document: an
-empirical floor for "how much rework does a human do on the same
-spec" is necessary to interpret the agentic conditions' zero against
-*something*, not against the absence of a number.
-
-## 3.5 Pre-registration
-
-The study design was committed to the project's git repository as
-`docs/EXPERIMENT_PROTOCOL.md` before any main-study data was captured.
-The first commit timestamp of that file is the methodological
-boundary between pilot exploration and the dissertation result. Every
-detail — sample size, model versions, statistical test, multiple-
-comparisons policy — was fixed in advance. Subsequent changes are
-appended to `docs/PROTOCOL_DEVIATIONS.md` with date, rationale, and
-analytical consequence; the file is empty if no deviation occurred.
-
-Three deviations were recorded during the main study:
-
-- **Deviation 001**: replay-mode within-cell variance is structurally
-  zero for web/desktop-IDE vendors. Reported as N=1 effective per cell
-  for those conditions; pairwise statistical tests exclude these cells
-  from variance estimates and use ranked comparisons instead.
-- **Deviation 002** (and 003, since rescinded after verification):
-  initially flagged contamination of one cell, retracted after the
-  researcher confirmed workspace isolation. The retraction itself is
-  retained in the log to preserve audit integrity.
-- **Analytical note 001**: Replit Agent shipped a data-pipeline CLI
-  when given the `internal_tool_cli` specification under a fresh
-  workspace and explicit instructions prohibiting pipeline output.
-  Reported as a measured architectural-prior dominance, not operator
-  error.
-
-## 3.6 Statistical analysis plan
-
-The pre-registered analysis is implemented in
-`notebooks/statistical_analysis.ipynb` and is identical for every
-metric:
-
-1. **Normality** is checked per `(condition, spec)` cell via
-   Shapiro-Wilk at p > 0.05.
-2. **Variance equality** is checked across the five conditions via
-   Levene's test at p > 0.05.
-3. If both pass: **one-way ANOVA** across the five conditions per
-   metric. If significant at the per-test α of 0.01 (Bonferroni
-   correction across five metrics), **Tukey HSD** is run as a
-   post-hoc to identify the responsible pairs.
-4. If either fails: **Kruskal-Wallis** across the five conditions per
-   metric, with **Dunn's test** post-hoc under Bonferroni adjustment.
-5. **Effect sizes** are reported as η² for the omnibus and Cohen's *d*
-   for pairwise comparisons.
-6. **95% confidence intervals** on each condition's mean are bootstrap-
-   resampled with 10,000 replicates.
-7. A **two-way ANOVA** with condition × spec is run per metric to test
-   whether condition effects are stable across task domains. A
-   significant interaction is itself a finding (some agents are better
-   at some task types) and is reported as such.
-
-The replay-mode constraint (deviation 001) is handled by excluding
-those cells from variance estimates but including them in ranked
-comparisons. The reporting policy is: every reported difference
-includes mean ± 95 % CI, effect size, exact *p*-value, and the cell N
-used in the comparison.
-
-## 3.7 Reproducibility infrastructure
-
-The instrument is shipped as a Python package on PyPI
-(`ai-code-quality-auditor`, version 0.2.0+) and a GitHub Action
-(`dominicrume/NEW-enterprise-ai-code-quality-auditor@v1`). The full
-main study is reproducible from a clean machine in three commands:
-
-```bash
-pipx install ai-code-quality-auditor
-git clone <repo>
-auditor experiment --reps 10 --run-label replication_001
-```
-
-The dissertation's headline CSV is committed to the repository at
-`data/reports/main_001.csv` with an accompanying
-`main_001.provenance.json` documenting the model versions, prompt
-hashes, and per-run durations. A live read-only dashboard at
-[auditor-dashboard-rume.fly.dev/report/main_001](https://auditor-dashboard-rume.fly.dev/report/main_001)
-renders the same CSV with banner provenance that auto-flips from
-"Pilot data" to "Dissertation result" when N ≥ 5 per condition is
-reached — a structural guard against misrepresenting pilot data as a
-dissertation result.
+> **Generated file — do not edit.**
+> Extracted from `DISSERTATION_FULL.md` on 2026-09-08 by
+> `scripts/split_chapters.py`. Edit the master and re-run; any change made
+> here is overwritten. The master is the submission artefact.
 
 ---
 
-*Word count: ~2,500. Next: Chapter 4 — Results.*
+# Chapter 3 — Methodology
+
+*(This chapter summarises the methodology; the canonical, fully-detailed version
+is maintained at `docs/dissertation/CHAPTER_3_METHODS.md` and the
+pre-registration at `docs/EXPERIMENT_PROTOCOL.md`. The two are consistent.)*
+
+## 3.1 Research design
+
+The study adopts a quantitative, between-conditions experimental design with
+replication, chosen because the research questions are comparative and causal in
+form (do tools differ, by how much, and does the difference depend on task?) and
+because the dependent variables are machine-measurable, which makes a
+quantitative design both feasible and preferable to a qualitative or
+mixed-methods alternative. The independent variable is the *workflow condition*
+(the tool, or the human baseline); the dependent variables are the five quality
+and process metrics; and the *specification* is treated as a second, crossed
+factor so that condition-by-task interactions can be estimated directly (RQ3).
+Holding the specification fixed across conditions is the design's central control:
+because every condition implements the identical brief, differences in the
+measured artefacts are attributable to the workflow rather than to the task.
+Figure 3.1 sets out the resulting pipeline end to end.
+
+![Instrument architecture](figures/fig_3_1_architecture.png)
+
+**Figure 3.1** The instrument's architecture. One fixed, versioned specification
+is issued to every condition; one adapter per vendor captures the result into a
+single capture contract; one analyser per metric scores that contract without
+sight of which condition produced it; and a provenance-stamped report is emitted.
+The file-level isolation — one adapter per vendor, one analyser per metric — is
+what allows a condition or a metric to be added without touching any other.
+
+The
+use of three specifications spanning distinct domains (a web application, an ETL
+pipeline, and a command-line tool) is a deliberate external-validity device — a
+single-specification study could not distinguish a general tool property from a
+task-specific one, and, as the results show (§4.4), that distinction turns out to
+be essential.
+
+Each condition produces *K* attempts at each of *S* specifications, yielding
+*N = K × S* observations per condition for every metric. The five **conditions**
+(independent variable) are the four commercial agentic tools — `claude_code`
+(Anthropic Claude Code CLI), `cursor_agent` (Cursor Agent CLI), `replit_agent`
+(Replit Agent, browser IDE, replay-captured), `antigravity` (Google
+Antigravity, desktop IDE, Gemini-class model) — and a `human_control`
+hand-coded baseline. The five **metrics** (dependent variables) are
+security-vulnerability density (CWE-tagged Bandit findings per kLOC), mean
+cyclomatic complexity (McCabe, via `radon`), code-duplication percentage
+(six-line shingles), hallucination count (off-specification features, via a
+`manifest_deriver`), and keystroke-correction frequency (backspace + delete per
+1,000 keystrokes, via `pynput`; structurally zero for agentic conditions). The
+three **specifications** (treatment stimuli, identical across conditions) span
+distinct domains: `agent_education_system` (CRUD + authentication web app),
+`data_pipeline` (ETL + scheduler), and `internal_tool_cli` (a CLI with
+subcommands), each with six features and three governance rules. Three
+specifications were used so that external-validity claims could be made across
+task types (RQ3).
+
+## 3.2 The capture contract
+
+The methodological core of the instrument is the **capture contract**: every
+condition, however different its native output, must surface its work as two
+artefacts of a fixed shape — a `codebase` (`{files: {path: content}, manifest:
+[feature_ids]}`) and an `interaction_log` (a list of typed events, where each
+type is one of `keystroke`, `backspace`, `delete`, or `agent_action`). For
+`human_control`, a `pynput` listener captures and classifies every key press at
+the OS level; for the agentic conditions, every vendor event (tool-call, file
+edit) is normalised to `agent_action` with vendor-native detail preserved in
+sibling keys for forensics but hidden from the analysers. The contract is the
+boundary that makes a human and an agent comparable, and it is enforced at load
+time: malformed events abort the run rather than silently degrading a metric.
+
+The normalisation this requires is shown in Figure 3.2.
+
+![The capture contract](figures/fig_3_2_capture_contract.png)
+
+**Figure 3.2** The capture contract. A human pressing keys and an agent
+streaming tool-calls produce structurally unrelated traces; both are normalised
+into the same two artefacts — a `codebase` mapping and a typed
+`interaction_log` — before any analyser sees them. Vendor-native detail is
+preserved in sibling fields for forensics, but comparability is enforced at this
+boundary rather than inside each metric.
+
+The design significance of the capture contract is that it relocates all
+vendor-specific reasoning to a thin *adapter* layer — one file per vendor — whose
+sole responsibility is to translate native output into the contract shape. The
+analyser layer never imports an adapter and never branches on condition; it sees
+only the contract. This separation is what makes the comparison defensible: a
+critic cannot argue that a metric was implemented to favour one vendor, because
+the metric code has no way of knowing which vendor produced the artefact it is
+scoring. It also makes the instrument extensible — adding a fifth or sixth tool
+requires writing one adapter, not modifying any metric — which is the property
+that allows third parties to reproduce and extend the study (§3.7, §6.4).
+
+## 3.3 Capture procedure
+
+The capture procedure differs by vendor only in how the native output is
+obtained; all four agentic conditions converge on the same contract before any
+analysis. The two CLI-exposing tools (`claude_code`, `cursor_agent`) are driven
+non-interactively via `subprocess` in a clean, per-run working directory,
+capturing their streamed JSON event output line by line and persisting the raw
+stream alongside the contract-shaped events for forensic re-analysis. Claude Code
+is invoked in its non-interactive, permission-skipping mode (required because no
+human is present to confirm individual tool calls in an unattended run) and
+sandboxed to a per-run session directory; Cursor Agent is invoked under its
+free-tier automatic-model constraint, a limitation reported transparently and
+discussed where it bears on interpretation. The two IDE-bound tools
+(`replit_agent`, `antigravity`) expose no scriptable interface — Replit Agent
+runs inside a browser IDE and Antigravity inside a desktop IDE — and are
+therefore captured by a manual session in the vendor's interface, after which the
+produced files and event log are handed to a replay adapter that loads them
+through the *same* contract used by the CLI-driven conditions. The replay
+adapters share their loader and persistence code with their live counterparts;
+the only difference is the source of the input bytes, so the analyser cannot
+distinguish a replayed capture from a live one. This equivalence is what licenses
+treating the conditions together, subject to the documented within-cell-variance
+consequence of replay (Deviation 001, §3.6). The `human_control` condition is
+detailed in §3.3.1 below.
+
+### 3.3.1 Human-control condition (as executed)
+
+The pre-registration specified 30 hand-coded sessions (three specs × ten reps)
+of 60 minutes each. The executed collection deviated from this plan
+(**Deviation 003**): a single completed session per specification was captured
+(N = 1 per spec), each run to feature-completion rather than time-capped, with
+all in-IDE AI assistance disabled and verified. All six features of each
+specification were implemented and verified to execute before scoring. The
+human baseline is therefore framed throughout as a **single-rep reference
+point** against the AI distribution, not a variance-bearing condition, and is
+excluded from the inferential tests. Because the recorder overwrites its log per
+invocation, multi-attempt sessions were preserved by archiving each capture
+segment and concatenating them at scoring time; the human interaction log for a
+rep is thus the union of all capture segments for that spec (total typing effort
+including debugging). One unrecoverable data-loss event is recorded and carried
+as a limitation: for `agent_education_system`, an early ~2,133-event coding
+segment was overwritten before the segment-archiving procedure existed, so that
+rep's correction frequency is computed from a 75-event surviving fixing segment
+and reported as a partial-capture outlier.
+
+## 3.4 Analyser pipeline
+
+Each metric is a single Python function with a uniform signature —
+`analyze(codebase, interaction_log, spec) -> MetricScore`. This does two things
+at once. It *formalises the capture contract* (an analyser sees exactly what the
+contract defines, no more), and it *blinds the analyser by construction*: no
+analyser receives a condition label, so no metric can be computed with
+vendor-specific knowledge, and condition identity is attached only by the
+orchestrator after scoring. The pipeline is blinded by interface design rather
+than by discipline — a deliberate guard against the vendor-favouring bias that
+hand-tuned evaluation harnesses are prone to.
+
+![Decision bands for each metric](figures/fig_3_3_metric_bands.png)
+
+**Figure 3.3** Decision bands applied to each metric when results are presented
+to a non-specialist audience. The thresholds are interpretation *policy*, held
+in one module (`auditor/core/calibration.py`) so that the command line, the
+dashboard and the reporting client cannot report different verdicts for the same
+number. They bound the reading of a value; they do not affect its measurement.
+
+*Security density (§3.4.1).* The analyser materialises the captured codebase to
+a temporary directory and invokes Bandit, counting only findings carrying a
+non-null CWE identifier (preserving the OWASP/MITRE framing of §2.2–2.3) and
+dividing by line count, scaled to one thousand lines. Assertion findings
+(`B101`) inside test files are excluded — see §4.3 and Erratum 001. An earlier
+design queried the SonarCloud REST API; it was abandoned during the pilot
+(docs/PILOT_RESULTS.md §4.1) because per-project scoping shared one numerator
+across conditions while the denominator varied, producing artefactually large
+per-kLOC figures for small codebases.
+
+*Cyclomatic complexity (§3.4.2).* `radon`'s control-flow visitor enumerates
+every function's McCabe number and the analyser reports the arithmetic mean.
+Files outside the source-suffix whitelist and inside excluded directories
+(virtual environments, caches, vendored packages) are removed by the codebase
+loader first, so the metric reflects produced code rather than transitive
+dependencies. As §5.5 discusses, the per-function basis is the source of the
+human baseline's CLI zero and a known cross-style confound.
+
+*Duplication (§3.4.3).* The analyser hashes every six-consecutive-line shingle
+across all source files (six being the conventional near-duplication window),
+counts the lines participating in any shingle of cardinality two or more, and
+divides by total source lines. It captures structural redundancy — including the
+repeated-template scaffolding that drives the Replit result — rather than merely
+verbatim copy-paste.
+
+*Hallucination (§3.4.4).* The analyser defers to a `manifest_deriver` that scans
+for evidence of each declared spec feature and for web routes and CLI
+subcommands mapping to *no* declared feature; the count of unmapped routes and
+commands is the score. Route detection covers both the Python decorator form
+(FastAPI/Flask) and the JavaScript/TypeScript call form (Express) — the latter
+added after the κ validation found the detector blind to it (Erratum 002).
+Subcommand detection (argparse/Click) was added after the main study revealed
+the Replit behaviour, logged as analytical note 001. The deriver is a
+token-matching heuristic; its validation against human judgement is reported in
+§4.7.
+
+*Keystroke correction (§3.4.5).* The analyser counts `backspace` and `delete`
+events, divides by total `keystroke` count, and scales to one thousand. It is
+structurally zero for the four agentic conditions and is the only metric for
+which the human baseline produces a non-zero value by construction (§4.6, §5.5).
+
+## 3.5 Pre-registration
+
+The design — sample size, model versions, metrics, statistical tests, and
+multiple-comparison policy — was committed to the repository
+(`docs/EXPERIMENT_PROTOCOL.md`) before any main-study data was captured; the
+first commit of that file is the boundary between pilot exploration and the
+dissertation result. Subsequent changes are appended to
+`docs/PROTOCOL_DEVIATIONS.md` with date, rationale and analytical consequence.
+
+## 3.6 Statistical analysis plan
+
+The analysis plan is pre-registered and identical for every metric, which
+removes the metric-by-metric analytic discretion that would otherwise threaten
+the validity of the reported p-values. For each metric, normality is checked per
+`(condition, spec)` cell with the Shapiro–Wilk test (Shapiro and Wilk, 1965) and
+variance equality across conditions with Levene's test (Levene, 1960). If both
+preconditions hold, a one-way ANOVA is run across the conditions; if either
+fails, the non-parametric Kruskal–Wallis test (Kruskal and Wallis, 1952) is used
+instead. The non-parametric fallback is not a marginal case here but the norm,
+because the deterministic-replay conditions contribute zero within-cell variance
+(Deviation 001), which violates the variance-equality precondition for every
+metric. Significance is assessed at a Bonferroni-corrected threshold of α = 0.01
+(0.05 across five metrics), a deliberately conservative choice that controls the
+family-wise error rate across the metric family. Significant omnibus tests are
+followed by the appropriate post-hoc — Tukey's HSD for an ANOVA omnibus, and
+Dunn's test (Dunn, 1964) with Bonferroni adjustment for a Kruskal–Wallis omnibus;
+because every omnibus was non-parametric, Dunn's test is the post-hoc used
+throughout, and an earlier implementation that applied Tukey's HSD to a
+Kruskal–Wallis omnibus was corrected to match the pre-registration. Effect sizes
+are reported as η² for the omnibus and as rank-biserial correlations for pairwise
+comparisons, interpreted against Cohen's (1988) conventional benchmarks for
+small, medium and large effects, and 95% confidence intervals on each condition
+mean are obtained by bootstrap resampling with 10,000 replicates (Efron, 1979).
+
+The pre-registration additionally specified a two-way ANOVA with a
+condition-by-specification interaction term to test whether condition effects are
+stable across task domains (RQ3). This test proved **inadmissible on the executed
+design** and is not reported: because the replay conditions contribute one
+effective observation per cell (Deviation 001), the interaction term has no
+residual degrees of freedom, and an interaction *F* computed over the replicated
+rows would measure the replay mechanism rather than the tools. RQ3 is therefore
+answered descriptively in §4.5.3. More generally, and departing from the
+pre-registered plan in the direction of conservatism, the analysis reported in
+§4.5 is stratified by the effective sample size each condition contributes:
+formal inference is confined to the two conditions captured live with genuine
+replication, and the four-condition comparison is reported descriptively with the
+pseudoreplication-corrected omnibus given alongside. The rationale is stated
+there in full; the principle is that the unit of analysis must be the
+independently captured session, not the CSV row.
+
+Three deviations and one analytical
+note are logged with their analytical consequences: the replay-mode zero-variance
+constraint (001), the deferred web-IDE cells (002), the human-control execution
+change (003), and the Replit architectural-prior observation (analytical note
+001); the security-metric instrument change from SonarCloud to local Bandit is
+documented in the pilot report (docs/PILOT_RESULTS.md §4.1).
+
+## 3.7 Reproducibility infrastructure
+
+The instrument ships as a Python package and a GitHub Action; the headline CSV
+(`data/reports/main_001.csv`) is accompanied by a provenance file, and a live
+read-only dashboard renders the same CSV with a banner that flips from "pilot"
+to "dissertation result" only when N ≥ 5 per condition is reached — a structural
+guard against misrepresenting pilot data.
+
+---

@@ -176,28 +176,86 @@ def add_figure(doc, path: Path, caption: str):
         add_runs(cp, caption, size=9.5, color=MUTED)
 
 
+def _borders(table, colour="C9CFCB"):
+    """Hairline grid; the data should carry the emphasis, not the rules."""
+    tbl = table._tbl
+    pr = tbl.tblPr
+    borders = OxmlElement("w:tblBorders")
+    for edge in ("top", "left", "bottom", "right", "insideH", "insideV"):
+        el = OxmlElement(f"w:{edge}")
+        el.set(qn("w:val"), "single")
+        el.set(qn("w:sz"), "4")
+        el.set(qn("w:color"), colour)
+        borders.append(el)
+    pr.append(borders)
+
+
+NUMERIC = re.compile(r"^[−\-]?[\d.,]+\s*%?$|^[\d.]+\s*×\s*10", re.U)
+
+
 def add_table(doc, rows):
     header, body = rows[0], rows[1:]
-    t = doc.add_table(rows=1, cols=len(header))
-    t.style = "Table Grid"
+    ncols = len(header)
+    t = doc.add_table(rows=1, cols=ncols)
     t.alignment = WD_TABLE_ALIGNMENT.CENTER
     t.autofit = True
+    _borders(t)
+
     for i, cell in enumerate(t.rows[0].cells):
         cell.text = ""
-        set_cell_bg(cell, "EDEFEC")
+        set_cell_bg(cell, "0F514B")
         par = cell.paragraphs[0]
-        par.paragraph_format.space_after = Pt(2)
-        add_runs(par, header[i].strip(), size=9.5)
+        par.paragraph_format.space_before = Pt(3)
+        par.paragraph_format.space_after = Pt(3)
+        par.alignment = (WD_ALIGN_PARAGRAPH.RIGHT if i and i == ncols - 1
+                         else WD_ALIGN_PARAGRAPH.LEFT)
+        add_runs(par, header[i].strip(), size=9.2,
+                 color=RGBColor(0xFF, 0xFF, 0xFF))
         for r in par.runs:
             r.bold = True
-    for row in body:
+
+    for k, row in enumerate(body):
         cells = t.add_row().cells
-        for i, val in enumerate(row[:len(header)]):
+        if k % 2 == 1:
+            for c in cells:
+                set_cell_bg(c, "F4F6F4")
+        for i, val in enumerate(row[:ncols]):
             cells[i].text = ""
             par = cells[i].paragraphs[0]
-            par.paragraph_format.space_after = Pt(2)
-            add_runs(par, val.strip(), size=9.5)
-    doc.add_paragraph().paragraph_format.space_after = Pt(6)
+            par.paragraph_format.space_before = Pt(2.5)
+            par.paragraph_format.space_after = Pt(2.5)
+            v = val.strip()
+            plain = re.sub(r"[*`]", "", v)
+            if i and NUMERIC.match(plain):
+                par.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+            add_runs(par, v, size=9.2)
+    doc.add_paragraph().paragraph_format.space_after = Pt(10)
+
+
+
+def add_toc_field(doc):
+    """A real TOC field. Word populates it on open; Google Docs offers
+    Insert > Table of contents against the same heading styles."""
+    p = doc.add_paragraph()
+    run = p.add_run()
+    for kind, val in (("w:fldChar", "begin"),
+                      ("w:instrText", r' TOC \o "1-3" \h \z \u '),
+                      ("w:fldChar", "separate")):
+        el = OxmlElement(kind)
+        if kind == "w:fldChar":
+            el.set(qn("w:fldCharType"), val)
+        else:
+            el.set(qn("xml:space"), "preserve")
+            el.text = val
+        run._r.append(el)
+    hint = p.add_run("Right-click and choose \u201cUpdate field\u201d, or in Google Docs "
+                     "use Insert \u2192 Table of contents.")
+    hint.italic = True
+    hint.font.size = Pt(9)
+    hint.font.color.rgb = MUTED
+    end = OxmlElement("w:fldChar")
+    end.set(qn("w:fldCharType"), "end")
+    p.add_run()._r.append(end)
 
 
 # --------------------------------------------------------------- title page
@@ -267,8 +325,16 @@ def render(doc, lines):
             level, text = len(m.group(1)), m.group(2).strip()
             if level == 1 and text.startswith("Chapter"):
                 doc.add_paragraph().add_run().add_break(WD_BREAK.PAGE)
+            if text in ("Declaration", "Abstract", "Acknowledgements",
+                        "Table of Contents", "References", "Appendices"):
+                doc.add_paragraph().add_run().add_break(WD_BREAK.PAGE)
             heading(doc, text, level)
             i += 1
+            # the static chapter list is replaced by a live field
+            if text == "Table of Contents":
+                add_toc_field(doc)
+                while i < n and not lines[i].startswith("**List of Tables**"):
+                    i += 1
             continue
 
         fm = FIG_RE.match(line)
@@ -392,6 +458,20 @@ def main():
     })
 
     render(doc, lines[1:])
+
+    # Refuse to ship a document containing text written for the author.
+    # A leak here reaches a marker, so it is a build failure, not a warning.
+    parts = [par.text for par in doc.paragraphs]
+    for tbl in doc.tables:
+        for row in tbl.rows:
+            parts.extend(cell.text for cell in row.cells)
+    rendered = "\n".join(parts)
+    banned = ["delete before submission", "End of dissertation draft",
+              "Remaining before submission", "requires you", "REGISTRY CHECK",
+              "Editorial status", "TODO", "FIXME"]
+    leaks = [b for b in banned if b.lower() in rendered.lower()]
+    if leaks:
+        raise SystemExit(f"refusing to build: editorial text leaked -> {leaks}")
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
     doc.save(OUT)
