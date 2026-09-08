@@ -1,21 +1,10 @@
 # Measuring the Unmeasured: An Empirical Instrument for Auditing the Code-Quality and Governance Behaviour of Agentic AI Coding Workflows
 
-**MSc Artificial Intelligence — Dissertation**
+**MSc Artificial Intelligence and Business Strategy — Dissertation**
 **Aston University · Project JBKS1**
 **Supervisors: Julien Barney and Kate Sugden**
-**Author: Dominic Orume Uririe**
+**Author: Uririe, Orume Dominic**
 **Submission: August 2026**
-
-> ⚠️ **REGISTRY CHECK (delete before submission).** The name above is set to
-> **Dominic Orume Uririe** and the degree title to **MSc Artificial
-> Intelligence**, and both are used consistently throughout this document and
-> the Declaration. Earlier drafts variously carried "Dominic Rume" and "MSc
-> Artificial Intelligence and Business Strategy". **Verify both strings
-> character-for-character against your Aston enrolment record before
-> submitting** — this is what is printed on the degree certificate, and only
-> the registry record is authoritative. If the enrolled programme title is in
-> fact "MSc Artificial Intelligence and Business Strategy", change it in three
-> places: this title page, the Declaration, and §1.5 Research context.
 
 > ⚠️ **PRE-SUBMISSION NOTICE (delete before submission).** This is a complete
 > full draft generated from the project's real captured data
@@ -31,9 +20,10 @@
 > `main_001.csv` established that the previously reported omnibus statistics
 > were pseudoreplicated; see the note below.
 >
-> **Remaining — requires you:** (a) verify the author name and programme title
-> against your Aston enrolment record (see the registry note under the title);
-> (b) confirm the Harvard citation variant against the marking rubric;
+> **Remaining — requires you:** (a) ✅ name and programme title verified against
+> the Aston enrolment record on 8 September 2026 — "Uririe, Orume Dominic",
+> MSc Artificial Intelligence and Business Strategy — and applied to the title
+> page and §1.5; (b) confirm the Harvard citation variant against the marking rubric;
 > (c) **check the word count in Word against the actual limit** — this draft is
 > ≈12,500 words of main text including tables (≈12,350 excluding them),
 > ≈13,780 for the whole file; if the limit is a hard 12,000 for main text you
@@ -260,7 +250,8 @@ practice.
 ## 1.5 Research context
 
 This work was conducted as the experimental instrument for an MSc Artificial
-Intelligence dissertation at Aston University (project JBKS1) and as a working
+Intelligence and Business Strategy dissertation at Aston University
+(project JBKS1) and as a working
 prototype aligned to the agenda of the Aston–Capgemini Centre of Excellence for
 Enterprise AI, whose concern is the safe, governed adoption of AI in
 high-trust enterprise settings. That context shapes the study's framing in two
@@ -1727,5 +1718,7 @@ references and appendices — built entirely on the study's real captured data.
 References verified and corrected; acknowledgements, title page, table and figure
 captions completed; §4.5 re-analysed and rewritten (6 August 2026). Cohen's κ collected and
 reported, and Erratum 002 applied throughout (8 September 2026). Remaining
-before submission: verify name and programme title against the enrolment record,
-and confirm the citation style and word-count rule against the marking rubric.*
+before submission: confirm the citation style and word-count rule against the
+marking rubric, add the Declaration of own work if the handbook requires one,
+and set the submission month on the title page. Name and programme title were
+verified against the enrolment record on 8 September 2026.*
