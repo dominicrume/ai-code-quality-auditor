@@ -40,6 +40,29 @@ spots kappa exists to detect -- and it does detect them: item_08's five
 JavaScript routes are invisible to the instrument's Python-only route regex,
 and the rater now sees them.
 
+## How your answers are recorded
+
+Rater 1's page is organisation-internal and records every tick server-side as
+it happens -- one document per item, carrying the flags, the resulting count
+and a timestamp. The pill in the header says which tier currently holds your
+data:
+
+* **saved** -- recorded server-side; safe to close the tab or change device.
+* **saving...** -- a write is in flight.
+* **saved on this device only** -- the store is unreachable, so answers are in
+  this browser alone. They are not lost, but do not switch device until the
+  pill goes back to "saved".
+
+Rater 2's page is shared publicly, and the storage capability cannot be
+combined with public sharing, so that page keeps answers in the browser and
+the rater copies the CSV out at the end. Both routes produce the same file:
+
+    python scripts/save_rater_labels.py 1 < results.json     # db documents
+    python scripts/save_rater_labels.py 2 --csv < results.csv  # pasted CSV
+
+Partial input is fine -- unlabelled items stay empty and the script reports
+which ones remain.
+
 ## Why the tool does not propose the count
 
 It would be easy to have the instrument, or a language model, pre-fill each
