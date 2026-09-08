@@ -274,7 +274,7 @@ def title_page(doc, meta):
 
     rule = doc.add_paragraph()
     rule.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    rr = rule.add_run("— " * 12)
+    rr = rule.add_run("\u2022  " * 5)
     rr.font.color.rgb = ACCENT
     rr.font.size = Pt(10)
     rule.paragraph_format.space_after = Pt(26)
@@ -466,6 +466,8 @@ def main():
         for row in tbl.rows:
             parts.extend(cell.text for cell in row.cells)
     rendered = "\n".join(parts)
+    if "\u2014" in rendered:
+        raise SystemExit("refusing to build: em dashes present in the text")
     banned = ["delete before submission", "End of dissertation draft",
               "Remaining before submission", "requires you", "REGISTRY CHECK",
               "Editorial status", "TODO", "FIXME"]

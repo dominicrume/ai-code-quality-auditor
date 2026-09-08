@@ -64,6 +64,18 @@ stale = {
 for msg, needle in stale.items():
     check(needle not in s, f"absent: {msg}")
 
+print("\n[4b] PUNCTUATION")
+check(s.count(chr(8212)) == 0,
+      f"no em dashes ({s.count(chr(8212))} found) — a recognised marker of machine prose")
+check(s.count(chr(8211)) > 0,
+      "en dashes retained for ranges and compound names")
+import re as _re
+_flat = " ".join(s.split())
+for _n, _p in [("nested parentheses", r"\([^()]*\([^()]*\)[^()]*\)"),
+               ("doubled commas", r",\s*,"),
+               ("space before punctuation", r"\s+[,.;:](?![0-9])")]:
+    check(not _re.search(_p, _flat), f"no {_n}")
+
 print("\n[5] KAPPA REPORTED CORRECTLY")
 kr = json.loads((ROOT / "data/labels/kappa_results.json").read_text())
 check("0.870" in s and "0.853" in s and "0.727" in s, "pre-registered kappa values present")
