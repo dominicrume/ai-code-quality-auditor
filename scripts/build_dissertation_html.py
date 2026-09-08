@@ -23,9 +23,25 @@ BANNED = ["delete before submission", "End of dissertation draft",
           "Editorial status", "REGISTRY CHECK"]
 
 
-def data_uri(path: Path) -> str:
-    b = base64.b64encode(path.read_bytes()).decode()
-    return f"data:image/png;base64,{b}"
+def data_uri(path: Path, max_px: int = 1500) -> str:
+    """Inline a figure, downsampled to keep the single-file page portable.
+
+    The page carries every figure in its own bytes, so full-resolution PNGs put
+    it past what the publishing endpoint will accept in one request. At 1500 px
+    across a 70ch column these are still sharp on a retina display.
+    """
+    import io
+
+    from PIL import Image
+
+    with Image.open(path) as im:
+        im = im.convert("RGB")
+        if im.width > max_px:
+            im = im.resize((max_px, round(im.height * max_px / im.width)),
+                           Image.LANCZOS)
+        buf = io.BytesIO()
+        im.save(buf, "JPEG", quality=86, optimize=True, progressive=True)
+    return "data:image/jpeg;base64," + base64.b64encode(buf.getvalue()).decode()
 
 
 INLINE = re.compile(r"(\*\*.+?\*\*|\*[^*\n]+?\*|`[^`\n]+?`|\[[^\]]+?\]\([^)]+?\))", re.S)
