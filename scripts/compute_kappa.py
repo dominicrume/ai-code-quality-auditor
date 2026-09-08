@@ -19,9 +19,9 @@ Usage:
     python scripts/compute_kappa.py
 
 Reads:
-    data/labels/hallucination_handlabels.csv       (rater 1)
-    data/labels/hallucination_handlabels_rater2.csv (rater 2)
-    data/reports/main_001.csv                       (heuristic values)
+    data/labels/labels_rater1.csv    (rater 1, 19 items)
+    data/labels/labels_rater2.csv    (rater 2, 19 items)
+    data/reports/main_001.csv        (heuristic values, mapped via pack/index.csv)
 
 Outputs:
     Prints the three κ values, their interpretation, and a contingency
@@ -41,8 +41,9 @@ ROOT = Path(__file__).resolve().parent.parent
 LABELS = ROOT / "data" / "labels"
 REPORTS = ROOT / "data" / "reports"
 
-RATER1_PATH = LABELS / "hallucination_handlabels.csv"
-RATER2_PATH = LABELS / "hallucination_handlabels_rater2.csv"
+RATER1_PATH = LABELS / "labels_rater1.csv"
+RATER2_PATH = LABELS / "labels_rater2.csv"
+PACK_INDEX = LABELS / "pack" / "index.csv"
 HEURISTIC_PATH = REPORTS / "main_001.csv"
 
 KAPPA_BANDS = [
@@ -70,10 +71,17 @@ def load_rater(path: Path, label: str) -> pd.DataFrame | None:
         print(f"  ⚠  {label}: file not found at {path}")
         return None
     df = pd.read_csv(path)
-    col = "n_hallucinated_handlabel"
+    col = "n_offspec_features"
     if col not in df.columns:
         print(f"  ⚠  {label}: missing column '{col}'")
         return None
+    # SKIP marks a capture with no files: not a zero, and not scoreable.
+    df[col] = df[col].astype(str).str.strip()
+    n_skipped = (df[col].str.upper() == "SKIP").sum()
+    df = df[df[col].str.upper() != "SKIP"].copy()
+    df[col] = pd.to_numeric(df[col], errors="coerce")
+    if n_skipped:
+        print(f"  \u2139  {label}: {n_skipped} item(s) marked SKIP (empty capture)")
     filled = df[col].notna()
     n_filled = filled.sum()
     if n_filled == 0:
@@ -84,7 +92,7 @@ def load_rater(path: Path, label: str) -> pd.DataFrame | None:
               f"({len(df) - n_filled} still empty)")
     df = df[filled].copy()
     df["binary"] = (df[col].astype(float) > 0).astype(int)
-    return df[["run_id", col, "binary"]]
+    return df[["item_id", col, "binary"]]
 
 
 def load_heuristic() -> pd.DataFrame | None:
@@ -93,8 +101,22 @@ def load_heuristic() -> pd.DataFrame | None:
         return None
     df = pd.read_csv(HEURISTIC_PATH)
     h = df[df["metric"] == "hallucinations"][["run_id", "value"]].copy()
-    h["binary"] = (h["value"].astype(float) > 0).astype(int)
-    return h
+    if not PACK_INDEX.exists():
+        print(f"  \u26a0  Pack index not found at {PACK_INDEX}")
+        return None
+    # Map each distinct codebase to one heuristic value. Runs covered by the
+    # same item are byte-identical, so their values agree by construction;
+    # taking the first is exact, not an approximation.
+    idx = pd.read_csv(PACK_INDEX)
+    rows = []
+    for _, r in idx.iterrows():
+        run_ids = str(r["run_ids"]).split(";")
+        vals = h[h["run_id"].isin(run_ids)]["value"]
+        if len(vals):
+            rows.append({"item_id": r["item_id"], "value": float(vals.iloc[0])})
+    out = pd.DataFrame(rows)
+    out["binary"] = (out["value"].astype(float) > 0).astype(int)
+    return out
 
 
 def report_kappa(name: str, y1: pd.Series, y2: pd.Series,
@@ -147,14 +169,16 @@ def main():
 
     if r1 is None and r2 is None:
         print("\n  Neither rater has labelled anything yet.")
-        print("  Fill in the CSV files in data/labels/ and re-run.")
+        print("  Each rater works through their own link, then pastes the")
+        print("  result back into Claude Code, which writes their CSV here.")
+        print("  Re-run this once at least one of them is done.")
         sys.exit(1)
 
     results = []
 
     # ── 1. Inter-annotator: rater1 vs rater2 ────────────────────
     if r1 is not None and r2 is not None:
-        merged_12 = r1.merge(r2, on="run_id", suffixes=("_r1", "_r2"),
+        merged_12 = r1.merge(r2, on="item_id", suffixes=("_r1", "_r2"),
                              how="inner")
         if len(merged_12) >= 10:
             res = report_kappa(
@@ -169,7 +193,7 @@ def main():
 
     # ── 2. Rater 1 vs heuristic ─────────────────────────────────
     if r1 is not None and heuristic is not None:
-        merged_1h = r1.merge(heuristic, on="run_id", suffixes=("_r1", "_h"),
+        merged_1h = r1.merge(heuristic, on="item_id", suffixes=("_r1", "_h"),
                              how="inner")
         if len(merged_1h) >= 10:
             res = report_kappa(
@@ -184,7 +208,7 @@ def main():
 
     # ── 3. Rater 2 vs heuristic ─────────────────────────────────
     if r2 is not None and heuristic is not None:
-        merged_2h = r2.merge(heuristic, on="run_id", suffixes=("_r2", "_h"),
+        merged_2h = r2.merge(heuristic, on="item_id", suffixes=("_r2", "_h"),
                              how="inner")
         if len(merged_2h) >= 10:
             res = report_kappa(
