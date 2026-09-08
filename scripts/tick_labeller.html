@@ -78,12 +78,19 @@
   .tally span{font-size:13px;padding:6px 11px;border-radius:99px;
     background:var(--bg);border:1px solid var(--line)}
   .hint{font-size:12.5px;color:var(--soft)}
+  .sync{font-size:12px;padding:2px 8px;border-radius:99px;
+    border:1px solid var(--line);background:var(--card);white-space:nowrap}
+  .sync.ok{color:var(--ok);border-color:var(--ok)}
+  .sync.local{color:var(--soft)}
+  .sync.busy{color:var(--accent);border-color:var(--accent)}
 </style>
 
 <div class="wrap">
   <header>
     <div class="bar"><i id="prog"></i></div>
-    <div class="meta"><span id="pos">—</span><span id="tag">—</span></div>
+    <div class="meta"><span id="pos">—</span>
+      <span><span id="sync" class="sync">connecting…</span> · <span id="tag">—</span></span>
+    </div>
   </header>
   <div id="view"></div>
 </div>
@@ -95,13 +102,79 @@ const DATA = JSON.parse(document.getElementById("d").textContent);
 const KEY = "kappa_v2_rater_" + DATA.rater;
 const ITEMS = DATA.items;
 
+// state[itemId] = {flags:[rowKey,...], seen:bool, ts:epoch_ms}
+// Two tiers on purpose: localStorage keeps the page usable the instant it
+// loads and if db never resolves; db is the record of account, and is what
+// Claude reads back. Every write goes to both.
 let state = {};
 try { state = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch(e){ state = {}; }
-const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e){} };
 
-// state[itemId] = {flags:[rowKey,...], seen:true}
 const rowKey = r => r.kind + "::" + r.name;
-const st = id => (state[id] = state[id] || {flags: [], seen: false});
+const st = id => (state[id] = state[id] || {flags: [], seen: false, ts: 0});
+
+let DB = null, pending = 0;
+
+function setSync(cls, text) {
+  const el = document.getElementById("sync");
+  if (el) { el.className = "sync " + cls; el.textContent = text; }
+}
+
+function saveLocal() {
+  try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e){}
+}
+
+// Persist one item. Local first (never fails, never blocks), then the store.
+function persist(itemId) {
+  const s = st(itemId);
+  s.ts = Date.now();
+  saveLocal();
+  if (!DB) return;
+  const it = ITEMS.find(i => i.id === itemId);
+  pending++;
+  setSync("busy", "saving…");
+  DB.doc("labels/" + itemId).set({
+    item_id: itemId,
+    spec_name: it.spec_name,
+    rater: DATA.rater,
+    n_offspec: it.n_files === 0 ? "SKIP" : s.flags.length,
+    flags: s.flags.slice(),
+    seen: !!s.seen,
+    updated_at: new Date(s.ts).toISOString(),
+    ts: s.ts,
+  }).then(() => {
+    if (--pending === 0) setSync("ok", "saved");
+  }, () => {
+    if (--pending === 0) setSync("local", "saved on this device only");
+  });
+}
+
+// Later write wins per item, so a rater can move between devices without
+// silently losing whichever side they touched second.
+function hydrate(docs) {
+  let changed = false;
+  docs.forEach(d => {
+    const v = d.data(); if (!v || !v.item_id) return;
+    const mine = state[v.item_id];
+    if (mine && (mine.ts || 0) >= (v.ts || 0)) return;
+    state[v.item_id] = {flags: Array.isArray(v.flags) ? v.flags : [],
+                        seen: !!v.seen, ts: v.ts || 0};
+    changed = true;
+  });
+  if (!changed) return;
+  saveLocal();
+  const resume = ITEMS.findIndex(i => !(state[i.id] && state[i.id].seen));
+  at = resume < 0 ? ITEMS.length : resume;
+  draw();
+}
+
+claude.use("db").then(d => {
+  if (!d) { setSync("local", "saved on this device only"); return; }
+  DB = d;
+  DB.collection("labels").get().then(snap => {
+    hydrate(snap.docs);
+    setSync("ok", "saved");
+  }, () => setSync("ok", "saved"));
+}, () => setSync("local", "saved on this device only"));
 
 let at = ITEMS.findIndex(i => !(state[i.id] && state[i.id].seen));
 if (at < 0) at = ITEMS.length;
@@ -112,13 +185,18 @@ const KW = {route:"route", command:"subcommand", module:"module"};
 function toggle(id, key, el) {
   const s = st(id), i = s.flags.indexOf(key);
   if (i < 0) s.flags.push(key); else s.flags.splice(i, 1);
-  save();
+  persist(id);
   el.classList.toggle("on");
   el.querySelector(".box").textContent = el.classList.contains("on") ? "✓" : "";
   paintFoot();
 }
 
-function next() { st(ITEMS[at].id).seen = true; save(); at++; draw(); }
+function next() {
+  const id = ITEMS[at].id;
+  st(id).seen = true;
+  persist(id);
+  at++; draw();
+}
 function prev() { if (at > 0) { at--; draw(); } }
 
 function csv() {
