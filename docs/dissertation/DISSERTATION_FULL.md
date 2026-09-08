@@ -24,12 +24,12 @@
 > the Aston enrolment record on 8 September 2026 — "Uririe, Orume Dominic",
 > MSc Artificial Intelligence and Business Strategy — and applied to the title
 > page and §1.5; (b) confirm the Harvard citation variant against the marking rubric;
-> (c) **word count, recut 8 September 2026 against the hard 12,000 limit.**
-> Chapters 1–6 now total **11,996 words including tables**. With the abstract,
-> acknowledgements and contents added the file is 12,781, so if your handbook
-> counts those too you need ≈790 more out — take it from §2.2–2.5 and §3.1,
-> which were not touched in this pass. Verify in Word: its counter differs
-> slightly from a whitespace split.
+> (c) **word count, against the hard 12,000 limit.** Chapters 1–6 are
+> **11,569 words excluding figure captions**, or 12,429 including them. Most
+> handbooks exclude captions, as they exclude table contents — confirm which
+> applies. If captions count, ≈430 must come out; §2.2–2.5 and §3.1 were not
+> touched in the last pass and are the candidates. Verify in Word: its counter
+> differs slightly from a whitespace split.
 > (d) the Cohen's κ validation is **complete** (8 September 2026): two raters,
 > 19 deduplicated items, κ = 0.870 / 0.853 / 0.727, all above the 0.6 threshold
 > (§4.7, docs/KAPPA_RESULTS_001.md). It also exposed a false negative in the
@@ -149,7 +149,14 @@ sharpened every chapter. Any errors that remain are my own.
 - Figure 3.3 Decision bands for each metric
 - Figure 4.1 Forest plot: per-condition means with bootstrap 95% CIs
 - Figure 4.2 Violin plots: distribution shape per (condition × metric)
-- Figure 4.3 Off-spec features by tool and task domain
+- Figure 4.3 What the specification asked for, and what was shipped
+- Figure 4.4 Language composition of each condition's output, and its effect on
+  security density
+- Figure 4.5 Off-spec features by tool and task domain
+- Figure 4.6 Nominal versus effective sample size per condition
+- Figure 4.7 Human baseline against the agentic mean, per specification
+- Figure 4.8 Per-item comparison of both raters and the instrument
+- Figure 5.1 Both errata, as first reported and as corrected
 
 ---
 
@@ -821,6 +828,14 @@ session and contribute no independent evidence of stability. The finding rests
 on the controlled capture conditions and on direct code inspection; a live
 multi-session re-capture (§5.7) is the stated next step.
 
+![What the specification asked for, and what was shipped](figures/fig_4_3_replit_evidence.png)
+
+**Figure 4.3** The finding in full. Left, the six subcommands declared in
+`internal_tool_cli.yaml`; right, the three shipped by `replit_agent` in the
+captured session for that cell, with the pipeline package supporting them. The
+intersection is empty. Both columns are read directly from the specification
+file and the frozen capture, so the figure cannot drift from its evidence.
+
 **Cyclomatic complexity.** Claude Code produced the densest code (mean McCabe
 3.35) and Replit the least (2.39), a gap of roughly one cc unit that is
 consistent across the three specifications. The reading is "denser, not worse":
@@ -865,6 +880,14 @@ support a whole-project security claim (§5.2). Reporting this openly, rather th
 allowing Replit's 0.00 to read as a security win, is precisely the behaviour the
 instrument exists to enforce.
 
+![Language composition of each condition's output, and its effect on security density](figures/fig_4_4_language_composition.png)
+
+**Figure 4.4** The artefact made visible. Left, the share of produced lines by
+language across all 30 runs per condition: Replit's output is 6% Python against
+52% TypeScript and 42% configuration, while every other condition is
+Python-first. Right, security density against Python share — the 0.00 is a
+property of what the scanner can read, not of what was written.
+
 **Keystroke correction.** Structurally zero for every AI condition, because
 agents do not press keys. The metric exists for the `human_control` comparison
 (§4.6); its inclusion is justified by the need for an empirical floor against
@@ -888,9 +911,9 @@ count per (condition × specification) cell.
 | replit_agent | 1.00 | 0.00 | 3.00 |
 | antigravity | 1.00 | 0.00 | 0.00 |
 
-![Off-spec features by tool and task domain](figures/fig_4_3_hallucination_heatmap.png)
+![Off-spec features by tool and task domain](figures/fig_4_5_hallucination_heatmap.png)
 
-**Figure 4.3** Table 4.2 rendered as a heatmap. The concentration of off-spec
+**Figure 4.5** Table 4.2 rendered as a heatmap. The concentration of off-spec
 output in `replit_agent` on the CLI specification — three off-spec subcommands
 per run, against at most one anywhere else — is the study's most consequential
 result, and the unevenness of the surrounding cells is the clearest available
@@ -947,6 +970,15 @@ and can see why it must be discounted. Condition-by-specification interaction
 effective observation per cell in two conditions the interaction term has no
 residual degrees of freedom and the statistic is undefined on this design, its
 apparent magnitude an artefact of near-zero error variance from duplicated rows.
+
+![Nominal versus effective sample size per condition](figures/fig_4_6_effective_n.png)
+
+**Figure 4.6** Why Level 1 must be discounted. Each condition contributes 30
+rows to the report, but only the two CLI-driven conditions contribute 30
+independently captured sessions; the IDE-bound conditions contribute three
+apiece, one per specification, replayed ten times each. The omnibus tests above
+treat the grey bars as the sample size; the analysis that follows treats the
+teal ones.
 
 **Level 2 — the inferential core (live conditions only).** Only `claude_code`
 and `cursor_agent` were captured live with genuine per-replication variance
@@ -1035,6 +1067,15 @@ inferential comparison is made.
 | Complexity (cc) | 1.71 / 1.56 | 5.00 / 3.20 | 0.00 / 3.54 |
 | Duplication (%) | 0.00 / 3.59 | 0.00 / 5.87 | 0.00 / 1.57 |
 | Hallucinations (count) | 0.00 / 0.62 | 0.00 / 0.00 | 0.00 / 0.75 |
+
+![Human baseline against the agentic mean, per specification](figures/fig_4_7_human_vs_ai.png)
+
+**Figure 4.7** Table 4.4 at a glance. The human baseline is at or near zero on
+every artefact metric in every domain — the signature of a spec-minimal
+implementation rather than superior craft. The exception is complexity, where
+the human sits *above* the agentic mean on the pipeline and at exactly zero on
+the CLI; that zero is the decomposition-style confound of §5.5, not a simpler
+program.
 | Correction frequency (per 1k) | 829.27 / 0.00 | 51.80 / 0.00 | 122.27 / 0.00 |
 
 Mean complexity
@@ -1071,8 +1112,18 @@ worked. Threshold κ ≥ 0.6 (Landis and Koch, 1977).
 | Rater 2 × instrument | 0.727 | substantial | 88.9% |
 
 All three clear the threshold, so the hallucination metric is admissible for
-inferential use rather than exploratory reporting only. Two qualifications bound
-that admission.
+inferential use rather than exploratory reporting only.
+
+![Per-item comparison of both raters and the instrument](figures/fig_4_8_kappa_agreement.png)
+
+**Figure 4.8** Every label in the study, item by item. Shaded cells carry at
+least one off-specification feature; item_04's capture is empty and was recorded
+`SKIP` by both raters. The two boxed columns are the only disagreements: at
+item_08 both raters saw a route the instrument could not (Erratum 002), and at
+item_16 the raters differ from each other over whether shipped vendor
+scaffolding counts as scope drift.
+
+Two qualifications bound that admission.
 
 **The validated claim is detection, not magnitude.** κ is computed on the binary
 contrast. Two items agree in binary terms while differing substantially in count
@@ -1273,7 +1324,17 @@ was inflated by counting assertions inside test files, penalising the conditions
 that tested most thoroughly (Erratum 001), and the route detector was blind to
 non-Python web frameworks, scoring an entire cell zero by construction rather
 than by judgement (Erratum 002). The second reversed a claim this study had
-previously advanced as its cleanest result. Correcting both in the text, and
+previously advanced as its cleanest result.
+
+![Both errata, as first reported and as corrected](figures/fig_5_1_errata.png)
+
+**Figure 5.1** What the two corrections changed. Left, excluding test-file
+assertions cuts claude_code's security density from 42.05 to 9.65 and
+cursor_agent's from 43.67 to 5.93 — the metric had substantially been measuring
+how thoroughly each condition tested its own output. Right, detecting TypeScript
+routes raises replit_agent's off-spec count from 1.00 to 1.33. Neither reverses
+a conclusion; both were found by the instrument's own validation rather than by
+a reader. Correcting both in the text, and
 declining to quote the flattering post-repair κ because it is circular, is the
 methodological heart of the dissertation. An instrument built to audit the
 trustworthiness of generated code earns the right to make that audit only by

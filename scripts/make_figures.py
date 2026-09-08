@@ -278,7 +278,7 @@ def fig_hallucination_heatmap():
     cb.outline.set_edgecolor(GREY)
     ax.set_title("Off-spec features by tool and task domain",
                  fontsize=9.5, fontweight="bold", pad=10)
-    save(fig, "fig_4_3_hallucination_heatmap")
+    save(fig, "fig_4_5_hallucination_heatmap")
 
 
 if __name__ == "__main__":
