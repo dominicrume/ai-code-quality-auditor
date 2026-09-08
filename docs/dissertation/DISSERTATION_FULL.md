@@ -204,42 +204,35 @@ errors that remain are my own.
 
 ## 1.1 Background and motivation
 
-The practice of software engineering is undergoing its most rapid tooling
-transition since the introduction of the integrated development environment.
-Where earlier AI assistance took the form of *autocomplete*, meaning single-line
-or single-block suggestions inside an editor (Vaithilingam, Zhang and Glassman,
-2022), the current generation of tools is *agentic*: given a high-level brief,
-they plan, write, execute, and revise multi-file codebases with limited or no
-human intervention. Anthropic's Claude Code, Cursor's agent mode, Replit's
-Agent, and Google's Antigravity each instantiate this pattern through different
-product surfaces (a terminal CLI, an editor-embedded agent, a browser IDE, and a
-desktop IDE respectively), and each is being adopted inside enterprises at a
-pace that materially exceeds the maturity of the evidence used to govern that
-adoption.
+Software engineering is undergoing its most rapid tooling transition since the
+integrated development environment. Where earlier AI assistance took the form of
+*autocomplete*, single-line or single-block suggestions inside an editor
+(Vaithilingam, Zhang and Glassman, 2022), the current generation is *agentic*:
+given a high-level brief, these tools plan, write, execute and revise multi-file
+codebases with limited human intervention. Anthropic's Claude Code, Cursor's
+agent mode, Replit's Agent and Google's Antigravity each instantiate the pattern
+through a different product surface, and each is being adopted inside
+enterprises faster than the evidence used to govern that adoption is maturing.
 
-The dominant evaluation paradigm for code-generating models is *functional
-correctness*, operationalised by benchmarks such as HumanEval (Chen et al.,
-2021) and its successors, which measure the proportion of problems for which the
-generated code passes a hidden test suite (the *pass@k* metric). This paradigm
-has been enormously productive for model development, but it answers only one question (*does it work?*) and is structurally silent on the questions that
-dominate the *total cost of ownership* of generated code in a real organisation:
-*is it secure? is it maintainable? is it redundant? and, above all, does it
-implement what was actually asked for, and nothing else?* The last question,
-**specification fidelity**, is the central concern of this dissertation, because
-it is both the least measured and, this study will argue, the most
-governance-relevant property of agentic output.
+The dominant evaluation paradigm is *functional correctness*, operationalised by
+benchmarks such as HumanEval (Chen et al., 2021), which measure the proportion of
+problems for which generated code passes a hidden test suite. That paradigm has
+been productive for model development, but it answers one question (*does it
+work?*) and is silent on those that dominate the *total cost of ownership* of
+generated code: *is it secure? is it maintainable? is it redundant? and, above
+all, does it implement what was actually asked for, and nothing else?* The last,
+**specification fidelity**, is this dissertation's central concern, because it is
+both the least measured and, this study argues, the most governance-relevant
+property of agentic output.
 
-The stakes of this measurement gap are highest precisely where agentic tools are
-most attractive: in large, regulated, high-trust organisations that adopt them to
-accelerate delivery. In such settings the cost of a tool that produces
-functionally-correct-but-ungoverned output is not borne at the moment of
-generation but downstream, as security exposure, maintenance burden, and the slow
-erosion of the relationship between what was specified and what was built. An
-organisation that cannot *measure* whether a tool stays within a declared scope
-cannot *govern* its use, and is left to rely on the same functional benchmarks
-and developer sentiment that, as Chapter 2 will show, are silent on exactly the
-properties that matter. The instrument developed in this dissertation is a direct
-response to that governance gap.
+The stakes are highest where agentic tools are most attractive: in large,
+regulated organisations adopting them to accelerate delivery. There the cost of
+functionally-correct-but-ungoverned output is borne downstream, as security
+exposure, maintenance burden, and the slow erosion of the relationship between
+what was specified and what was built. An organisation that cannot *measure*
+whether a tool stays within a declared scope cannot *govern* its use, and is left
+relying on the functional benchmarks and developer sentiment that, as Chapter 2
+shows, are silent on exactly the properties that matter.
 
 ## 1.2 The problem
 
@@ -1374,10 +1367,13 @@ shows can be tested.
 
 ## 5.4 Methodological reflection
 
-Three points warrant reflection. First, the *capture contract* succeeded in its
-purpose (RQ1): structurally heterogeneous workflows were scored on a common
-footing, and the blinded analyser design removed a class of vendor-favouring
-bias by construction. Second, the *replay-mode constraint* (Deviation 001)
+Three points warrant reflection. First, the *capture contract* succeeded in
+half its purpose (RQ1): structurally heterogeneous workflows were scored on a
+common footing for every artefact metric, and the blinded analyser design
+removed a class of vendor-favouring bias by construction. Its process half did
+not follow, for the reason given in §6.3: the agentic interaction logs are too
+sparse to support process comparison, so the contract is demonstrated for
+artefacts and remains a proposal for process. Second, the *replay-mode constraint* (Deviation 001)
 is a genuine limitation: the IDE-bound vendors contribute zero within-cell
 variance, so their cells are effective singletons and the replayed cells'
 internal consistency is a property of the replay mechanism rather than
@@ -1589,11 +1585,18 @@ convenience: the replay-mode zero-variance constraint on the two IDE-bound
 conditions (Deviation 001), which reduces their effective replication to one and
 concentrates the omnibus variance in the two CLI-driven conditions; the reduced,
 single-replication human baseline and its one unrecoverable data-loss event
-(Deviation 003); the as-yet-unvalidated, token-based hallucination heuristic
-(§4.7); the per-language confound in the security-density metric (§5.2); the
-cross-style confound in per-function complexity (§5.5); and the static,
-artefact-level measurement scope, which by design excludes runtime behaviour,
-developer satisfaction, and longitudinal maintenance cost. None of these
+(Deviation 003); the token-based hallucination heuristic, validated for detection but not for
+magnitude (§4.7); the per-language confound in the security-density metric (§5.2); the
+cross-style confound in per-function complexity (§5.5); and the static, artefact-level measurement scope, which by design excludes runtime
+behaviour, developer satisfaction, and longitudinal maintenance cost; and,
+most consequentially for the capture contract's own claims, the thinness of the
+agentic interaction logs. The contract specifies a codebase and a typed
+interaction log, and the codebase half is complete for every run, but the log
+half is not: the human sessions record 7,979 events while `antigravity` and
+`replit_agent` record one placeholder event per run and the two CLI-driven
+conditions a median of seventeen and two. The artefact findings are unaffected,
+since they are computed from the code, but no claim about *how* an agent worked
+is supported by this dataset. None of these
 undermines the study's structural findings, which rest on large descriptive
 margins and on mechanisms established by direct inspection of the captured code,
 but each bounds the strength and generality of the claims. The replay constraint
