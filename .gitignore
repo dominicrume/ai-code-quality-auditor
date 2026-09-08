@@ -26,3 +26,9 @@ dist/
 !.vscode/extensions.json
 replay_dirs/
 data/waitlist.jsonl
+
+# Local tool state produced by running the auditor on this repo itself.
+.auditor/
+
+# Scratch output from demo runs; contains absolute paths.
+test_output.json
