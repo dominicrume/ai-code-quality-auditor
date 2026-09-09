@@ -139,6 +139,14 @@ from 9.65 to 42.05 and cursor_agent from 5.93 to 43.67. The correction is
 recorded as Erratum 001; it reverses no conclusion, and the corrected values are
 used throughout.
 
+The exclusion also exposes a difference the metric had been hiding. Whether a
+tool writes tests at all varies enormously: `antigravity` produced a test file in
+all 30 runs, `cursor_agent` in 21 and `claude_code` in 16, never once on the CLI
+specification, while `replit_agent` produced none in any run. Because assertions
+were being counted as findings, the metric had been penalising thoroughness and
+rewarding its absence, which is the precise inversion an instrument built to
+inform governance must not make.
+
 The pattern inverts that of the other metrics, which makes it the clearest
 illustration of why an artefact-level, transparently-reported instrument is
 necessary. The two feature-dense vendors, Claude Code (9.65) and Cursor Agent
@@ -158,8 +166,9 @@ precisely the behaviour the instrument exists to enforce.
 **Figure 4.4** The artefact made visible. Left, the share of produced lines by
 language across all 30 runs per condition: Replit's output is 6% Python against
 52% TypeScript and 42% configuration, while every other condition is
-Python-first. Right, security density against Python share, the 0.00 is a
-property of what the scanner can read, not of what was written.
+Python-first. Centre, the number of runs containing a test file. Right, security
+density against Python share. Replit's 0.00 has two causes and neither is
+security: almost nothing it wrote is scannable, and it wrote no tests to scan.
 
 **Keystroke correction.** Structurally zero for every AI condition, because
 agents do not press keys. The metric exists for the `human_control` comparison
@@ -466,6 +475,13 @@ reading the metric is designed to produce when output matches its brief, while
 `GovSignal` returns 4. A metric returning the same value on every real project
 would measure nothing. And `GovSignal` was audited by a third party on their own
 machine, so these readings occur in hands other than the author's.
+
+![The published package installed by a third party](figures/fig_4_10_installation.jpg)
+
+**Figure 4.10** How that audit began. The published package is installed from
+PyPI on another user's Windows machine, resolving its dependencies and reporting
+success, in the project directory it then audited. Adoption of a research
+instrument is ordinarily asserted; here it is a terminal transcript.
 
 *4.8.1 The instrument audits itself.* The third row is the most uncomfortable
 and the most useful. Scored against its own declared scope, transcribed from the

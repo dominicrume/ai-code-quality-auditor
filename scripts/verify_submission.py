@@ -15,7 +15,7 @@ def warn(cond, msg):
 
 print("\n[1] FIGURES")
 refs = re.findall(r'!\[[^\]]*\]\(([^)]+)\)', s)
-check(len(refs) == 13, f"13 figures referenced (found {len(refs)})")
+check(len(refs) == 15, f"15 figures referenced (found {len(refs)})")
 for r in refs:
     check((ROOT / "docs/dissertation" / r).resolve().exists(), f"file exists: {r}")
 caps = re.findall(r'^\*\*Figure ([0-9.]+)\*\*', s, re.M)
@@ -61,6 +61,8 @@ stale = {
     "pre-erratum security 43.67 in a table": "| 43.67 |",
     "withdrawn interaction called significant": "significant condition-by-spec interaction",
     "kappa described as planned": "planned step",
+    "kappa described as unvalidated": "not yet validated",
+    "kappa described as as-yet-unvalidated": "as-yet-unvalidated",
     "Replit drift 'entirely' in CLI": "concentrated entirely in the CLI",
     "old hallucination range": "0.00 to 1.00 hallucinations",
     "old name": "Dominic Orume Uririe",

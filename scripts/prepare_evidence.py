@@ -44,6 +44,8 @@ CROPS = {
     # The scope-drift pair: same project four minutes apart.
     "Screenshot 2026-09-08 at 18.41.59.png":      (0, 310, 2940, 1420),
     "Screenshot 2026-09-08 at 18.45.24.png":      (0, 310, 2940, 880),
+    # The hosted report view: browser chrome off the top, dock off the bottom.
+    "Screenshot 2026-09-09 at 00.45.06.png":      (0, 440, 2940, 1720),
     # Windows VS Code: title bar off the top, taskbar and status bar off the
     # bottom, activity rail off the left.
     "1fbed596-aa52-4d30-b890-3503b7d5b470 2.JPG": (60, 45, 1600, 915),
@@ -51,6 +53,10 @@ CROPS = {
 
 # Not evidence for this study.
 EXCLUDE = {
+    "Screenshot 2026-09-09 at 00.32.47.png": "Laravel Herd setup for an unrelated project",
+    "Screenshot 2026-09-09 at 00.44.31.png": "superseded by the 00.46 capture",
+    "Screenshot 2026-09-09 at 00.44.44.png": "superseded by the 00.46 capture",
+    "Screenshot 2026-09-09 at 00.46.01.png": "superseded by the 00.46.29 capture",
     "MORE_Cover_Front_HiRes.png": "a book cover; unrelated to the study",
     "Screenshot 2026-08-31 at 19.39.54 copy.png": "byte-identical duplicate",
     "a162b5b3-daa6-405e-98ac-5b29d39c64ac 2.JPG": "duplicate of GOV_SIGNAL_REALRUN",

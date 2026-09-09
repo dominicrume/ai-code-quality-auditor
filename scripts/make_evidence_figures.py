@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import csv
 import json
+import re
 from collections import defaultdict
 from pathlib import Path
 
@@ -80,10 +81,28 @@ def language_mix():
     return acc
 
 
+TEST_PATH = re.compile(r"(^|/)(tests?|__tests__|spec)s?(/|$)"
+                       r"|(^|/)test_[^/]+\.(py|ts|js)$"
+                       r"|[._-](test|spec)\.(py|ts|tsx|js|jsx)$", re.I)
+
+
+def tests_written():
+    """Runs containing at least one test file, per condition."""
+    n, with_tests = defaultdict(int), defaultdict(int)
+    for cb in (ROOT / "data/raw").glob("main_001__*/*/codebase.json"):
+        cond = cb.parent.parent.name.split("__")[2]
+        files = json.loads(cb.read_text()).get("files", {})
+        n[cond] += 1
+        if any(TEST_PATH.search(p) for p in files):
+            with_tests[cond] += 1
+    return n, with_tests
+
+
 def fig_language_composition():
     acc = language_mix()
-    fig, (ax, ax2) = plt.subplots(1, 2, figsize=(8.6, 3.3),
-                                  gridspec_kw={"width_ratios": [1.5, 1], "wspace": 0.42})
+    fig, (ax, axt, ax2) = plt.subplots(
+        1, 3, figsize=(9.6, 3.3),
+        gridspec_kw={"width_ratios": [1.45, 0.78, 1.0], "wspace": 0.46})
 
     y = np.arange(len(CONDS))[::-1]
     left = np.zeros(len(CONDS))
@@ -111,6 +130,23 @@ def fig_language_composition():
     tidy(ax, keep=("bottom",))
     ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.22), ncol=5,
               frameon=False, fontsize=7.6, handlelength=1.1)
+
+    # middle panel: did the tool write tests at all?
+    n, wt = tests_written()
+    y = np.arange(len(CONDS))[::-1]
+    vals = [wt[c] for c in CONDS]
+    axt.barh(y, [n[c] for c in CONDS], height=0.62, color=GREY_L,
+             edgecolor=GREY, linewidth=0.8)
+    axt.barh(y, vals, height=0.62, color=TEAL, edgecolor=TEAL, linewidth=0.8)
+    for yy, v, c in zip(y, vals, CONDS):
+        axt.text(v + 0.9, yy, f"{v}/{n[c]}", va="center", fontsize=8.4,
+                 fontweight="bold", color=TEAL if v else RED)
+    axt.set_yticks(y); axt.set_yticklabels([])
+    axt.set_xlim(0, 30 * 1.34)
+    axt.set_xlabel("runs containing a test file", fontsize=8.4)
+    axt.set_title("Did it write tests?", fontsize=10, fontweight="bold",
+                  loc="left", pad=8)
+    tidy(axt, keep=("bottom",))
 
     # right panel: the consequence -- security density against Python share
     sec = {}

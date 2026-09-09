@@ -203,6 +203,17 @@ events, divides by total `keystroke` count, and scales to one thousand. It is
 structurally zero for the four agentic conditions and is the only metric for
 which the human baseline produces a non-zero value by construction (§4.6, §5.5).
 
+Scores reach a reader through a reporting layer, shown in Figure 3.4.
+
+![The hosted report view](figures/fig_3_4_report_dashboard.jpg)
+
+**Figure 3.4** The reporting surface. Every scored run is published to a hosted
+report rendering the full condition-by-metric grid, normalised per row so colour
+encodes rank within a metric rather than magnitude across metrics, with a
+per-metric drill-down beneath. The instrument is therefore usable by a reader
+who will not run it. This capture predates both errata, so its underlying values
+are those Chapter 4 corrects.
+
 ## 3.5 Pre-registration
 
 The design (sample size, model versions, metrics, statistical tests, and

@@ -186,6 +186,7 @@ errors that remain are my own.
 - Figure 3.1 Instrument architecture: specification to report
 - Figure 3.2 The capture contract: one comparable shape from heterogeneous workflows
 - Figure 3.3 Decision bands for each metric
+- Figure 3.4 The hosted report view
 - Figure 4.1 Per-condition means with bootstrap confidence intervals
 - Figure 4.2 Distribution of every run, by condition and metric
 - Figure 4.3 What the specification asked for, and what was shipped
@@ -196,6 +197,7 @@ errors that remain are my own.
 - Figure 4.7 Human baseline against the agentic mean, per specification
 - Figure 4.8 Per-item comparison of both raters and the instrument
 - Figure 4.9 The same project before and after a specification was supplied
+- Figure 4.10 The published package installed by a third party
 - Figure 5.1 Both errata, as first reported and as corrected
 
 ---
@@ -693,6 +695,17 @@ events, divides by total `keystroke` count, and scales to one thousand. It is
 structurally zero for the four agentic conditions and is the only metric for
 which the human baseline produces a non-zero value by construction (§4.6, §5.5).
 
+Scores reach a reader through a reporting layer, shown in Figure 3.4.
+
+![The hosted report view](figures/fig_3_4_report_dashboard.jpg)
+
+**Figure 3.4** The reporting surface. Every scored run is published to a hosted
+report rendering the full condition-by-metric grid, normalised per row so colour
+encodes rank within a metric rather than magnitude across metrics, with a
+per-metric drill-down beneath. The instrument is therefore usable by a reader
+who will not run it. This capture predates both errata, so its underlying values
+are those Chapter 4 corrects.
+
 ## 3.5 Pre-registration
 
 The design (sample size, model versions, metrics, statistical tests, and
@@ -895,6 +908,14 @@ from 9.65 to 42.05 and cursor_agent from 5.93 to 43.67. The correction is
 recorded as Erratum 001; it reverses no conclusion, and the corrected values are
 used throughout.
 
+The exclusion also exposes a difference the metric had been hiding. Whether a
+tool writes tests at all varies enormously: `antigravity` produced a test file in
+all 30 runs, `cursor_agent` in 21 and `claude_code` in 16, never once on the CLI
+specification, while `replit_agent` produced none in any run. Because assertions
+were being counted as findings, the metric had been penalising thoroughness and
+rewarding its absence, which is the precise inversion an instrument built to
+inform governance must not make.
+
 The pattern inverts that of the other metrics, which makes it the clearest
 illustration of why an artefact-level, transparently-reported instrument is
 necessary. The two feature-dense vendors, Claude Code (9.65) and Cursor Agent
@@ -914,8 +935,9 @@ precisely the behaviour the instrument exists to enforce.
 **Figure 4.4** The artefact made visible. Left, the share of produced lines by
 language across all 30 runs per condition: Replit's output is 6% Python against
 52% TypeScript and 42% configuration, while every other condition is
-Python-first. Right, security density against Python share, the 0.00 is a
-property of what the scanner can read, not of what was written.
+Python-first. Centre, the number of runs containing a test file. Right, security
+density against Python share. Replit's 0.00 has two causes and neither is
+security: almost nothing it wrote is scannable, and it wrote no tests to scan.
 
 **Keystroke correction.** Structurally zero for every AI condition, because
 agents do not press keys. The metric exists for the `human_control` comparison
@@ -1223,6 +1245,13 @@ reading the metric is designed to produce when output matches its brief, while
 would measure nothing. And `GovSignal` was audited by a third party on their own
 machine, so these readings occur in hands other than the author's.
 
+![The published package installed by a third party](figures/fig_4_10_installation.jpg)
+
+**Figure 4.10** How that audit began. The published package is installed from
+PyPI on another user's Windows machine, resolving its dependencies and reporting
+success, in the project directory it then audited. Adoption of a research
+instrument is ordinarily asserted; here it is a terminal transcript.
+
 *4.8.1 The instrument audits itself.* The third row is the most uncomfortable
 and the most useful. Scored against its own declared scope, transcribed from the
 pre-registration and the standing brief of 30 May 2026 and reproduced in
@@ -1332,42 +1361,35 @@ governance signal, precisely the failure mode the instrument exists to prevent.
 
 The study's central governance contribution is the elevation of *specification
 fidelity* to a measurable, first-class metric. The Replit architectural-prior
-finding is its strongest evidence: an agent that ships a data pipeline when
-asked for a CLI, under controlled conditions designed to prevent exactly that,
-is an agent whose output cannot be guaranteed to remain within a declared scope.
-In enterprise terms, and in the "governance box" framing of the Aston–Capgemini
-Centre's enterprise-AI agenda, this is a containment failure, not a quality
-nuance. The duplication finding generalises the point: an agent that ships 9–10%
-scaffolding redundancy by default is incurring technical debt (Cunningham, 1992)
-at the moment of generation, before a single line has been reviewed.
+finding is its strongest evidence: an agent that ships a data pipeline when asked
+for a CLI, under controls designed to prevent exactly that, is an agent whose
+output cannot be guaranteed to stay within a declared scope. In the "governance
+box" framing of the Aston–Capgemini Centre's agenda this is a containment
+failure, not a quality nuance. The duplication finding generalises it: an agent
+shipping 9 to 10% scaffolding redundancy by default incurs technical debt
+(Cunningham, 1992) at the moment of generation, before a line has been reviewed.
 
-The deeper conceptual point is that specification fidelity is *categorically*
-different from functional correctness, and that the two can move independently.
-A tool can be perfectly functionally correct, its data pipeline passes every
-test a data pipeline should pass, while being entirely *infidel* to the
-specification, because the specification asked for something else. The
-functional-correctness paradigm (§2.1) is structurally incapable of detecting
-this divergence, because it evaluates the produced artefact against its own
-implied tests rather than against the brief. Specification fidelity therefore is
-not a refinement of functional correctness but an orthogonal axis, and one that
-maps directly onto the governance properties that frameworks such as the NIST AI
-RMF (2023) foreground: an artefact that silently departs from its specification
-is neither *valid* with respect to its requirements nor *accountable* to the
-person who specified them. This is why the dissertation treats fidelity as a
-first-class metric rather than a sub-case of correctness.
+The deeper point is that fidelity is *categorically* different from functional
+correctness, and the two move independently. A tool can be perfectly correct, its
+pipeline passing every test a pipeline should pass, while being entirely
+*infidel* to the specification, because the specification asked for something
+else. The functional paradigm (§2.1) cannot detect that divergence, because it
+evaluates the artefact against its own implied tests rather than against the
+brief. Fidelity is therefore not a refinement of correctness but an orthogonal
+axis, and one mapping directly onto the properties the NIST AI RMF (2023)
+foregrounds: an artefact that silently departs from its specification is neither
+*valid* with respect to its requirements nor *accountable* to whoever set them.
 
-The operational recommendation that follows is concrete: procurement and
-continuous-integration processes for agentic tools should include a *fidelity
-gate*, an automated check that the tool's output maps to the declared
-specification and introduces nothing outside it, sitting alongside, not instead
-of, the functional tests that currently dominate. The instrument's hallucination
-metric is a first implementation of such a gate, and its limitations
-(token-matching rather than structural-shape detection, §4.7, §6.4) define the
-engineering road to a production-grade one. The broader governance claim is
-that, for high-trust enterprise settings, *containment*, the guarantee that a
-tool stays within its declared scope, is a precondition for adoption that
-current evaluation practice simply does not test, and that this dissertation
-shows can be tested.
+The operational recommendation is concrete. Procurement and continuous
+integration for agentic tools should include a *fidelity gate*, an automated
+check that output maps to the declared specification and introduces nothing
+outside it, sitting alongside rather than instead of the functional tests that
+currently dominate. The hallucination metric is a first implementation, and its
+limitations, token matching rather than structural-shape detection (§4.7, §6.4),
+define the engineering road to a production-grade one. The broader claim is that
+in high-trust settings *containment*, the guarantee that a tool stays within its
+declared scope, is a precondition for adoption that current practice does not
+test and that this study shows can be tested.
 
 ## 5.4 Methodological reflection
 
@@ -1505,36 +1527,35 @@ exactly those current evaluation does not measure, and they can be measured.
 
 ## 5.7 Threats to validity
 
-The study's claims are bounded by four classes of threat, each mitigated but not
-eliminated. *Construct validity*: the five metrics operationalise quality and
-governance but do not exhaust them; the security-density and per-function
-complexity constructs are confounded as discussed (§5.2, §5.5), and the
-hallucination construct rests on a token-matching heuristic not yet validated
-against human labels (§4.7). These are mitigated by transparent reporting and by
-triangulating the central finding against direct code inspection, which does not
-depend on any single metric. *Internal validity*: the deterministic-replay
-constraint (Deviation 001) means two conditions contribute no within-cell
-variance and only three effective observations each. This is the study's most
-serious internal-validity limitation, and §4.5 addresses it directly rather than
-by mitigation language: the four-condition omnibus is reported at three levels
-of conservatism, the nominal statistics are explicitly disowned as
-pseudoreplicated, the interaction statistics are withdrawn as undefined on this
-design, and the inferential claims are confined to the two live conditions. What
-remains, the large descriptive gaps and the mechanism established by code
-inspection, is genuine but is labelled as case evidence, and a fully live
-re-capture is required to convert it into inference. *External validity*: three
-specifications across three domains, while broader than the single-task norm, do
-not span the full space of software tasks, and the per-specification
-non-uniformity of Table 4.2 (descriptive, since the interaction statistic is
-undefined on this design) warns against over-generalisation: the appropriate
-inference is task-conditional. *Conclusion validity*: free parameters (the
-shingle window, the α level, the choice of non-parametric tests) were fixed by
-pre-registration before data collection (§3.5), constraining the analytic
-flexibility that would otherwise threaten the reported p-values; the structural
-findings, moreover, rest on absolute gaps that are large relative to within-cell
-variance rather than on marginal significance.
+Four classes of threat bound the claims, each mitigated but not eliminated.
+*Construct validity*: the five metrics operationalise quality and governance
+without exhausting them; security density and per-function complexity are
+confounded as discussed (§5.2, §5.5), and the hallucination construct rests on a
+token-matching heuristic validated for detection but not for magnitude (§4.7).
+These are mitigated by transparent reporting and by triangulating the central
+finding against direct code inspection, which depends on no single metric.
 
----
+*Internal validity*: the replay constraint (Deviation 001) leaves two conditions
+with no within-cell variance and three effective observations each. This is the
+most serious limitation, and §4.5 addresses it rather than mitigating it in
+language: the omnibus is reported at three levels of conservatism, the nominal
+statistics are disowned as pseudoreplicated, the interaction statistics are
+withdrawn as undefined, and inference is confined to the two live conditions.
+What remains, the large descriptive gaps and the mechanism established by
+inspection, is genuine but labelled case evidence; a fully live re-capture would
+be required to convert it into inference.
+
+*External validity*: three specifications across three domains, while broader
+than the single-task norm, do not span the space of software tasks, and the
+per-specification non-uniformity of Table 4.2, descriptive since the interaction
+statistic is undefined here, warns against over-generalisation. The appropriate
+inference is task-conditional.
+
+*Conclusion validity*: free parameters, the shingle window, the α level and the
+choice of non-parametric tests, were fixed by pre-registration before collection
+(§3.5), constraining the analytic flexibility that would otherwise threaten the
+reported p-values. The structural findings rest on absolute gaps large relative
+to within-cell variance rather than on marginal significance.
 
 # Chapter 6: Conclusion
 
