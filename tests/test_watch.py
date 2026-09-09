@@ -124,21 +124,37 @@ def test_scope_drift_needs_a_spec_to_move(project):
 # --------------------------------------------------------------- live loop
 
 def test_watch_loop_emits_an_event_for_a_real_edit(project):
+    """A file written after the watcher starts is reported as a change.
+
+    The timing here is waited on rather than slept through. The original version
+    slept a fixed 0.3s before writing, assuming the watcher had taken its
+    baseline by then, which held on an idle machine and failed under a loaded
+    one: the new file landed inside the first scan and was never a change. The
+    file is now rewritten until an event arrives or the deadline passes, so a
+    live watcher sees at least one of the writes regardless of scheduling.
+    """
     events = []
     stop = threading.Event()
 
     def consume():
-        for event in watch_directory(project, interval=0.1, settle=0.1,
+        for event in watch_directory(project, interval=0.05, settle=0.05,
                                      stop=stop.is_set):
             events.append(event)
             break
 
     worker = threading.Thread(target=consume, daemon=True)
     worker.start()
-    time.sleep(0.3)
-    (project / "late.py").write_text("def g():\n    return 2\n")
-    worker.join(timeout=5)
-    stop.set()
 
-    assert events, "watch produced no event for a new file"
+    target = project / "late.py"
+    deadline = time.monotonic() + 20
+    body = 2
+    while not events and time.monotonic() < deadline:
+        target.write_text(f"def g():\n    return {body}\n")
+        body += 1
+        time.sleep(0.2)
+
+    stop.set()
+    worker.join(timeout=5)
+
+    assert events, "watch produced no event for a new file within 20s"
     assert "late.py" in events[0].changed_files
