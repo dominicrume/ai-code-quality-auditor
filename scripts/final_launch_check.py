@@ -87,7 +87,8 @@ ok(all("Accessed" in p or "Git dates every addition" in p for p in aug),
    f"({len(aug)} mentions)")
 ok("I declare that this dissertation is my own work" in full, "Declaration present")
 ok("Use of generative AI" in full, "AI-use declaration present")
-ok("Matthew Aston" in full, "second rater credited")
+ok("Matthew Brian Tahir" in full, "second rater credited by name")
+ok("with his consent" in full, "consent to be named is recorded")
 
 # ------------------------------------------------------------ document vs data
 section("[3] EVERY HEADLINE FIGURE AGAINST THE DATA")
@@ -149,8 +150,10 @@ ver = re.search(r'^version = "([^"]+)"', (ROOT / "pyproject.toml").read_text(), 
 print(f"        pyproject version: {ver.group(1)}")
 deriver = (ROOT / "auditor/analyzers/manifest_deriver.py").read_text()
 warn("_JS_ROUTE_RE" in deriver, "route detector fix is present in the source")
-warn(False, "the route fix is NOT on PyPI until a release is cut "
-            f"(current pyproject {ver.group(1)})")
+dist = sorted((ROOT / "dist").glob(f"*{ver.group(1)}*"))
+ok(len(dist) == 2, f"sdist and wheel built for {ver.group(1)} ({len(dist)} found)")
+warn(False, f"{ver.group(1)} is built and verified but not yet uploaded; "
+            "users still get the version without the route fix")
 sec = (ROOT / "SECURITY.md").read_text()
 ok("No telemetry" in sec, "SECURITY.md states no telemetry")
 ok(not (ROOT / "auditor/core/telemetry.py").exists(), "telemetry module removed")
