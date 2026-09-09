@@ -123,6 +123,14 @@ w = lambda ls: len(re.findall(r"\S+", "\n".join(ls)))
 print(f"        chapters incl captions: {w(ch)}   excl captions: {w(out)}")
 check(w(out) <= 12000, f"under 12,000 excluding captions ({w(out)})")
 
+print("\n[8b] REPORT CONSISTENCY")
+import subprocess as _sp2
+_r = _sp2.run([".venv/bin/python", "scripts/check_report_consistency.py"],
+              capture_output=True, text=True)
+check(_r.returncode == 0, "every report file agrees with Table 4.1")
+if _r.returncode:
+    print(_r.stdout.strip().splitlines()[-1] if _r.stdout.strip() else "")
+
 print("\n[9] REPO HYGIENE")
 r = subprocess.run(["git", "status", "--porcelain"], capture_output=True, text=True)
 check(not r.stdout.strip(), "working tree clean")
