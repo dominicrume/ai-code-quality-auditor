@@ -321,7 +321,23 @@ def main() -> None:
     title = re.match(r"^#\s+(.*)$", md.splitlines()[0]).group(1)
     short, sub = title.split(":", 1)
 
-    words = 11569
+    # Counted from the source, never typed in. A hardcoded figure here drifted
+    # to 11,569 while the chapters grew to 11,942, and the page went on
+    # announcing the stale number on its own front matter.
+    _lines = md.splitlines()
+    _cut = next(i for i, l in enumerate(_lines)
+                if re.match(r"^#+\s*References", l, re.I))
+    _body = [l for l in _lines[:_cut] if not l.startswith(">")]
+    _ch1 = next(i for i, l in enumerate(_body) if l.startswith("## 1.1"))
+    _keep, _skip = [], False
+    for l in _body[_ch1:]:
+        if l.startswith("**Figure "):
+            _skip = True
+        elif _skip and not l.strip():
+            _skip = False
+        if not _skip and not l.startswith("!["):
+            _keep.append(l)
+    words = len(re.findall(r"\S+", "\n".join(_keep)))
     head = f"""<header class="title">
 <p class="kicker">MSc Artificial Intelligence and Business Strategy · Aston University</p>
 <h1>{html.escape(short)}<br><span style="color:var(--muted);font-weight:400">{html.escape(sub.strip())}</span></h1>
