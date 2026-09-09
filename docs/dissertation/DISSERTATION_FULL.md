@@ -155,9 +155,9 @@ cleaner-looking draft would have been. I thank the Aston–Capgemini Centre of
 Excellence for Enterprise AI for the enterprise framing that gives this
 instrument its purpose beyond the laboratory, and the mentors and industry
 partners whose questions about credibility, differentiation, and evidence
-sharpened every chapter. I thank Matthew Aston, who gave several hours to the
-independent labelling reported in §4.7 and who also installed and ran the
-instrument on his own machine, producing one of the field audits in §4.8. Any
+sharpened every chapter. I thank Matthew Brian Tahir, who gave several hours to
+the independent labelling reported in §4.7, and who installed and ran the
+instrument on his own machine to produce one of the field audits in §4.8. Any
 errors that remain are my own.
 
 ---
@@ -1145,11 +1145,11 @@ evidence that hand-coding is superior.
 ## 4.7 Inter-rater reliability
 
 The hallucination heuristic was validated against human judgement as
-pre-registered. Two raters independently labelled the 30-run hand-label sample, the second
-being Matthew Aston, who had no other involvement in the study,
-deduplicated to 19 distinct codebases (11 of the 30 rows are byte-identical
-replays under Deviation 001, and labelling identical code twice would inflate
-agreement by construction). Neither rater saw `data/reports/main_001.csv`, and
+pre-registered. Two raters independently labelled the 30-run hand-label sample, deduplicated to
+19 distinct codebases (11 of the 30 rows are byte-identical replays under
+Deviation 001, and labelling identical code twice would inflate agreement by
+construction). The second rater was Matthew Brian Tahir, named here with his
+consent, who had no other involvement in the study. Neither rater saw `data/reports/main_001.csv`, and
 neither was told which condition produced which item. One capture contains no
 files and was recorded `SKIP` by both, giving N = 18 scoreable items. Labels are
 compared on the binary contrast, any off-specification feature against none.

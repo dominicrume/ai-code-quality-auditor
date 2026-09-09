@@ -376,11 +376,11 @@ evidence that hand-coding is superior.
 ## 4.7 Inter-rater reliability
 
 The hallucination heuristic was validated against human judgement as
-pre-registered. Two raters independently labelled the 30-run hand-label sample, the second
-being Matthew Aston, who had no other involvement in the study,
-deduplicated to 19 distinct codebases (11 of the 30 rows are byte-identical
-replays under Deviation 001, and labelling identical code twice would inflate
-agreement by construction). Neither rater saw `data/reports/main_001.csv`, and
+pre-registered. Two raters independently labelled the 30-run hand-label sample, deduplicated to
+19 distinct codebases (11 of the 30 rows are byte-identical replays under
+Deviation 001, and labelling identical code twice would inflate agreement by
+construction). The second rater was Matthew Brian Tahir, named here with his
+consent, who had no other involvement in the study. Neither rater saw `data/reports/main_001.csv`, and
 neither was told which condition produced which item. One capture contains no
 files and was recorded `SKIP` by both, giving N = 18 scoreable items. Labels are
 compared on the binary contrast, any off-specification feature against none.
