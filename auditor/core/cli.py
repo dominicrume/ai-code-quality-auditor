@@ -158,7 +158,9 @@ def scan_cmd(path: Path, spec: Path | None, as_json: bool, fail_on: str, decisio
         "spec": result.spec_name,
         "coverage_note": result.coverage_note,
         "metrics": {
-            o.name: ({"value": o.value, "unit": o.unit, "band": o.band, "details": getattr(o, "details", None)}
+            o.name: ({"value": o.value, "unit": o.unit, "band": o.band,
+                      "coverage": o.coverage, "languages": o.languages,
+                      "details": getattr(o, "details", None)}
                      if o.applicable else {"skipped": o.skipped_reason})
             for o in result.outcomes
         },
@@ -176,7 +178,7 @@ def scan_cmd(path: Path, spec: Path | None, as_json: bool, fail_on: str, decisio
         console.print(f"[bold]{result.path}[/bold]")
         console.print(
             f"[dim]{result.file_count} files · {result.total_loc} lines · "
-            f"{result.python_files} Python"
+            f"{result.readable_files} analysable"
             + (f" · spec: {result.spec_name}" if result.spec_name else "")
             + "[/dim]\n"
         )
@@ -189,8 +191,11 @@ def scan_cmd(path: Path, spec: Path | None, as_json: bool, fail_on: str, decisio
         for o in result.outcomes:
             if o.applicable:
                 style = BAND_STYLE[o.band]
+                mark = f"[{style}]{BAND_MARK[o.band]}[/{style}]"
+                if o.caveat:
+                    mark += f"  [dim]{o.caveat}[/dim]"
                 table.add_row(f"[{style}]●[/{style}]", o.label,
-                              f"{o.value:.2f}", f"[{style}]{BAND_MARK[o.band]}[/{style}]")
+                              f"{o.value:.2f}", mark)
             else:
                 table.add_row("[dim]○[/dim]", f"[dim]{o.label}[/dim]",
                               "[dim]n/a[/dim]", f"[dim]{o.skipped_reason}[/dim]")

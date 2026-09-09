@@ -13,6 +13,18 @@ What is counted:
   We count issues whose CWE id is non-null, which is the same OWASP/CWE
   framing used in the original SonarQube contract (see docs/METRICS.md).
 
+Languages:
+  Bandit reads Python and nothing else. On this study's own captures that
+  left the majority of the produced code unscanned and returned 0.00 for a
+  TypeScript-dominated condition, which reads as "secure" and means "not
+  read" (Erratum 001, section 5.2). Version 2 of the metric adds a curated,
+  CWE-tagged JavaScript and TypeScript ruleset, and every reading now
+  declares the share of source it could evaluate.
+
+  Version 1 is retained so the study's published figures remain
+  reproducible: `analyze(..., version=1)` is Python-only and returns exactly
+  what data/reports/main_001.csv records.
+
 Output: per 1,000 LOC density (preserves the unit used in METRICS.md).
 """
 from __future__ import annotations
@@ -22,7 +34,12 @@ import subprocess
 import tempfile
 from pathlib import Path
 
+from auditor.analyzers import js_security, languages
 from auditor.models.audit_result import MetricScore
+
+# 1 = Python only, the analyser the published study ran with.
+# 2 = adds JavaScript and TypeScript. Default for new audits.
+DEFAULT_VERSION = 2
 
 
 def _write_codebase(codebase: dict, dest: Path) -> int:
@@ -87,12 +104,40 @@ def _counts(issues: list[dict], scan_dir: Path) -> list[dict]:
     return kept
 
 
-def analyze(codebase: dict, interaction_log: list[dict], spec: dict) -> MetricScore:
+def _scan_javascript(files: dict[str, str]) -> tuple[list[dict], int]:
+    """Findings and lines read across the JS/TS files, test files excluded."""
+    findings, loc = [], 0
+    for path, content in files.items():
+        if not languages.in_languages(path, languages.TYPESCRIPT):
+            continue
+        if _is_test_file(path):
+            continue
+        loc += len(content.splitlines())
+        findings += js_security.scan(path, content)
+    return findings, loc
+
+
+def analyze(codebase: dict, interaction_log: list[dict], spec: dict,
+            version: int = DEFAULT_VERSION) -> MetricScore:
+    files = codebase.get("files", {})
     with tempfile.TemporaryDirectory() as tmp:
         scan_dir = Path(tmp) / "code"
         scan_dir.mkdir()
-        loc = _write_codebase(codebase, scan_dir) or 1
-        issues = _run_bandit(scan_dir)
-        cwe_tagged = _counts(issues, scan_dir)
-    density = (len(cwe_tagged) / loc) * 1000
-    return MetricScore(name="security_density", value=density, unit="per_kloc")
+        py_loc = _write_codebase(codebase, scan_dir)
+        issues = _counts(_run_bandit(scan_dir), scan_dir)
+
+    js_issues, js_loc = ([], 0) if version < 2 else _scan_javascript(files)
+    suffixes = languages.PYTHON if version < 2 else (
+        languages.PYTHON + languages.TYPESCRIPT)
+    _, total = languages.line_counts(files, suffixes)
+
+    scanned = py_loc + js_loc
+    density = (len(issues) + len(js_issues)) / max(scanned, 1) * 1000
+    return MetricScore(
+        name="security_density",
+        value=density,
+        unit="per_kloc",
+        scanned_lines=scanned,
+        total_lines=total,
+        languages=languages.present(files),
+    )

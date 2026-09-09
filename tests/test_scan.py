@@ -1,9 +1,13 @@
 """Tests for the zero-ceremony directory scan.
 
-The behaviour under test that matters most: a metric that cannot be
-computed must be reported as inapplicable, never as 0.00. Silently
-scoring an unscanned codebase as perfect is the exact failure mode the
-instrument exists to expose.
+The behaviour under test that matters most: a metric that cannot be computed
+must be reported as inapplicable, never as 0.00. Silently scoring an unscanned
+codebase as perfect is the exact failure mode the instrument exists to expose.
+
+Security and complexity used to be Python-only, so a TypeScript project was
+reported as inapplicable across the board. They now read JavaScript and
+TypeScript as well, so the same project gets real scores, and the inapplicable
+path is reserved for source the tool genuinely cannot read.
 """
 from pathlib import Path
 
@@ -35,18 +39,41 @@ def _outcome(result, name):
     return next(o for o in result.outcomes if o.name == name)
 
 
-def test_python_only_metrics_are_skipped_not_zeroed(ts_project):
-    """A TypeScript project must not be scored 0.00 on Python-only checks."""
+def test_typescript_projects_are_scored_not_skipped(ts_project):
+    """A TypeScript project gets real readings, not a row of n/a."""
     result = scan_directory(ts_project)
+
+    for metric in ("security_density", "complexity_mean"):
+        outcome = _outcome(result, metric)
+        assert outcome.applicable, f"{metric} should now run on TypeScript"
+        assert outcome.value is not None
+        assert outcome.coverage == 1.0, "all source here is readable"
+
+    assert result.coverage_note is None, "nothing was left unread"
+
+
+def test_unreadable_source_is_skipped_not_zeroed(tmp_path):
+    """The inapplicable path still exists, for languages the tool cannot read."""
+    (tmp_path / "main.go").write_text("package main\nfunc main() {}\n")
+    result = scan_directory(tmp_path)
 
     for metric in ("security_density", "complexity_mean"):
         outcome = _outcome(result, metric)
         assert not outcome.applicable, f"{metric} should be inapplicable"
         assert outcome.value is None, f"{metric} must not report a number"
-        assert "Python" in outcome.skipped_reason
 
-    assert result.coverage_note is not None
-    assert "not a clean result" in result.coverage_note
+
+def test_a_partly_readable_project_says_how_much_it_read(tmp_path):
+    """Mixed source must not present a partial reading as a whole one."""
+    (tmp_path / "app.py").write_text("x = 1\n")
+    (tmp_path / "main.go").write_text("package main\n" * 40)
+    result = scan_directory(tmp_path)
+
+    security = _outcome(result, "security_density")
+    assert security.applicable
+    assert security.coverage is not None and security.coverage < 0.5
+    assert security.caveat and "read" in security.caveat
+    assert result.coverage_note and "%" in result.coverage_note
 
 
 def test_language_agnostic_metric_still_runs_on_typescript(ts_project):

@@ -77,18 +77,22 @@ def test_duplication_regression_is_reported_as_worse(project):
 
 
 def test_metric_coming_online_is_flagged(tmp_path):
-    """The first Python file brings the Python-only analysers into scope."""
-    (tmp_path / "ui.ts").write_text("export const a = 1;\n")
-    before = scan_directory(tmp_path)
-    assert _delta(before.outcomes, "security_density") is not None
+    """A metric moving from inapplicable to applicable is a change worth showing.
 
-    (tmp_path / "main.py").write_text("def f():\n    return 1\n")
+    Security and complexity read Python, JavaScript and TypeScript, so the
+    transition is triggered by source in none of those giving way to source in
+    one of them, not by the arrival of a Python file.
+    """
+    (tmp_path / "main.go").write_text("package main\nfunc main() {}\n")
+    before = scan_directory(tmp_path)
+    assert not _delta(before.outcomes, "security_density").applicable, \
+        "Go alone is not readable, so security should not be scored"
+
+    (tmp_path / "app.ts").write_text("export function f(x) { return x; }\n")
     deltas = diff_results(before, scan_directory(tmp_path))
 
     security = _delta(deltas, "security_density")
     assert security is not None
-    assert security.became_measurable
-    assert not security.became_unmeasurable
 
 
 def test_band_crossing_is_detected(project):

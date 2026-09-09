@@ -3,8 +3,14 @@
 Each metric lives in its own analyzer file. This document is the contract.
 
 ## 1. Security vulnerability density
-- **Definition:** count of CWE-tagged Bandit findings normalised per 1000
-  lines of Python. This is a **per-language density** (Bandit scans Python
+- **Languages (v2, from 0.4.1):** Python via Bandit, plus JavaScript and
+  TypeScript via a curated CWE-tagged ruleset (`auditor/analyzers/js_security.py`).
+  Every reading reports `coverage`, the share of source it could evaluate, so a
+  density over part of a project is not mistaken for a verdict on all of it.
+  Version 1 (Python only) is retained and reproduces the published study
+  exactly: `analyze(..., version=1)`.
+- **Definition:** count of CWE-tagged findings normalised per 1000
+  lines of scanned source. This is a **per-language density** (v1 scans Python
   only), and it is **severity-unweighted** — every finding contributes 1
   regardless of severity, because severity weighting would conflate the
   independent variable with the dependent variable. It is not a
@@ -36,8 +42,11 @@ Each metric lives in its own analyzer file. This document is the contract.
   the unweighted **mean** across all functions in the codebase. Reports
   `complexity_mean` as the headline metric (used by the experiment CSV);
   the per-function detail is preserved alongside in the raw artefacts.
-- **Tool:** `radon.complexity.cc_visit` — AST-based, language-aware. Only
-  Python (`.py`) files are scored in the MSc scope; other languages are
+- **Tool:** `radon.complexity.cc_visit` for Python, AST-based; JavaScript and
+  TypeScript are scored from version 2 by `auditor/analyzers/js_complexity.py`,
+  a lexical decision-point counter that strips strings and comments first and
+  tracks brace depth so nested functions are scored separately. Version 1 scores
+  Python (`.py`) only, as the MSc study did; other languages are
   skipped and logged. This is documented as a scope limitation.
 - **Aggregation:** if a codebase has zero scorable functions the metric is
   reported as 0.0 with `unit="cc"`. A file that fails to parse is logged
