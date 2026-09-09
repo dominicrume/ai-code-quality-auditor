@@ -42,13 +42,18 @@ for cond, want in [("claude_code", "0.00"), ("cursor_agent", "0.17"),
                    ("replit_agent", "1.33"), ("antigravity", "0.33")]:
     m = mean("hallucinations", cond)
     check(f"{m:.2f}" == want, f"Table 4.1 hallucinations {cond} = {want} (data: {m:.2f})")
-sec = list(csv.DictReader(open(ROOT / "data/reports/security_density_corrected.csv")))
+# Security is checked against main_001.csv itself, not against the corrections
+# file. Checking the corrections file passed while main_001.csv still held the
+# pre-erratum values, which put Figures 4.1 and 4.2 in contradiction with
+# Table 4.1 on the same page.
 for cond, want in [("claude_code", "9.65"), ("cursor_agent", "5.93"),
                    ("replit_agent", "0.00"), ("antigravity", "1.47")]:
-    v = [float(r["security_density_corrected"]) for r in sec if r["condition"] == cond]
-    m = sum(v) / len(v)
-    check(f"{m:.2f}" == want, f"Table 4.1 security {cond} = {want} (data: {m:.2f})")
+    m = mean("security_density", cond)
+    check(f"{m:.2f}" == want,
+          f"Table 4.1 security {cond} = {want} (main_001.csv: {m:.2f})")
     check(f"| {want} |" in s or f"({want})" in s, f"  {want} appears in the document")
+check(not any("notebooks/" in r for r in refs),
+      "no figure is sourced from the analysis notebook")
 
 print("\n[4] NO STALE CLAIMS")
 stale = {

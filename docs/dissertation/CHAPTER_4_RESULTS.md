@@ -37,18 +37,22 @@ N = 30 per condition (10 replications × 3 specifications).
 | Security density (per kLOC) | 9.65 | 5.93 | 0.00 | 1.47 |
 | Keystroke correction (per 1k) | 0.00 | 0.00 | 0.00 | 0.00 |
 
-![Forest plot of per-condition means](../../notebooks/forest_plots.png)
+![Per-condition means with bootstrap confidence intervals](figures/fig_4_1_condition_means.png)
 
-**Figure 4.1** Forest plot of per-condition means with bootstrap 95% confidence
-intervals (10,000 replicates), by metric. The intervals for `replit_agent` and
-`antigravity` are degenerate by construction: those conditions contribute one
-captured session per specification (Deviation 001, analysed in §4.5).
+**Figure 4.1** Per-condition means with bootstrap 95% confidence intervals
+(10,000 replicates). Keystroke correction is omitted because it is structurally
+zero for every agentic condition. The intervals for `replit_agent` and
+`antigravity` collapse to a point by construction: those conditions contribute
+one captured session per specification (Deviation 001, analysed in §4.5).
 
-![Violin plots of per-condition distributions](../../notebooks/violin_plots.png)
+![Distribution of every run, by condition and metric](figures/fig_4_2_distribution.png)
 
-**Figure 4.2** Violin plots of the distribution shape for each
-(condition × metric) pair. The collapsed distributions for the two IDE-bound
-conditions are the visual signature of the replay design.
+**Figure 4.2** Every run plotted, by condition and metric, with the condition
+mean marked. Open points are the two IDE-bound conditions, whose ten runs per
+cell are replays of one captured session (Deviation 001); filled points are
+independently captured. The visual difference between a column of independent
+measurements and a column of copies is the clearest statement of what the
+design does and does not support.
 
 The table already reveals the study's central structural result: there is no
 single column that is best on every row. Of the five metrics, three produce a
