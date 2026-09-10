@@ -1,5 +1,5 @@
 > **Generated file — do not edit.**
-> Extracted from `DISSERTATION_FULL.md` on 2026-09-09 by
+> Extracted from `DISSERTATION_FULL.md` on 2026-09-10 by
 > `scripts/split_chapters.py`. Edit the master and re-run; any change made
 > here is overwritten. The master is the submission artefact.
 
