@@ -473,20 +473,34 @@
         const visible = CONDITIONS.filter(c => activeConditions.has(c));
         const values = currentView === 'normalized' ? NORM : PIVOT;
         const colors = visible.map(c => colorFor(c));
+        const ys = visible.map(c => values[m][c]);
+
+        // Plotly's automatic range stops at the tallest bar, which leaves the
+        // outside value label wedged against the top of the plot with nowhere
+        // to sit. Reserve a fifth of the range above the tallest bar so the
+        // label has room and the column reads as finished rather than clipped.
+        const peak = Math.max(0, ...ys);
+        const headroom = peak > 0 ? peak * 1.2 : 1;
+
         Plotly.newPlot('bar-' + m, [{
           type: 'bar',
           x: visible,
-          y: visible.map(c => values[m][c]),
+          y: ys,
           marker: { color: colors, line: { width: 0 } },
-          text: visible.map(c => values[m][c].toFixed(2)),
+          text: ys.map(v => v.toFixed(2)),
           textposition: 'outside',
+          cliponaxis: false,
           textfont: { color: '#e6e8ef' },
           hovertemplate: '<b>%{x}</b><br>' + m + ': %{y:.3f} ' + (UNITS[m] || '') + '<extra></extra>'
         }], {
           ...PLOT_LAYOUT_BASE,
-          margin: { t: 30, l: 56, r: 24, b: 70 },
+          margin: { t: 44, l: 56, r: 24, b: 70 },
           xaxis: { ...PLOT_LAYOUT_BASE.xaxis, tickangle: -25 },
-          yaxis: { ...PLOT_LAYOUT_BASE.yaxis, title: { text: UNITS[m] || '', font: { color: '#8b91a4', size: 11 } } },
+          yaxis: {
+            ...PLOT_LAYOUT_BASE.yaxis,
+            range: [0, headroom],
+            title: { text: UNITS[m] || '', font: { color: '#8b91a4', size: 11 } },
+          },
         }, PLOT_CFG);
       });
     }
