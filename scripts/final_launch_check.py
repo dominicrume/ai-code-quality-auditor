@@ -21,7 +21,7 @@ import pandas as pd
 from docx import Document
 
 ROOT = Path(__file__).resolve().parent.parent
-DOCX = ROOT / "build" / "Dissertation_Uririe_Orume_Dominic.docx"
+DOCX = ROOT / "build" / "Dissertation_FINAL_Uririe_Orume_Dominic.docx"
 MD = ROOT / "docs/dissertation/DISSERTATION_FULL.md"
 
 fails, warns = [], []

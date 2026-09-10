@@ -28,7 +28,10 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "docs/dissertation/DISSERTATION_FULL.md"
 BASE = SRC.parent
-OUT = ROOT / "build" / "Dissertation_Uririe_Orume_Dominic.docx"
+# Deliberately not the name a stale copy already occupies in the author's
+# Downloads folder. Three separate reviews were carried out against that
+# day-old file because the two were indistinguishable by name.
+OUT = ROOT / "build" / "Dissertation_FINAL_Uririe_Orume_Dominic.docx"
 
 INK = RGBColor(0x1A, 0x1F, 0x1D)
 ACCENT = RGBColor(0x0F, 0x51, 0x4B)
