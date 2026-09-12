@@ -20,7 +20,6 @@ from pathlib import Path
 from flask import Flask, abort, jsonify, render_template
 
 from auditor.core.calibration import BANDS
-from auditor.remediation.engine import remediate
 
 import os
 
@@ -407,13 +406,6 @@ def api_scan():
     })
 
 
-@app.route("/api/remediate", methods=["POST"])
-def api_remediate():
-    """Trigger the remediation engine."""
-    results = remediate(apply=True)
-    return jsonify({"status": "success", "results": results})
-
-
 @app.route("/api/drift/acknowledge", methods=["POST"])
 def api_drift_acknowledge():
     """Dynamically add the feature to .auditor/spec.yaml"""
@@ -441,24 +433,6 @@ def api_drift_acknowledge():
         spec_path.write_text(yaml.dump(spec, sort_keys=False))
 
     return jsonify({"status": "success", "message": f"Acknowledged {item}"})
-
-
-@app.route("/api/drift/strip", methods=["POST"])
-def api_drift_strip():
-    """Strip the endpoint out of the codebase using the AST parser"""
-    from flask import request
-    from auditor.remediation.ast_stripper import strip_hallucinated_endpoint
-    
-    data = request.get_json() or {}
-    item = data.get("item")
-    if not item:
-        return jsonify({"status": "error", "message": "No item provided"}), 400
-
-    success = strip_hallucinated_endpoint(ROOT, item)
-    if success:
-        return jsonify({"status": "success", "message": f"Stripped {item}"})
-    else:
-        return jsonify({"status": "error", "message": f"Could not find or strip {item}"}), 404
 
 
 if __name__ == "__main__":
