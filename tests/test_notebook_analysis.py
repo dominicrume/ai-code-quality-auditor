@@ -8,8 +8,9 @@ import json
 import random
 from pathlib import Path
 
-import pandas as pd
 import pytest
+
+pd = pytest.importorskip("pandas", reason="notebook extras not installed")
 
 NB = Path(__file__).parent.parent / "notebooks" / "analysis.ipynb"
 

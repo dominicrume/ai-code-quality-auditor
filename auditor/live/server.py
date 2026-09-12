@@ -218,7 +218,11 @@ def create_app(session: LiveSession) -> Flask:
     @app.post("/api/remediate")
     def api_remediate():
         """Trigger the remediation engine."""
-        from auditor.remediation.engine import remediate
+        try:
+            from auditor.remediation.engine import remediate
+        except ImportError:
+            return jsonify({"status": "error",
+                            "message": "Remediation is not available in this build."}), 501
         results = remediate(session.project, apply=True)
         # We don't need to manually update session.latest because the watch loop 
         # will naturally pick up the file changes and broadcast them.
@@ -245,7 +249,11 @@ def create_app(session: LiveSession) -> Flask:
         data = request.get_json() or {}
         item = data.get("item")
         if not item: return jsonify({"status": "error", "message": "No item"}), 400
-        from auditor.remediation.ast_stripper import strip_hallucinated_endpoint
+        try:
+            from auditor.remediation.ast_stripper import strip_hallucinated_endpoint
+        except ImportError:
+            return jsonify({"status": "error",
+                            "message": "Remediation is not available in this build."}), 501
         success = strip_hallucinated_endpoint(session.project, item)
         if success: return jsonify({"status": "success", "message": f"Stripped {item}"})
         return jsonify({"status": "error", "message": f"Could not find or strip {item}"}), 404

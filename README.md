@@ -3,6 +3,7 @@
 [![CI](https://github.com/dominicrume/NEW-enterprise-ai-code-quality-auditor/actions/workflows/ci.yml/badge.svg)](https://github.com/dominicrume/NEW-enterprise-ai-code-quality-auditor/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/ai-code-quality-auditor.svg)](https://pypi.org/project/ai-code-quality-auditor/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Downloads](https://static.pepy.tech/badge/ai-code-quality-auditor)](https://pepy.tech/projects/ai-code-quality-auditor)
 [![Live dashboard](https://img.shields.io/badge/live-dashboard-purple)](https://auditor-dashboard-rume.fly.dev/report/main_001_plus_human)
 
 > An empirical Safety Harness for agentic AI coding systems.
