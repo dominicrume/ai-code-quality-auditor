@@ -88,17 +88,22 @@ Run on this repository's own source, on 12 September 2026:
 
 ```
 $ auditor scan auditor
-43 files · 3,711 lines · 43 analysable
+44 files · 3,971 lines · 44 analysable
 
-  Security     3.50 per kLOC   OK
-  Complexity   3.87 cc         WARN
-  Duplication  10.24 %         RISK
+  Security     3.27 per kLOC   OK
+  Complexity   3.94 cc         WARN
+  Duplication  9.54 %          WARN
 ```
 
-**We publish the RISK rather than tuning it away**, because an instrument that hides its
-own findings cannot be trusted with anyone else's. Locating the 10.24% took one pass: it
-is dominated by 24 shingles shared across the four vendor adapters, plus 10 shared
-between `dashboard/app.py` and `live/server.py`.
+These figures move as the code does — adding the shape detector took duplication
+from 10.24% (RISK) to 9.54% (WARN) simply by adding lines that are not duplicated.
+A self-audit is a reading taken at a commit, not a badge; re-run it rather than
+trusting a number in a README.
+
+**We publish the warning rather than tuning it away**, because an instrument that hides
+its own findings cannot be trusted with anyone else's. Locating the duplication took one
+pass: it is dominated by 24 shingles shared across the four vendor adapters, plus 10
+shared between `dashboard/app.py` and `live/server.py`.
 
 Those two findings get opposite verdicts, and saying so is the point:
 
