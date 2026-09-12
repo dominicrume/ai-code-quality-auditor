@@ -41,21 +41,45 @@ PhD extension at the Aston-Capgemini Centre of Excellence for Enterprise AI.
 
 ## What it does
 Given a fixed specification (the "spec box"), the Auditor:
-1. Runs five experimental conditions against the same task (human control,
-   visualisation→Claude→Replit, Cursor IDE, autonomous agent).
-2. Captures every output and every interaction event.
-3. Scores each result on five empirical metrics: security vulnerability
-   density, cyclomatic complexity, code duplication, hallucination frequency
-   (features outside spec), and keystroke dynamics (correction frequency).
-4. Emits CSV/JSON reports for statistical comparison.
+1. Runs five workflow conditions against the same brief — a hand-coded
+   `human_control` baseline plus four commercial agentic tools: `claude_code`,
+   `cursor_agent`, `replit_agent` and `antigravity`.
+2. Captures every produced file and every interaction event through one capture
+   contract, so a human's keystrokes and an agent's tool-calls become comparable.
+3. Scores each result on five metrics: security-vulnerability density, cyclomatic
+   complexity, code duplication, specification-hallucination count (scope drift),
+   and keystroke-correction frequency.
+4. Emits CSV/JSON for statistical comparison.
+
+The analysers never see which condition produced the code they are scoring —
+the comparison is blinded by interface design, not by discipline.
 
 ## Quick start
+Audit any folder you already have, in one command:
+
 ```bash
-cp .env.example .env
-pip install -e .
-auditor run --spec specs/agent_education_system.yaml --workflow human_control
-auditor report --out data/reports/
+pip install ai-code-quality-auditor
+auditor scan .                                # the four spec-free metrics
+auditor scan . --spec spec.yaml               # adds the scope-drift check
+auditor scan . --fail-on critical             # gate a CI pipeline
+auditor live .                                # watch a folder on a dashboard
 ```
+
+Reproduce the study instead:
+
+```bash
+pip install -e ".[all]"
+auditor experiment --reps 10 --run-label main_001     # full pre-registered design
+auditor run --spec specs/agent_education_system.yaml \
+            --workflow human_control --run-id main_001   # one condition, as JSON
+python scripts/compute_kappa.py --pre-erratum002      # the κ figures of record
+```
+
+`compute_kappa.py --pre-erratum002` returns **0.870 / 0.853 / 0.727** — the
+inter-rater agreement figures reported in the dissertation, computed against the
+instrument as it stood when the raters labelled. Running it without the flag
+returns the post-repair values, which are circular and are not the result; see
+`docs/KAPPA_RESULTS_001.md`.
 
 ## Case study: the instrument audits its own maker
 
@@ -98,6 +122,13 @@ The same pass over three neighbouring codebases, for calibration:
 scanner reads Python. The dissertation documents this caveat, and the honest reading is
 "per-language vulnerability density", never "zero vulnerabilities". Reporting that
 plainly is the same discipline as publishing our own RISK.
+
+**Scope note.** The figures above score `auditor/` — the instrument's own source. The
+dissertation's §4.8 field audit scores the *whole repository* (141 files, 13,136 lines,
+including scripts, tests and tooling) and reports 3.14 security, 3.58 complexity, 4.01%
+duplication and 12 scope drift. Neither figure is wrong; they answer different questions,
+and a metric that did not move when you changed what you pointed it at would be useless.
+Always state the scanned path alongside the number.
 
 ## Read in this order
 1. `docs/ARCHITECTURE.md` — how the pieces fit
