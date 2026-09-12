@@ -30,6 +30,8 @@ from __future__ import annotations
 
 import re
 
+from auditor.analyzers.shape_detector import classify_surface, shape_mismatch
+
 
 # Web routes, Python decorator form: @app.get("/path"), @router.post("/path").
 _ROUTE_RE = re.compile(r"""@\w+\.(?:get|post|put|delete|patch)\(\s*["']([^"']+)["']""")
@@ -125,7 +127,21 @@ def derive(spec: dict, codebase: dict) -> dict:
             "implemented": [feature_id, ...],
             "hallucinated_endpoints": [route, ...],
             "hallucinated_commands": [cli_command, ...],
+            "shape": {...},      # see shape_detector.shape_mismatch
+            "surface": {...},    # see shape_detector.classify_surface
         }
+
+    The ``shape`` and ``surface`` keys are additive. They are **not** folded
+    into the hallucination count, because doing so would change figures already
+    published in the dissertation and that is a decision to take deliberately,
+    with an erratum, rather than as a side effect of adding a detector.
+
+    Why they are worth having anyway: the hallucination count answers "what
+    extra did it ship?" and is therefore blind to substitution. In run_001,
+    ``antigravity`` given ``internal_tool_cli`` shipped ``pipeline.py`` and
+    ``scheduler.py`` with no subcommands at all, and scored 0.00 — the same
+    score as the two conditions that built the CLI correctly — because it added
+    nothing. It replaced. ``shape["mismatch"]`` is what separates those cases.
     """
     blob = "\n".join(codebase.get("files", {}).values())
     spec_features = [f["id"] for f in spec.get("features", [])]
@@ -147,4 +163,6 @@ def derive(spec: dict, codebase: dict) -> dict:
         "implemented": implemented,
         "hallucinated_endpoints": hallucinated_endpoints,
         "hallucinated_commands": hallucinated_commands,
+        "shape": shape_mismatch(spec, codebase),
+        "surface": classify_surface(codebase),
     }

@@ -34,11 +34,18 @@ def test_flags_off_spec_endpoint_as_hallucinated():
 
 
 def test_empty_codebase_yields_nothing():
-    assert derive(SPEC, {"files": {}}) == {
+    out = derive(SPEC, {"files": {}})
+    # The three published keys are asserted exactly; `shape` and `surface` are
+    # additive and asserted separately, so adding a signal never silently
+    # changes what the hallucination metric reports.
+    assert {k: out[k] for k in ("implemented", "hallucinated_endpoints", "hallucinated_commands")} == {
         "implemented": [],
         "hallucinated_endpoints": [],
         "hallucinated_commands": [],
     }
+    assert out["shape"]["built_shape"] == "unknown"
+    assert out["shape"]["mismatch"] is False
+    assert out["surface"] == {"capability": [], "scaffolding": []}
 
 
 def test_detects_argparse_subcommands():
