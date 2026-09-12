@@ -57,6 +57,48 @@ auditor run --spec specs/agent_education_system.yaml --workflow human_control
 auditor report --out data/reports/
 ```
 
+## Case study: the instrument audits its own maker
+
+The fastest way to judge a measuring instrument is to point it at the person holding it.
+Run on this repository's own source, on 12 September 2026:
+
+```
+$ auditor scan auditor
+43 files · 3,711 lines · 43 analysable
+
+  Security     3.50 per kLOC   OK
+  Complexity   3.87 cc         WARN
+  Duplication  10.24 %         RISK
+```
+
+**We publish the RISK rather than tuning it away**, because an instrument that hides its
+own findings cannot be trusted with anyone else's. Locating the 10.24% took one pass: it
+is dominated by 24 shingles shared across the four vendor adapters, plus 10 shared
+between `dashboard/app.py` and `live/server.py`.
+
+Those two findings get opposite verdicts, and saying so is the point:
+
+- **Accepted.** The adapters are deliberately thin files of one shape — one per vendor,
+  each translating native output into the capture contract. Their similarity *is* the
+  architecture (see Principles below). Collapsing them into a clever abstraction would
+  buy a better duplication score and a worse codebase.
+- **Scheduled.** The dashboard/live overlap is genuine drift between two servers that
+  grew apart, and it is queued for a shared core.
+
+The same pass over three neighbouring codebases, for calibration:
+
+| Codebase | Files / lines | Security (per kLOC) | Complexity | Duplication |
+|---|---|---|---|---|
+| this repo (`auditor/`) | 43 / 3,711 | 3.50 OK | 3.87 WARN | 10.24% RISK |
+| a Next.js app (`app/`) | 20 / 2,372 | 1.69 OK | 4.16 WARN | 2.11% OK |
+| its components | 54 / 4,913 | 0.81 OK | 3.25 WARN | 5.57% WARN |
+| a Node agent pipeline | 47 / 5,531 | 0.00\* OK | 4.02 WARN | 6.45% WARN |
+
+\* A per-language artifact, not a security win: the codebase is JavaScript and the
+scanner reads Python. The dissertation documents this caveat, and the honest reading is
+"per-language vulnerability density", never "zero vulnerabilities". Reporting that
+plainly is the same discipline as publishing our own RISK.
+
 ## Read in this order
 1. `docs/ARCHITECTURE.md` — how the pieces fit
 2. `docs/METHODOLOGY.md` — how an experiment is run
