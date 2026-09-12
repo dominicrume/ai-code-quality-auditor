@@ -8,8 +8,8 @@ import sys
 import tempfile
 from pathlib import Path
 
-sys.path.insert(0, "/Users/dominicorumeuririe/Downloads/NEW-enterprise-ai-code-quality-auditor")
-ROOT = Path("/Users/dominicorumeuririe/Downloads/NEW-enterprise-ai-code-quality-auditor")
+sys.path.insert(0, "/Users/dominicorumeuririe/Downloads/ai-code-quality-auditor")
+ROOT = Path("/Users/dominicorumeuririe/Downloads/ai-code-quality-auditor")
 
 import yaml
 from auditor.analyzers import (

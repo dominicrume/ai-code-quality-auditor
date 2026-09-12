@@ -44,10 +44,10 @@ all = ["pytest>=8.0", "pandas>=2.0", "scipy>=1.10", "matplotlib>=3.7",
        "flask>=3.0", "pynput>=1.7"]
 
 [project.urls]
-Homepage      = "https://github.com/dominicrume/NEW-enterprise-ai-code-quality-auditor"
-Repository    = "https://github.com/dominicrume/NEW-enterprise-ai-code-quality-auditor"
-Issues        = "https://github.com/dominicrume/NEW-enterprise-ai-code-quality-auditor/issues"
-Documentation = "https://github.com/dominicrume/NEW-enterprise-ai-code-quality-auditor/tree/main/docs"
+Homepage      = "https://github.com/dominicrume/ai-code-quality-auditor"
+Repository    = "https://github.com/dominicrume/ai-code-quality-auditor"
+Issues        = "https://github.com/dominicrume/ai-code-quality-auditor/issues"
+Documentation = "https://github.com/dominicrume/ai-code-quality-auditor/tree/main/docs"
 
 [project.scripts]
 auditor = "auditor.core.cli:main"

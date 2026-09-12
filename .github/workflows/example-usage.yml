@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dominicrume/NEW-enterprise-ai-code-quality-auditor@main
+      - uses: dominicrume/ai-code-quality-auditor@main
         with:
           run-id: ${{ github.run_id }}
           spec: specs/agent_education_system.yaml

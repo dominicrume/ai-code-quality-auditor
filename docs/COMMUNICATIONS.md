@@ -53,7 +53,7 @@ finalising.
 2. `CHAPTER_4_RESULTS.md` — the Results chapter with the full statistical
    analysis and the human-baseline section.
 (The full repository is on GitHub:
-https://github.com/dominicrume/NEW-enterprise-ai-code-quality-auditor)
+https://github.com/dominicrume/ai-code-quality-auditor)
 
 **Two points I'd value your steer on:**
 1. The human baseline was executed as N = 1 per spec (not the pre-registered

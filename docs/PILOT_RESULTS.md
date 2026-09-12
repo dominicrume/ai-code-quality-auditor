@@ -189,8 +189,8 @@ Three caveats your supervisors will (correctly) raise, addressed here:
 
 ```bash
 # 1. Install
-git clone https://github.com/dominicrume/NEW-enterprise-ai-code-quality-auditor
-cd NEW-enterprise-ai-code-quality-auditor
+git clone https://github.com/dominicrume/ai-code-quality-auditor
+cd ai-code-quality-auditor
 pip install -e ".[dashboard]" bandit python-dotenv pynput
 
 # 2. Human baseline (you need to type in VS Code)
@@ -218,7 +218,7 @@ PYTHONPATH=. python -m auditor.dashboard.app
 
 ## 7. Artefacts
 
-- **Code:** https://github.com/dominicrume/NEW-enterprise-ai-code-quality-auditor
+- **Code:** https://github.com/dominicrume/ai-code-quality-auditor
 - **CSV:** [data/reports/run_002_comparison.csv](../data/reports/run_002_comparison.csv)
 - **Provenance:** [data/reports/run_002_comparison.provenance.json](../data/reports/run_002_comparison.provenance.json)
 - **Dashboard screenshots:**

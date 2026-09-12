@@ -1,6 +1,6 @@
 # AI Code Quality Auditor — the Referee Tool
 
-[![CI](https://github.com/dominicrume/NEW-enterprise-ai-code-quality-auditor/actions/workflows/ci.yml/badge.svg)](https://github.com/dominicrume/NEW-enterprise-ai-code-quality-auditor/actions/workflows/ci.yml)
+[![CI](https://github.com/dominicrume/ai-code-quality-auditor/actions/workflows/ci.yml/badge.svg)](https://github.com/dominicrume/ai-code-quality-auditor/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/ai-code-quality-auditor.svg)](https://pypi.org/project/ai-code-quality-auditor/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Downloads](https://static.pepy.tech/badge/ai-code-quality-auditor)](https://pepy.tech/projects/ai-code-quality-auditor)
@@ -23,7 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dominicrume/NEW-enterprise-ai-code-quality-auditor@main
+      - uses: dominicrume/ai-code-quality-auditor@main
         with:
           run-id: ${{ github.run_id }}
           conditions: claude_code,cursor_agent

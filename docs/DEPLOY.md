@@ -21,7 +21,7 @@ Verify with `pipx install ai-code-quality-auditor && auditor --help`.
 To cut a new release later: bump `version =` in `pyproject.toml`, then
 `rm -rf dist build && python -m build && twine upload dist/*`.
 
-## 2. GitHub Action — `dominicrume/NEW-enterprise-ai-code-quality-auditor@v1`
+## 2. GitHub Action — `dominicrume/ai-code-quality-auditor@v1`
 
 The repo root already contains `action.yml`, so the repo itself is the
 action. After the next `git push`:
@@ -39,7 +39,7 @@ git push origin v1
 A third party then drops these six lines into their own workflow:
 
 ```yaml
-- uses: dominicrume/NEW-enterprise-ai-code-quality-auditor@v1
+- uses: dominicrume/ai-code-quality-auditor@v1
   with:
     run-id: ${{ github.run_id }}
     spec: specs/agent_education_system.yaml
