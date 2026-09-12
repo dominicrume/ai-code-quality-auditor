@@ -32,10 +32,11 @@ jobs:
 **📊 Live dashboard:** https://auditor-dashboard-rume.fly.dev/report/main_001_plus_human
 
 This is the experimental instrument for the MSc dissertation
-**"AI-Assisted Coding Assessment Tool: Evaluating LLM Performance, Governance,
-and Security in an Agent Education System"** (Aston University, MSc AI &
-Business Strategy). The same instrument is the working prototype for the
-PhD extension at the Aston-Capgemini Centre of Excellence for Enterprise AI.
+**"Measuring the Unmeasured: An Empirical Instrument for Auditing the
+Code-Quality and Governance Behaviour of Agentic AI Coding Workflows"**
+(Aston University, MSc AI & Business Strategy, September 2026). The same
+instrument is the working prototype for the PhD extension at the
+Aston–Capgemini Centre of Excellence for Enterprise AI.
 
 ---
 
@@ -118,7 +119,7 @@ The same pass over three neighbouring codebases, for calibration:
 
 | Codebase | Files / lines | Security (per kLOC) | Complexity | Duplication |
 |---|---|---|---|---|
-| this repo (`auditor/`) | 43 / 3,711 | 3.50 OK | 3.87 WARN | 10.24% RISK |
+| this repo (`auditor/`) | 44 / 3,971 | 3.27 OK | 3.94 WARN | 9.54% WARN |
 | a Next.js app (`app/`) | 20 / 2,372 | 1.69 OK | 4.16 WARN | 2.11% OK |
 | its components | 54 / 4,913 | 0.81 OK | 3.25 WARN | 5.57% WARN |
 | a Node agent pipeline | 47 / 5,531 | 0.00\* OK | 4.02 WARN | 6.45% WARN |
