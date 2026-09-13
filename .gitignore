@@ -39,3 +39,6 @@ evidence/*.jpg
 evidence/*.jpeg
 evidence/.DS_Store
 evidence/prepared/
+
+# Rebuilt or moved-aside virtualenvs (e.g. .venv.x86_64-broken-*)
+.venv*/
