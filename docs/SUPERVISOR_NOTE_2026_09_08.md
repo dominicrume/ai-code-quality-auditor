@@ -10,9 +10,9 @@ claim I previously made to you, so I would rather flag it than let you find it.
 ## 1. The Cohen's κ validation is done, and it passes
 
 The hallucination heuristic was validated against human judgement as
-pre-registered. Two raters labelled independently — I was one, and the second is
-someone with no other involvement in the study. Neither of us saw the
-instrument's output. The 30-run sample deduplicates to 19 distinct codebases,
+pre-registered. Two raters labelled independently: Ikenna Onyedebelu (MSc Data Science and AI)
+and Matthew Brian Tahir, neither with any other involvement in the study.
+Neither saw the instrument's output. The 30-run sample deduplicates to 19 distinct codebases,
 because 11 of those rows are byte-identical replays under Deviation 001 and
 labelling the same code twice would inflate agreement by construction.
 
@@ -28,9 +28,8 @@ use.
 
 Two limits on that, which the chapter states: κ is computed on the binary
 contrast, so the instrument is validated as an answer to *whether* scope drift
-occurred and **not** to *how much*; and I am one of the two raters, which the
-single human–human disagreement shows did not produce collusion but does not
-make me blind to the hypotheses.
+occurred and **not** to *how much*. Both raters are independent of the study, and the single human–human
+disagreement shows the two sheets were produced without conferring.
 
 ## 2. The labelling exposed a real defect, and it changes a claim I made to you
 

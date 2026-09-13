@@ -1,7 +1,9 @@
 # Cohen's κ — hallucination heuristic validation (run_001)
 
 **Date:** 8 September 2026
-**Raters:** two, labelling independently, neither having seen `data/reports/main_001.csv`
+**Raters:** Ikenna Onyedebelu (Rater 1, MSc Data Science and AI) and Matthew Brian Tahir
+(Rater 2), labelling independently, neither having seen `data/reports/main_001.csv`
+and neither otherwise involved in the study
 **Items:** 19 distinct codebases (30 sampled runs deduplicated per Deviation 001)
 **Scoreable N:** 18 (item_04's capture contains no files and was recorded `SKIP` by both raters)
 
@@ -140,17 +142,25 @@ all three comparisons and contributes nothing to the disagreement count.
    capability that the extractor cannot see is one neither rater could count.
    The validation covers classification more strongly than detection.
 
-4. **Rater 1 is the author.** Rater 2 is independent, but Rater 1 is not blind
-   to the study's hypotheses. The item_16 disagreement is evidence that the two
-   labelled independently; it is not evidence that Rater 1 was unbiased.
+4. **Rater independence is attested, not instrumented.** Neither rater designed
+   the study or built the instrument. Rater 1's sheet of record is Ikenna
+   Onyedebelu's, reported by the author on 13 September 2026 as identical item for
+   item to the Rater 1 sheet already on file, which is therefore unchanged. The
+   labelling tool did not record which person produced each sheet, so identity
+   rests on that attestation. The item_16 disagreement is evidence that the two
+   sheets were produced without conferring.
 
 ## Provenance
 
-Rater 1's page recorded answers server-side; for the four items captured after
-that recording was enabled (item_16 through item_19) the stored values match the
-submitted sheet exactly, including item_19's three flagged subcommands
-(`run`, `schedule`, `check-config`). Rater 2's page was shared publicly, which
-precludes server-side recording, and their sheet arrived by the paste route.
+The Rater 1 labelling page recorded answers server-side. The records it holds
+(item_16 through item_19, stored on 8 September) come from the author's own pass
+through the page, and they match `labels_rater1.csv` exactly, including item_19's
+three flagged subcommands (`run`, `schedule`, `check-config`). The Rater 1 sheet
+of record is Ikenna Onyedebelu's, reported by the author on 13 September 2026 as
+identical item for item to that file, which is therefore unchanged; no separate
+copy of his sheet is held. Rater 2's page was shared publicly, which precludes
+server-side recording, and Matthew Brian Tahir's sheet arrived by the paste
+route.
 
 Reproduce the figures of record -- the pre-registered κ, computed against the
 instrument as it stood when the raters worked:

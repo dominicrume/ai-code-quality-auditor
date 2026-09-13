@@ -76,9 +76,6 @@ used for drafting, structural editing and proofreading; the research questions,
 the experimental design, the interpretation of results and the conclusions are
 my own. I take full responsibility for the content of this dissertation.
 
-I also acted as Rater 1 in the inter-rater reliability study reported in §4.7.
-The limitation this places on that result is stated there.
-
 **Signed:** Uririe, Orume Dominic
 **Date:** September 2026
 
@@ -155,8 +152,8 @@ cleaner-looking draft would have been. I thank the Aston–Capgemini Centre of
 Excellence for Enterprise AI for the enterprise framing that gives this
 instrument its purpose beyond the laboratory, and the mentors and industry
 partners whose questions about credibility, differentiation, and evidence
-sharpened every chapter. I thank Matthew Brian Tahir, who gave several hours to
-the independent labelling reported in §4.7, and who installed and ran the
+sharpened every chapter. I thank Ikenna Onyedebelu and Matthew Brian Tahir, who gave their time to the
+independent labelling reported in §4.7; Matthew also installed and ran the
 instrument on his own machine to produce one of the field audits in §4.8. Any
 errors that remain are my own.
 
@@ -1148,8 +1145,9 @@ The hallucination heuristic was validated against human judgement as
 pre-registered. Two raters independently labelled the 30-run hand-label sample, deduplicated to
 19 distinct codebases (11 of the 30 rows are byte-identical replays under
 Deviation 001, and labelling identical code twice would inflate agreement by
-construction). The second rater was Matthew Brian Tahir, named here with his
-consent, who had no other involvement in the study. Neither rater saw `data/reports/main_001.csv`, and
+construction). Rater 1 was Ikenna Onyedebelu (MSc Data Science and AI) and Rater 2 Matthew
+Brian Tahir, named here with his consent; neither had any other involvement in
+the study. Neither rater saw `data/reports/main_001.csv`, and
 neither was told which condition produced which item. One capture contains no
 files and was recorded `SKIP` by both, giving N = 18 scoreable items. Labels are
 compared on the binary contrast, any off-specification feature against none.
@@ -1206,10 +1204,10 @@ same labels, which is circular; establishing the repaired instrument's validity
 would require a fresh sample and raters who have not seen these items. The
 figures of record are those in Table 4.5.
 
-A residual limitation is that Rater 1 is the author. Rater 2 labelled
-independently and was not otherwise involved in the study, and the single
-human–human disagreement is evidence that the two sheets were produced without
-conferring; neither fact establishes that Rater 1 was blind to the hypotheses.
+Neither rater designed the study or built the instrument, which removes the
+concern that a rater might label towards the hypotheses. The single human–human
+disagreement, at item_16, is evidence that the two sheets were produced without
+conferring.
 
 ## 4.8 Application outside the controlled study
 

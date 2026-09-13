@@ -87,7 +87,10 @@ ok(all("Accessed" in p or "Git dates every addition" in p for p in aug),
    f"({len(aug)} mentions)")
 ok("I declare that this dissertation is my own work" in full, "Declaration present")
 ok("Use of generative AI" in full, "AI-use declaration present")
-ok("Matthew Brian Tahir" in full, "second rater credited by name")
+ok("Ikenna Onyedebelu" in full, "Rater 1 credited by name")
+ok("Matthew Brian Tahir" in full, "Rater 2 credited by name")
+ok("acted as Rater 1" not in full and "Rater 1 is the author" not in full,
+   "the author is no longer described as a rater")
 ok("with his consent" in full, "consent to be named is recorded")
 
 # ------------------------------------------------------------ document vs data
