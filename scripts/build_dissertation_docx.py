@@ -108,11 +108,13 @@ def add_field(par, instr, result=True, hidden=False):
     run_with(fld("end"))
 
 
-def add_tc(par, text, table_id):
-    """A table-of-contents entry. Chapters carry "C", figures "F", tables "T",
-    so each of the three lists collects only its own entries."""
-    add_field(par, f'TC "{text.replace(chr(34), chr(39))}" \\f {table_id} \\l 1',
-              result=False, hidden=True)
+def add_tc(par, text, table_id, level=1):
+    """A table-of-contents entry. Contents entries carry "C", figures "F",
+    tables "T", so each of the three lists collects only its own entries.
+    The entry must not be formatted hidden: Word's TOC field skips hidden TC
+    fields, and a TC field has no visible result, so nothing shows either way."""
+    add_field(par, f'TC "{text.replace(chr(34), chr(39))}" \\f {table_id} \\l {level}',
+              result=False)
 
 
 def add_page_numbers(section):
@@ -503,7 +505,9 @@ def render(doc, lines, titles):
                     add_tc(h, text, "C")
             elif text == "Table of Contents":
                 front_heading(doc, "Contents")
-                add_toc(doc, r'TOC \o "2-3" \f C \h \z')
+                # built wholly from entries, so chapters read "1  Introduction"
+                # as in the template while the page shows two lines
+                add_toc(doc, r"TOC \f C \h \z")
                 front_heading(doc, "List of Tables")
                 add_toc(doc, r"TOC \f T \h \z")
                 front_heading(doc, "List of Figures")
@@ -513,7 +517,7 @@ def render(doc, lines, titles):
             elif text in FRONT:
                 front_heading(doc, text)
             else:
-                heading(doc, text, level)
+                add_tc(heading(doc, text, level), text, "C", min(level, 3))
             continue
 
         fm = FIG_RE.match(line)
@@ -636,14 +640,14 @@ def finalise_in_word():
         old.unlink()
     stem = "dissertation_word_pass_" + datetime.now().strftime("%Y%m%d-%H%M%S")
     name = stem + ".docx"
-    # Handed over inside the container as well: a file anywhere else may wait
-    # on the user to grant access, and "open" returns before Word has loaded
-    # the document, so the script waits for it to appear.
+    # Word silently ignores a file handed to it by AppleScript's "open", even
+    # from its own container, but accepts one opened through Launch Services
+    # as Finder does. It loads asynchronously, so the script waits for it.
     saved_docx, saved_pdf = WORD_DATA / name, WORD_DATA / (stem + ".pdf")
     shutil.copy2(OUT, saved_docx)
+    subprocess.run(["open", "-a", "Microsoft Word", str(saved_docx)], check=True)
     steps = [
-        ("open", f'open (POSIX file "{saved_docx}")\n'
-                 'repeat 240 times\n'
+        ("open", 'repeat 240 times\n'
                  f'if (name of every document) contains "{name}" then return "{name}"\n'
                  'delay 0.5\nend repeat\nerror "Word did not open the document"'),
         ("fill in contents and lists",
