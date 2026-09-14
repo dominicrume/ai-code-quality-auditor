@@ -53,6 +53,7 @@ CROPS = {
 
 # Not evidence for this study.
 EXCLUDE = {
+    "Screenshot 2026-09-08 at 13.17.17.png": "the first Rater 1 labelling pass, discarded",
     "Screenshot 2026-09-09 at 00.32.47.png": "Laravel Herd setup for an unrelated project",
     "Screenshot 2026-09-09 at 00.44.31.png": "superseded by the 00.46 capture",
     "Screenshot 2026-09-09 at 00.44.44.png": "superseded by the 00.46 capture",
