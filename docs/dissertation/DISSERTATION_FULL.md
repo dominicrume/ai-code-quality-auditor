@@ -196,6 +196,13 @@ errors that remain are my own.
 - Figure 4.9 The same project before and after a specification was supplied
 - Figure 4.10 The published package installed by a third party
 - Figure 5.1 Both errata, as first reported and as corrected
+- Figure F.1 GovSignal audited by a third party
+- Figure F.2 kya-rails audited
+- Figure F.3 The instrument scored against the wrong specification
+- Figure F.4 Public installation counts
+- Figure F.5 Installations by release
+- Figure F.6 Rater 2's completed labelling
+- Figure F.7 The results table before the errata
 
 ---
 
@@ -1803,6 +1810,42 @@ analytical note 001).
 
 **Appendix E, Instrument source.** The `auditor` package (core engine, one
 analyser per metric, one adapter per vendor) and its test suite.
+
+**Appendix F, Supplementary evidence.** Captures supporting results reported in
+Chapter 4 that are not already shown as figures in the body. Each is cropped
+from an original screen capture to the region carrying evidence, with browser
+chrome, bookmarks, file paths and account details removed and nothing else
+altered. The same images, with an index, are published in `docs/evidence/` of
+the project repository.
+
+![GovSignal audited by a third party](../evidence/E1_field_audit_govsignal.jpg)
+
+**Figure F.1** GovSignal, a codebase outside the study, audited on Rater 2's own machine: 30 files and 1,923 lines, with security 2.26 per kLOC, complexity 4.79, duplication 0.89% and scope drift 4. Supports Table 4.6.
+
+![kya-rails audited](../evidence/E2_field_audit_kya_rails.jpg)
+
+**Figure F.2** kya-rails, a codebase outside the study: 43 files and 4,620 lines, with scope drift 0.00, the reading the metric returns when output matches its brief. Supports Table 4.6.
+
+![The instrument scored against the wrong specification](../evidence/E3_self_audit.jpg)
+
+**Figure F.3** The instrument audited against the study's demonstration specification for a student-course application, reading scope drift of 19. This is the wrong-brief artefact described in §4.8.1 and is not a finding; scored against its own declared scope the figure of record is 12.
+
+![Public installation counts](../evidence/E4_pypi_downloads.jpg)
+
+**Figure F.4** Installations of the published package from PyPI to 5 September 2026: 2,500 all-time, 880 in the preceding thirty days and 232 in twenty-four hours.
+
+![Installations by release](../evidence/E5_pypi_versions.jpg)
+
+**Figure F.5** Downloads by released version over the quarter to 9 September 2026: 517 of 0.2.0, 479 of 0.3.0, 319 of 0.1.0 and 302 of 0.4.0. Every published version is in use.
+
+![Rater 2's completed labelling](../evidence/E6_rater2_completion.jpg)
+
+**Figure F.6** Rater 2's completed labelling screen, all nineteen items reviewed. The item_16 count of 4 is the single human disagreement discussed in §4.7.
+
+![The results table before the errata](../evidence/E7_results_before_errata.jpg)
+
+**Figure F.7** The per-condition results as first produced, before Errata 001 and 002. Security density reads 42.05 and 43.67 for claude_code and cursor_agent, and replit_agent's hallucination mean 1.00; Chapter 4 reports the corrected 9.65, 5.93 and 1.33. Retained as a record of what the corrections changed.
+
 
 ---
 

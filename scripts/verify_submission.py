@@ -15,11 +15,11 @@ def warn(cond, msg):
 
 print("\n[1] FIGURES")
 refs = re.findall(r'!\[[^\]]*\]\(([^)]+)\)', s)
-check(len(refs) == 15, f"15 figures referenced (found {len(refs)})")
+check(len(refs) == 22, f"22 figures referenced, 7 of them in Appendix F (found {len(refs)})")
 for r in refs:
     check((ROOT / "docs/dissertation" / r).resolve().exists(), f"file exists: {r}")
 caps = re.findall(r'^\*\*Figure ([0-9.]+)\*\*', s, re.M)
-check(caps == sorted(caps, key=lambda x: [int(p) for p in x.split(".")]),
+check(caps == sorted(caps, key=lambda x: [int(p) if p.isdigit() else 1000 + ord(p) for p in x.split(".")]),
       f"captions in ascending order: {caps}")
 lof = re.findall(r'^- Figure ([0-9.]+)', s, re.M)
 check(set(lof) == set(caps), "List of Figures matches captions")

@@ -55,7 +55,11 @@ for t in doc.tables:
 full = "\n".join(parts)
 
 imgs = [n for n in z.namelist() if n.startswith("word/media/")]
-ok(len(imgs) == 15, f"15 figures embedded (found {len(imgs)})")
+ok(len(imgs) == 22, f"22 images embedded: 15 body figures and 7 in Appendix F (found {len(imgs)})")
+ok("Appendix F, Supplementary evidence" in full, "Appendix F present")
+ev = ROOT / "docs" / "evidence"
+ok(len(list(ev.glob("E*.jpg"))) == 7 and (ev / "README.md").exists(),
+   "public evidence folder has 7 images and an index")
 ok(all(z.getinfo(n).file_size > 4000 for n in imgs), "no figure is a truncated file")
 ok(len(doc.tables) == 6, f"6 tables (found {len(doc.tables)})")
 for i, t in enumerate(doc.tables, 1):
