@@ -38,3 +38,10 @@ data/raw/run_002/cursor_agent/code/.pytest_cache/**/*
 # Created by venv; see https://docs.python.org/3/library/venv.html
 data/raw/run_002/cursor_agent/code/.venv/**/*
 fly.toml
+
+# Moved-aside or rebuilt virtualenvs (the pattern above only matches ".venv"),
+# and the untracked pilot archive, neither of which the dashboard needs
+**/.venv*
+data/archive
+# Rater sheets and labelling packs, including pack_002 ground truth
+data/labels

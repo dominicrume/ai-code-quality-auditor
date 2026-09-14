@@ -42,3 +42,6 @@ evidence/prepared/
 
 # Rebuilt or moved-aside virtualenvs (e.g. .venv.x86_64-broken-*)
 .venv*/
+
+# Pilot web-page snapshot, untracked since eb9f707; kept locally
+data/archive/
