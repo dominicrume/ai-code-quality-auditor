@@ -7,9 +7,7 @@
 
 # Chapter 3: Methodology
 
-*(This chapter summarises the methodology; the canonical, fully-detailed version
-is maintained at `docs/dissertation/CHAPTER_3_METHODS.md` and the
-pre-registration at `docs/EXPERIMENT_PROTOCOL.md`. The two are consistent.)*
+
 
 ## 3.1 Research design
 
@@ -58,8 +56,7 @@ zero for agentic conditions). The three **specifications** (treatment stimuli,
 identical across conditions) span distinct domains: `agent_education_system`
 (CRUD + authentication web app), `data_pipeline` (ETL + scheduler), and
 `internal_tool_cli` (a CLI with subcommands), each with six features and three
-governance rules. Three specifications were used so that external-validity
-claims could be made across task types (RQ3).
+governance rules.
 
 ## 3.2 The capture contract
 
@@ -279,5 +276,17 @@ The instrument ships as a Python package and a GitHub Action; the headline CSV
 read-only dashboard renders the same CSV with a banner that flips from "pilot"
 to "dissertation result" only when N ≥ 5 per condition is reached, a structural
 guard against misrepresenting pilot data.
+
+## 3.8 Ethical considerations
+
+The study involved no human participants and collected no human-subject data,
+and the approved project proposal records that ethics approval was not
+required. Every specification and all application content are synthetic, and
+no personal, customer or organisational data was given to any tool. The
+human-control sessions were carried out by the researcher, and the recorder
+logs only the type of each key event, never the characters typed. The two
+raters in §4.7 acted as independent assessors of the instrument's output rather
+than as research subjects; both took part voluntarily and gave signed consent
+for their labels to be used and their names to appear.
 
 ---

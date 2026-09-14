@@ -50,6 +50,23 @@
 
 ---
 
+## Acknowledgements
+
+I am grateful to my supervisors, Julien Barney and Kate Sugden, whose guidance
+shaped this work from a research question into a working instrument, and whose
+insistence on methodological honesty, particularly around the mid-study analyser
+corrections documented in Chapter 5, made the dissertation stronger than a
+cleaner-looking draft would have been. I thank the Aston–Capgemini Centre of
+Excellence for Enterprise AI for the enterprise framing that gives this
+instrument its purpose beyond the laboratory, and the mentors and industry
+partners whose questions about credibility, differentiation, and evidence
+sharpened every chapter. I thank Ikenna Onyedebelu and Matthew Brian Tahir, who gave their time to the
+independent labelling reported in §4.7; Matthew also installed and ran the
+instrument on his own machine to produce one of the field audits in §4.8. Any
+errors that remain are my own.
+
+---
+
 ## Declaration
 
 I declare that this dissertation is my own work and that it has been composed
@@ -139,23 +156,6 @@ for Enterprise AI.
 **Keywords:** agentic AI; code generation; large language models; software
 quality metrics; specification fidelity; AI governance; empirical software
 engineering.
-
----
-
-## Acknowledgements
-
-I am grateful to my supervisors, Julien Barney and Kate Sugden, whose guidance
-shaped this work from a research question into a working instrument, and whose
-insistence on methodological honesty, particularly around the mid-study analyser
-corrections documented in Chapter 5, made the dissertation stronger than a
-cleaner-looking draft would have been. I thank the Aston–Capgemini Centre of
-Excellence for Enterprise AI for the enterprise framing that gives this
-instrument its purpose beyond the laboratory, and the mentors and industry
-partners whose questions about credibility, differentiation, and evidence
-sharpened every chapter. I thank Ikenna Onyedebelu and Matthew Brian Tahir, who gave their time to the
-independent labelling reported in §4.7; Matthew also installed and ran the
-instrument on his own machine to produce one of the field audits in §4.8. Any
-errors that remain are my own.
 
 ---
 
@@ -256,12 +256,22 @@ features, redundant enterprise scaffolding, or insecure patterns, and have no
 instrument with which to detect this before it becomes technical debt or a
 security incident.
 
-## 1.3 Research aim and questions
+## 1.3 Research aim, objectives and questions
 
 The aim of this study is to design, build and apply a reusable, vendor-agnostic
 instrument that quantifies the quality and governance behaviour of agentic
 coding workflows, and to use it to produce a pre-registered empirical
-comparison of the leading commercial tools. Three research questions follow:
+comparison of the leading commercial tools. It has five objectives:
+
+- to design a capture contract that makes human and agentic workflows
+  comparable, scored by analysers blind to condition (§3.2, §3.4);
+- to implement the instrument as a tested, openly published package (§3.7);
+- to apply it under a pre-registered protocol to four agentic tools and a human
+  baseline across three specifications (Chapter 4);
+- to validate its hallucination metric against independent human raters (§4.7); and
+- to test it on real projects outside the controlled study (§4.8).
+
+The objectives serve three research questions:
 
 - **RQ1.** Can a single, blinded, vendor-agnostic measurement instrument capture
   and score the output of structurally heterogeneous coding workflows (a human
@@ -288,20 +298,14 @@ practice.
 
 ## 1.5 Research context
 
-This work was conducted as the experimental instrument for an MSc Artificial
-Intelligence and Business Strategy dissertation at Aston University (project
-JBKS1) and as a working prototype aligned to the agenda of the Aston–Capgemini
-Centre of Excellence for Enterprise AI, whose concern is the safe, governed
-adoption of AI in high-trust enterprise settings. That context shapes the
-study's framing in two ways. First, it motivates the emphasis on *governance*
-properties (specification fidelity, scope containment, and technical-debt
-footprint) over the functional properties that dominate academic benchmarking,
-because these are the properties that determine whether an enterprise can adopt
-a tool responsibly. Second, it motivates the engineering discipline of the
-instrument itself (pre-registration, a blinded analyser pipeline, reproducible
-packaging, and transparent deviation-logging) as a model of the measurement
-rigour that enterprise AI governance requires. The instrument is thus both an
-academic contribution and a demonstrator of governable measurement practice.
+This work was conducted for an MSc Artificial Intelligence and Business Strategy
+dissertation at Aston University (project JBKS1) and as a prototype aligned to
+the Aston–Capgemini Centre of Excellence for Enterprise AI, whose concern is the
+safe, governed adoption of AI in high-trust enterprise settings. That context
+explains the emphasis on *governance* properties (specification fidelity, scope
+containment and technical-debt footprint) over functional ones, and the
+engineering discipline of the instrument itself: pre-registration, blinded
+analysers, reproducible packaging and transparent deviation-logging.
 
 ## 1.6 Scope and dissertation structure
 
@@ -330,6 +334,12 @@ closes by articulating the research gap (§2.6). The organising argument is that
 the evaluation of agentic coding tools has inherited a *functional-correctness*
 paradigm that is mature, productive, and structurally blind to the quality and
 governance properties that determine the real cost of generated code.
+
+The review draws on 26 sources published between 1952 and 2024, fifteen of
+them since 2021. A source was included where it evaluates, secures, measures or
+governs generated code, or sets a methodological standard this study adopts,
+and every entry was checked against its original arXiv, ACM Digital Library or
+publisher record.
 
 ## 2.1 The evaluation of code-generating models
 
@@ -503,9 +513,7 @@ instrument, and in doing so addresses the gap directly.
 
 # Chapter 3: Methodology
 
-*(This chapter summarises the methodology; the canonical, fully-detailed version
-is maintained at `docs/dissertation/CHAPTER_3_METHODS.md` and the
-pre-registration at `docs/EXPERIMENT_PROTOCOL.md`. The two are consistent.)*
+
 
 ## 3.1 Research design
 
@@ -554,8 +562,7 @@ zero for agentic conditions). The three **specifications** (treatment stimuli,
 identical across conditions) span distinct domains: `agent_education_system`
 (CRUD + authentication web app), `data_pipeline` (ETL + scheduler), and
 `internal_tool_cli` (a CLI with subcommands), each with six features and three
-governance rules. Three specifications were used so that external-validity
-claims could be made across task types (RQ3).
+governance rules.
 
 ## 3.2 The capture contract
 
@@ -775,6 +782,18 @@ The instrument ships as a Python package and a GitHub Action; the headline CSV
 read-only dashboard renders the same CSV with a banner that flips from "pilot"
 to "dissertation result" only when N ≥ 5 per condition is reached, a structural
 guard against misrepresenting pilot data.
+
+## 3.8 Ethical considerations
+
+The study involved no human participants and collected no human-subject data,
+and the approved project proposal records that ethics approval was not
+required. Every specification and all application content are synthetic, and
+no personal, customer or organisational data was given to any tool. The
+human-control sessions were carried out by the researcher, and the recorder
+logs only the type of each key event, never the characters typed. The two
+raters in §4.7 acted as independent assessors of the instrument's output rather
+than as research subjects; both took part voluntarily and gave signed consent
+for their labels to be used and their names to appear.
 
 ---
 
@@ -1575,10 +1594,7 @@ comparable (RQ1); the tools *do* differ, significantly so on duplication and
 complexity between the two conditions the design replicates fully, and by large
 descriptive margins across all four (RQ2); and those differences are *not stable
 across task domains*, so tool quality is task-conditional (RQ3, established
-descriptively). Its most consequential
-empirical finding is a measured architectural-prior dominance in Replit Agent,
-and its central conceptual contribution is the framing of specification fidelity
-as a first-class, measurable governance metric.
+descriptively).
 
 ## 6.2 Contributions revisited
 
@@ -1586,8 +1602,7 @@ The *methodological* contribution is the capture contract and its blinded
 analyser pipeline, a design that solves the comparability problem at the heart
 of cross-vendor agentic evaluation by forcing structurally heterogeneous
 workflows into one artefact shape and removing condition identity from the
-metric code by interface, not discipline. Its success (RQ1) is what makes the
-rest of the study possible, and it is reusable: any workflow that can emit a
+metric code by interface, not discipline. It is reusable: any workflow that can emit a
 codebase and an interaction log can be scored on the same footing.
 
 The *empirical* contribution is the pre-registered, four-vendor, three-domain,
@@ -1604,14 +1619,11 @@ first-class, measurable quality metric, and the consequent recommendation of a
 *fidelity gate* in enterprise procurement: a measured check that a tool's output
 maps to the specification and nothing more, sitting alongside the functional
 benchmarks that currently dominate. This reframes the adoption question from "is
-the tool capable?" to "can the tool be contained?", the question that matters
-for the high-trust, governed environments the Aston–Capgemini Centre's agenda
-addresses.
+the tool capable?" to "can the tool be contained?".
 
 ## 6.3 Limitations
 
-The principal limitations, developed in §5.7, are restated here for the reader's
-convenience: the replay-mode zero-variance constraint on the two IDE-bound
+The principal limitations, developed in §5.7, are: the replay-mode zero-variance constraint on the two IDE-bound
 conditions (Deviation 001), which reduces their effective replication to one and
 concentrates the omnibus variance in the two CLI-driven conditions; the reduced,
 single-replication human baseline and its one unrecoverable data-loss event
@@ -1626,12 +1638,10 @@ half is not: the human sessions record 7,979 events while `antigravity` and
 `replit_agent` record one placeholder event per run and the two CLI-driven
 conditions a median of seventeen and two. The artefact findings are unaffected,
 since they are computed from the code, but no claim about *how* an agent worked
-is supported by this dataset. None of these
-undermines the study's structural findings, which rest on large descriptive
-margins and on mechanisms established by direct inspection of the captured code,
-but each bounds the strength and generality of the claims. The replay constraint
-does so most sharply, since it is what confines formal inference to the two live
-conditions (§4.5), and each limitation is logged transparently.
+is supported by this dataset. None of these undermines the structural findings, which rest on large
+descriptive margins and on mechanisms confirmed by inspecting the captured code,
+but each bounds the claims, the replay constraint most sharply, since it confines
+formal inference to the two live conditions (§4.5).
 
 ## 6.4 Future work
 
@@ -1653,11 +1663,8 @@ through improved capture automation, and *expand the human baseline* to a
 properly powered, multi-rep, multi-participant sample so that it can enter the
 inferential analysis rather than serve only as a descriptive floor. Fifth,
 *extend the instrument* to runtime and maintainability metrics and to additional
-task domains, broadening external validity. The instrument's package-and-Action
-distribution is deliberately designed to make each of these extensions
-tractable, and to allow third parties to reproduce, extend, and contest these
-findings, which is the appropriate end-state for an instrument whose entire
-purpose is trustworthy, contestable measurement.
+task domains, broadening external validity. The instrument is packaged so that third parties can make each extension, and
+reproduce or contest these findings.
 
 ## 6.5 Concluding remarks
 
@@ -1790,33 +1797,63 @@ Machine Programming (MAPS)*, pp. 21–29.
 
 # Appendices
 
-**Appendix A, Specifications.** The three fixed YAML specifications
-(`specs/agent_education_system.yaml`, `specs/data_pipeline.yaml`,
-`specs/internal_tool_cli.yaml`), each with six features and three governance
-rules. (Reproduce in full in the submitted appendix.)
+All code and data are held in the public project repository and are linked
+below. Repository: [https://github.com/dominicrume/ai-code-quality-auditor](https://github.com/dominicrume/ai-code-quality-auditor). Published package:
+[https://pypi.org/project/ai-code-quality-auditor/](https://pypi.org/project/ai-code-quality-auditor/).
 
-**Appendix B, Data artefacts.** Headline CSV `data/reports/main_001.csv` (600
-rows) with `main_001.provenance.json`; human baseline CSVs
-`data/reports/human_session_<spec>_rep00.csv`; and the comparison view
-`data/reports/human_vs_ai_comparison.csv`.
+## Appendix A: Specifications
 
-**Appendix C, Statistical notebook.** `notebooks/statistical_analysis.ipynb`,
-which reproduces all Chapter 4 statistics and the forest/violin figures from the
-headline CSV.
+The three fixed YAML specifications issued to every condition, each with six
+features and three governance rules.
 
-**Appendix D, Pre-registration and deviations.** `docs/EXPERIMENT_PROTOCOL.md`
-(pre-registration) and `docs/PROTOCOL_DEVIATIONS.md` (Deviations 001–003 and
-analytical note 001).
+- [https://github.com/dominicrume/ai-code-quality-auditor/blob/main/specs/agent_education_system.yaml](https://github.com/dominicrume/ai-code-quality-auditor/blob/main/specs/agent_education_system.yaml)
+- [https://github.com/dominicrume/ai-code-quality-auditor/blob/main/specs/data_pipeline.yaml](https://github.com/dominicrume/ai-code-quality-auditor/blob/main/specs/data_pipeline.yaml)
+- [https://github.com/dominicrume/ai-code-quality-auditor/blob/main/specs/internal_tool_cli.yaml](https://github.com/dominicrume/ai-code-quality-auditor/blob/main/specs/internal_tool_cli.yaml)
 
-**Appendix E, Instrument source.** The `auditor` package (core engine, one
-analyser per metric, one adapter per vendor) and its test suite.
+## Appendix B: Data artefacts
 
-**Appendix F, Supplementary evidence.** Captures supporting results reported in
-Chapter 4 that are not already shown as figures in the body. Each is cropped
-from an original screen capture to the region carrying evidence, with browser
-chrome, bookmarks, file paths and account details removed and nothing else
-altered. The same images, with an index, are published in `docs/evidence/` of
-the project repository.
+The headline results (600 rows) with their provenance record, the human
+baseline sessions, the human-versus-AI comparison, and both raters' label sheets
+with the computed agreement.
+
+- [https://github.com/dominicrume/ai-code-quality-auditor/blob/main/data/reports/main_001.csv](https://github.com/dominicrume/ai-code-quality-auditor/blob/main/data/reports/main_001.csv)
+- [https://github.com/dominicrume/ai-code-quality-auditor/blob/main/data/reports/main_001.provenance.json](https://github.com/dominicrume/ai-code-quality-auditor/blob/main/data/reports/main_001.provenance.json)
+- [https://github.com/dominicrume/ai-code-quality-auditor/tree/main/data/reports](https://github.com/dominicrume/ai-code-quality-auditor/tree/main/data/reports) (human baseline: `human_session_<spec>_rep00.csv`)
+- [https://github.com/dominicrume/ai-code-quality-auditor/blob/main/data/reports/human_vs_ai_comparison.csv](https://github.com/dominicrume/ai-code-quality-auditor/blob/main/data/reports/human_vs_ai_comparison.csv)
+- [https://github.com/dominicrume/ai-code-quality-auditor/tree/main/data/labels](https://github.com/dominicrume/ai-code-quality-auditor/tree/main/data/labels) (rater sheets and `kappa_results.json`)
+
+## Appendix C: Statistical notebook
+
+The notebook that reproduces every Chapter 4 statistic from the headline data.
+
+- [https://github.com/dominicrume/ai-code-quality-auditor/blob/main/notebooks/statistical_analysis.ipynb](https://github.com/dominicrume/ai-code-quality-auditor/blob/main/notebooks/statistical_analysis.ipynb)
+
+## Appendix D: Pre-registration, deviations and errata
+
+The pre-registered protocol, Deviations 001 to 003, the inter-rater reliability
+record and both errata.
+
+- [https://github.com/dominicrume/ai-code-quality-auditor/blob/main/docs/EXPERIMENT_PROTOCOL.md](https://github.com/dominicrume/ai-code-quality-auditor/blob/main/docs/EXPERIMENT_PROTOCOL.md)
+- [https://github.com/dominicrume/ai-code-quality-auditor/blob/main/docs/PROTOCOL_DEVIATIONS.md](https://github.com/dominicrume/ai-code-quality-auditor/blob/main/docs/PROTOCOL_DEVIATIONS.md)
+- [https://github.com/dominicrume/ai-code-quality-auditor/blob/main/docs/ERRATUM_001_security_density.md](https://github.com/dominicrume/ai-code-quality-auditor/blob/main/docs/ERRATUM_001_security_density.md)
+- [https://github.com/dominicrume/ai-code-quality-auditor/blob/main/docs/KAPPA_RESULTS_001.md](https://github.com/dominicrume/ai-code-quality-auditor/blob/main/docs/KAPPA_RESULTS_001.md)
+- [https://github.com/dominicrume/ai-code-quality-auditor/blob/main/docs/ERRATUM_002_hallucination_false_negative.md](https://github.com/dominicrume/ai-code-quality-auditor/blob/main/docs/ERRATUM_002_hallucination_false_negative.md)
+
+## Appendix E: Instrument source
+
+The `auditor` package (core engine, one analyser per metric, one adapter per
+vendor) and its automated test suite.
+
+- [https://github.com/dominicrume/ai-code-quality-auditor/tree/main/auditor](https://github.com/dominicrume/ai-code-quality-auditor/tree/main/auditor)
+- [https://github.com/dominicrume/ai-code-quality-auditor/tree/main/tests](https://github.com/dominicrume/ai-code-quality-auditor/tree/main/tests)
+
+## Appendix F: Supplementary evidence
+
+Captures supporting results reported in Chapter 4 that are not already shown as
+figures in the body. Each is cropped from an original screen capture to the
+region carrying evidence, with browser chrome, bookmarks, file paths and account
+details removed and nothing else altered. The same images are published with an
+index at [https://github.com/dominicrume/ai-code-quality-auditor/tree/main/docs/evidence](https://github.com/dominicrume/ai-code-quality-auditor/tree/main/docs/evidence).
 
 ![GovSignal audited by a third party](../evidence/E1_field_audit_govsignal.jpg)
 

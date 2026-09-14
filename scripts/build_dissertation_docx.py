@@ -1,28 +1,40 @@
 #!/usr/bin/env python3
-"""Render DISSERTATION_FULL.md as a submission-ready .docx.
+"""Render DISSERTATION_FULL.md as the submission document, laid out to the
+Aston dissertation template.
 
-The .docx is the transport format: uploaded to Google Drive it converts to a
-native Google Doc with headings, tables and figures intact, so the outline
-pane works and the author can export to PDF unaltered.
+Two stages. python-docx writes the .docx: A4, an unnumbered cover carrying the
+University crest, front matter in the template's order, two-line chapter
+openings, captions below figures and tables, and appendices as real headings.
+Microsoft Word then opens that file, fills in the contents and the lists of
+tables and figures, and exports the PDF, which is the one file the module
+accepts. Only Word knows where the pages break, so page numbers cannot be
+computed here.
 
-Editorial blockquotes -- the ones marked "delete before submission" -- are
-dropped, because the whole point of this artefact is that it is the thing
-handed to a marker.
+Editorial blockquotes are dropped, because this artefact is the thing handed
+to a marker.
 
-    .venv/bin/python scripts/build_dissertation_docx.py
+    .venv/bin/python scripts/build_dissertation_docx.py            # .docx and PDF
+    .venv/bin/python scripts/build_dissertation_docx.py --no-word  # .docx only
 """
 from __future__ import annotations
 
+import platform
 import re
+import shutil
+import subprocess
+import sys
+import time
+from datetime import datetime, timezone
 from pathlib import Path
 
 from docx import Document
-from docx.enum.section import WD_SECTION
+from docx.enum.style import WD_STYLE_TYPE
 from docx.enum.table import WD_TABLE_ALIGNMENT
-from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_BREAK
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.opc.constants import RELATIONSHIP_TYPE as RT
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
-from docx.shared import Inches, Pt, RGBColor
+from docx.shared import Cm, Inches, Pt, RGBColor
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -32,15 +44,34 @@ BASE = SRC.parent
 # Downloads folder. Three separate reviews were carried out against that
 # day-old file because the two were indistinguishable by name.
 OUT = ROOT / "build" / "Dissertation_FINAL_Uririe_Orume_Dominic.docx"
+PDF = OUT.with_suffix(".pdf")
+# Extracted from the Aston template. build/ is gitignored, so the University's
+# arms are never published alongside the code.
+CREST = ROOT / "build" / "assets" / "aston_university_crest.jpg"
+
+COVER = {
+    "institution": "Aston University",
+    "department": "Department of AI and Robotics",
+    "degree": "Master of Science in Artificial Intelligence and Business Strategy",
+    "date": "September 2026",
+    "author": "Uririe, Orume Dominic",
+    "supervisors": "Julien Barney and Kate Sugden",
+    "address": "Aston University, Aston Triangle, Birmingham, B4 7ET, United Kingdom",
+    "project": "Project JBKS1",
+}
 
 INK = RGBColor(0x1A, 0x1F, 0x1D)
-ACCENT = RGBColor(0x0F, 0x51, 0x4B)
+BLACK = RGBColor(0x00, 0x00, 0x00)
 MUTED = RGBColor(0x5A, 0x60, 0x5C)
 
 BODY_FONT = "Georgia"
 HEAD_FONT = "Georgia"
 MONO_FONT = "Consolas"
 TEXT_WIDTH_IN = 6.0
+
+# Front matter takes the template's large headings on a fresh page, but is not
+# a Heading style: the contents page lists the chapters, not itself.
+FRONT = ("Acknowledgements", "Declaration", "Abstract", "Table of Contents")
 
 
 # ------------------------------------------------------------------ utilities
@@ -52,23 +83,72 @@ def set_cell_bg(cell, hexcolor):
     tcPr.append(shd)
 
 
+def add_field(par, instr, result=True, hidden=False):
+    """A complex field: begin, instruction, [separate], end. Word computes the
+    result when fields are updated."""
+    def run_with(el):
+        r = par.add_run()
+        if hidden:
+            r.font.hidden = True
+        r._r.append(el)
+        return r
+
+    def fld(kind):
+        el = OxmlElement("w:fldChar")
+        el.set(qn("w:fldCharType"), kind)
+        return el
+
+    run_with(fld("begin"))
+    it = OxmlElement("w:instrText")
+    it.set(qn("xml:space"), "preserve")
+    it.text = f" {instr} "
+    run_with(it)
+    if result:
+        run_with(fld("separate"))
+    run_with(fld("end"))
+
+
+def add_tc(par, text, table_id):
+    """A table-of-contents entry. Chapters carry "C", figures "F", tables "T",
+    so each of the three lists collects only its own entries."""
+    add_field(par, f'TC "{text.replace(chr(34), chr(39))}" \\f {table_id} \\l 1',
+              result=False, hidden=True)
+
+
 def add_page_numbers(section):
-    """Footer with a live PAGE field, centred."""
+    """Footer with a live PAGE field, centred, as in the template."""
     p = section.footer.paragraphs[0]
     p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    run = p.add_run()
-    for instr, kind in (("begin", "w:fldChar"), (" PAGE ", "w:instrText"),
-                        ("end", "w:fldChar")):
-        el = OxmlElement(kind)
-        if kind == "w:fldChar":
-            el.set(qn("w:fldCharType"), instr)
-        else:
-            el.set(qn("xml:space"), "preserve")
-            el.text = instr
-        run._r.append(el)
-    run.font.name = BODY_FONT
-    run.font.size = Pt(9.5)
-    run.font.color.rgb = MUTED
+    add_field(p, "PAGE")
+    for r in p.runs:
+        r.font.name = BODY_FONT
+        r.font.size = Pt(9.5)
+
+
+def add_hyperlink(par, url, text, size):
+    r_id = par.part.relate_to(url, RT.HYPERLINK, is_external=True)
+    h = OxmlElement("w:hyperlink")
+    h.set(qn("r:id"), r_id)
+    r = OxmlElement("w:r")
+    rpr = OxmlElement("w:rPr")
+    fonts = OxmlElement("w:rFonts")
+    for a in ("w:ascii", "w:hAnsi", "w:cs"):
+        fonts.set(qn(a), BODY_FONT)
+    colour = OxmlElement("w:color")
+    colour.set(qn("w:val"), "1F4E79")
+    sz = OxmlElement("w:sz")
+    sz.set(qn("w:val"), str(round(size * 2)))
+    u = OxmlElement("w:u")
+    u.set(qn("w:val"), "single")
+    for el in (fonts, colour, sz, u):
+        rpr.append(el)
+    t = OxmlElement("w:t")
+    t.set(qn("xml:space"), "preserve")
+    t.text = text
+    r.append(rpr)
+    r.append(t)
+    h.append(r)
+    par._p.append(h)
 
 
 INLINE = re.compile(
@@ -76,8 +156,9 @@ INLINE = re.compile(
 
 
 def add_runs(par, text, size=11, color=INK, italic_all=False):
-    """Render markdown inline emphasis into runs."""
-    text = text.replace(" ", " ")
+    """Render markdown inline emphasis and links into runs."""
+    for ch in ("\u00a0", "\u202f", "\u2009"):
+        text = text.replace(ch, " ")
     for piece in INLINE.split(text):
         if not piece:
             continue
@@ -91,6 +172,9 @@ def add_runs(par, text, size=11, color=INK, italic_all=False):
         else:
             m = re.fullmatch(r"\[([^\]]+?)\]\(([^)]+?)\)", piece)
             if m:
+                if m.group(2).startswith("http"):
+                    add_hyperlink(par, m.group(2), m.group(1), size)
+                    continue
                 piece = m.group(1)
         run = par.add_run(piece)
         run.bold = bold
@@ -100,43 +184,110 @@ def add_runs(par, text, size=11, color=INK, italic_all=False):
         run.font.color.rgb = color
 
 
-def body_par(doc, text, size=11, space_after=8, first_line_indent=None,
-             justify=True):
+def body_par(doc, text, size=11, space_after=8, justify=True):
     p = doc.add_paragraph()
     pf = p.paragraph_format
     pf.space_after = Pt(space_after)
     pf.line_spacing = 1.42
     if justify:
         p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-    if first_line_indent:
-        pf.first_line_indent = Inches(first_line_indent)
     add_runs(p, text, size=size)
     return p
 
 
+# --------------------------------------------------------------------- styles
+def _plain_style_fonts(style):
+    """The default template ties headings to theme fonts and theme colours,
+    which override explicit values in Word. Strip the theme attributes so the
+    heading is Georgia and black wherever it appears, contents page included."""
+    rpr = style.element.rPr
+    if rpr is None:
+        return
+    for el in rpr.iterchildren():
+        for attr in list(el.attrib):
+            if "Theme" in attr or "theme" in attr:
+                del el.attrib[attr]
+
+
+def ensure_styles(doc):
+    styles = doc.styles
+    normal = styles["Normal"]
+    normal.font.name = BODY_FONT
+    normal.font.size = Pt(11)
+    normal.font.color.rgb = INK
+
+    def own(name, size, before, after, page_break):
+        s = styles.add_style(name, WD_STYLE_TYPE.PARAGRAPH)
+        s.base_style = normal
+        s.font.name = HEAD_FONT
+        s.font.size = Pt(size)
+        s.font.bold = True
+        s.font.color.rgb = BLACK
+        pf = s.paragraph_format
+        pf.space_before = Pt(before)
+        pf.space_after = Pt(after)
+        pf.page_break_before = page_break
+        pf.keep_with_next = True
+
+    # Without this Word opens the file in Compatibility Mode and lays it out
+    # with Word 2010 rules, which is not what a reader's Word will show.
+    compat = doc.settings.element.find(qn("w:compat"))
+    if compat is not None:
+        for cs in compat.findall(qn("w:compatSetting")):
+            if cs.get(qn("w:name")) == "compatibilityMode":
+                cs.set(qn("w:val"), "15")
+
+    own("Front Heading", 24, 24, 24, page_break=True)
+    own("Chapter Label", 20, 24, 4, page_break=True)
+    for level, size, before, after in ((1, 24, 0, 24), (2, 14, 18, 8),
+                                       (3, 11.5, 14, 6)):
+        h = styles[f"Heading {level}"]
+        _plain_style_fonts(h)
+        h.font.name = HEAD_FONT
+        h.font.size = Pt(size)
+        h.font.bold = True
+        h.font.italic = False
+        h.font.color.rgb = BLACK
+        h.paragraph_format.space_before = Pt(before)
+        h.paragraph_format.space_after = Pt(after)
+        h.paragraph_format.keep_with_next = True
+
+
+HEAD_SIZES = {1: 24, 2: 14, 3: 11.5}
+
+
 def heading(doc, text, level):
-    sizes = {1: 17, 2: 13, 3: 11.5}
-    p = doc.add_paragraph()
-    p.paragraph_format.space_before = Pt(20 if level == 1 else 14)
-    p.paragraph_format.space_after = Pt(7)
-    p.paragraph_format.keep_with_next = True
-    run = p.add_run(text)
-    run.bold = True
-    run.font.size = Pt(sizes.get(level, 11))
-    run.font.name = HEAD_FONT
-    run.font.color.rgb = ACCENT if level <= 2 else INK
-    p.style = doc.styles[f"Heading {min(level, 3)}"]
+    p = doc.add_paragraph(style=f"Heading {min(level, 3)}")
+    add_runs(p, text, size=HEAD_SIZES[min(level, 3)], color=BLACK)
     for r in p.runs:
-        r.font.color.rgb = ACCENT if level <= 2 else INK
-        r.font.name = HEAD_FONT
-        r.font.size = Pt(sizes.get(level, 11))
         r.bold = True
+        r.font.name = HEAD_FONT
     return p
 
 
+def chapter_heading(doc, number, title):
+    """Two lines, as in the template: "Chapter 1", then "Introduction"."""
+    label = doc.add_paragraph(style="Chapter Label")
+    label.add_run(f"Chapter {number}")
+    h = heading(doc, title, 1)
+    add_tc(h, f"{number}  {title}", "C")
+
+
+def front_heading(doc, text):
+    p = doc.add_paragraph(style="Front Heading")
+    p.add_run(text)
+    return p
+
+
+def add_toc(doc, instr):
+    p = doc.add_paragraph()
+    add_field(p, instr)
+
+
+# -------------------------------------------------------------------- figures
 # Figures are generated at 300 dpi for print. Embedding them at full size
-# makes the .docx too large to transport; 1600 px across a 6-inch column is
-# still 267 dpi, which survives PDF export without visible loss.
+# makes the .docx too large to transport; 1150 px across a 6-inch column is
+# still 190 dpi, which survives PDF export without visible loss.
 MAX_PX = 1150
 _TMP = ROOT / "build" / "_figures_optimised"
 
@@ -158,31 +309,46 @@ def optimised(path: Path) -> Path:
     return out
 
 
-def add_figure(doc, path: Path, caption: str):
+CAP_RE = re.compile(r"^\*\*(Figure|Table) ([0-9A-Z]+\.[0-9]+)\*\*")
+
+
+def caption(doc, text, titles, space_before=4):
+    """Caption with the template's colon ("Figure 4.1:") and a hidden entry
+    that places it in the list of figures or tables."""
+    m = CAP_RE.match(text)
+    kind, num = m.group(1), m.group(2)
+    if (kind, num) not in titles:
+        raise SystemExit(f"refusing to build: {kind} {num} is captioned but "
+                         f"missing from the List of {kind}s")
+    cp = doc.add_paragraph()
+    cp.alignment = WD_ALIGN_PARAGRAPH.LEFT
+    pf = cp.paragraph_format
+    pf.space_before = Pt(space_before)
+    pf.space_after = Pt(14)
+    pf.left_indent = Inches(0.25)
+    pf.right_indent = Inches(0.25)
+    pf.line_spacing = 1.15
+    add_tc(cp, f"{num}  {titles[(kind, num)]}", kind[0])
+    add_runs(cp, CAP_RE.sub(f"**{kind} {num}:**", text, count=1), size=9.5)
+    return cp
+
+
+def add_figure(doc, path: Path, cap: str, titles):
     path = optimised(path)
-    with Image.open(path) as im:
-        w, h = im.size
-    width = min(TEXT_WIDTH_IN, TEXT_WIDTH_IN)
     p = doc.add_paragraph()
     p.alignment = WD_ALIGN_PARAGRAPH.CENTER
     p.paragraph_format.space_before = Pt(12)
     p.paragraph_format.space_after = Pt(4)
     p.paragraph_format.keep_with_next = True
-    p.add_run().add_picture(str(path), width=Inches(width))
-    if caption:
-        cp = doc.add_paragraph()
-        cp.alignment = WD_ALIGN_PARAGRAPH.LEFT
-        cp.paragraph_format.space_after = Pt(14)
-        cp.paragraph_format.left_indent = Inches(0.25)
-        cp.paragraph_format.right_indent = Inches(0.25)
-        cp.paragraph_format.line_spacing = 1.15
-        add_runs(cp, caption, size=9.5, color=MUTED)
+    p.add_run().add_picture(str(path), width=Inches(TEXT_WIDTH_IN))
+    if cap:
+        caption(doc, cap, titles)
 
 
+# --------------------------------------------------------------------- tables
 def _borders(table, colour="C9CFCB"):
     """Hairline grid; the data should carry the emphasis, not the rules."""
-    tbl = table._tbl
-    pr = tbl.tblPr
+    pr = table._tbl.tblPr
     borders = OxmlElement("w:tblBorders")
     for edge in ("top", "left", "bottom", "right", "insideH", "insideV"):
         el = OxmlElement(f"w:{edge}")
@@ -228,116 +394,126 @@ def add_table(doc, rows):
             par.paragraph_format.space_before = Pt(2.5)
             par.paragraph_format.space_after = Pt(2.5)
             v = val.strip()
-            plain = re.sub(r"[*`]", "", v)
-            if i and NUMERIC.match(plain):
+            if i and NUMERIC.match(re.sub(r"[*`]", "", v)):
                 par.alignment = WD_ALIGN_PARAGRAPH.RIGHT
             add_runs(par, v, size=9.2)
-    doc.add_paragraph().paragraph_format.space_after = Pt(10)
+    # the caption now sits below the table; keep the two on one page
+    for row in t.rows:
+        for c in row.cells:
+            for par in c.paragraphs:
+                par.paragraph_format.keep_with_next = True
+    return t
 
 
+# ---------------------------------------------------------------- cover page
+def cover(doc, title, words):
+    """The template's cover: crest, institution, department, title, the
+    fulfilment statement, date, author, supervision and word count."""
+    if not CREST.exists():
+        raise SystemExit(f"refusing to build: the Aston crest is missing at {CREST}")
+    crest = _TMP / "aston_university_crest.jpg"
+    _TMP.mkdir(parents=True, exist_ok=True)
+    if not crest.exists() or crest.stat().st_mtime < CREST.stat().st_mtime:
+        with Image.open(CREST) as im:
+            im.convert("RGB").save(crest, "JPEG", quality=90, optimize=True)
 
-def add_toc_field(doc):
-    """A real TOC field. Word populates it on open; Google Docs offers
-    Insert > Table of contents against the same heading styles."""
-    p = doc.add_paragraph()
-    run = p.add_run()
-    for kind, val in (("w:fldChar", "begin"),
-                      ("w:instrText", r' TOC \o "1-3" \h \z \u '),
-                      ("w:fldChar", "separate")):
-        el = OxmlElement(kind)
-        if kind == "w:fldChar":
-            el.set(qn("w:fldCharType"), val)
-        else:
-            el.set(qn("xml:space"), "preserve")
-            el.text = val
-        run._r.append(el)
-    hint = p.add_run("Right-click and choose \u201cUpdate field\u201d, or in Google Docs "
-                     "use Insert \u2192 Table of contents.")
-    hint.italic = True
-    hint.font.size = Pt(9)
-    hint.font.color.rgb = MUTED
-    end = OxmlElement("w:fldChar")
-    end.set(qn("w:fldCharType"), "end")
-    p.add_run()._r.append(end)
-
-
-# --------------------------------------------------------------- title page
-def title_page(doc, meta):
-    for _ in range(3):
-        doc.add_paragraph()
-    p = doc.add_paragraph()
-    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    r = p.add_run(meta["title"])
-    r.bold = True
-    r.font.size = Pt(20)
-    r.font.name = HEAD_FONT
-    r.font.color.rgb = INK
-    p.paragraph_format.space_after = Pt(26)
-    p.paragraph_format.line_spacing = 1.25
-
-    rule = doc.add_paragraph()
-    rule.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    rr = rule.add_run("\u2022  " * 5)
-    rr.font.color.rgb = ACCENT
-    rr.font.size = Pt(10)
-    rule.paragraph_format.space_after = Pt(26)
-
-    for text, size, bold, colour, gap in [
-        (meta["degree"], 13, True, ACCENT, 6),
-        (meta["institution"], 12, False, INK, 3),
-        (meta["project"], 11, False, MUTED, 26),
-        (meta["author_label"], 10.5, False, MUTED, 2),
-        (meta["author"], 15, True, INK, 22),
-        (meta["supervisors"], 11, False, INK, 26),
-        (meta["date"], 11, False, MUTED, 4),
-        (meta["wordcount"], 10, False, MUTED, 0),
-    ]:
+    def line(text="", size=11, bold=False, after=4):
         p = doc.add_paragraph()
         p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        p.paragraph_format.space_after = Pt(after)
+        p.paragraph_format.line_spacing = 1.2
+        if text:
+            r = p.add_run(text)
+            r.bold = bold
+            r.font.size = Pt(size)
+            r.font.name = BODY_FONT
+            r.font.color.rgb = BLACK
+        return p
+
+    p = line(after=6)
+    p.add_run().add_picture(str(crest), width=Cm(4.8))
+    line(COVER["institution"], 16, after=2)
+    line(COVER["department"], 11, after=28)
+    line(title, 16, bold=True, after=30)
+    line("A dissertation submitted in fulfilment of the requirements for the degree of",
+         11, after=0)
+    line(COVER["degree"] + ".", 11, after=4)
+    line(COVER["date"], 11, after=26)
+    line(COVER["author"], 13, bold=True, after=26)
+    p = line(after=0)
+    for text, bold in (("Supervisors: ", True), (COVER["supervisors"], False)):
         r = p.add_run(text)
         r.bold = bold
-        r.font.size = Pt(size)
+        r.font.size = Pt(11)
         r.font.name = BODY_FONT
-        r.font.color.rgb = colour
-        p.paragraph_format.space_after = Pt(gap)
-    doc.add_paragraph().add_run().add_break(WD_BREAK.PAGE)
+        r.font.color.rgb = BLACK
+    line(COVER["address"], 10, after=4)
+    line(COVER["project"], 10, after=26)
+    line(f"Word count: {words:,} (main text, excluding figure captions, "
+         "references and appendices)", 10, after=0)
 
 
 # ------------------------------------------------------------------- parsing
 FIG_RE = re.compile(r"^!\[([^\]]*)\]\(([^)]+)\)\s*$")
-CAP_RE = re.compile(r"^\*\*(Figure|Table) ([0-9.]+)\*\*")
 
 
-def render(doc, lines):
-    i, n = 0, len(lines)
-    pending_fig = None
+def list_titles(lines):
+    """Short titles for the lists of tables and figures, taken from the
+    manuscript's own lists so the two cannot drift apart."""
+    start = next(i for i, l in enumerate(lines) if l.strip() == "## Table of Contents")
+    end = next(i for i in range(start, len(lines)) if lines[i].startswith("# Chapter"))
+    titles, cur = {}, None
+    for l in lines[start:end]:
+        m = re.match(r"^- (Figure|Table) ([0-9A-Z]+\.[0-9]+) (.*)$", l)
+        if m:
+            cur = (m.group(1), m.group(2))
+            titles[cur] = m.group(3).strip()
+        elif cur and l.startswith("  ") and l.strip():
+            titles[cur] += " " + l.strip()
+        else:
+            cur = None
+    return {k: re.sub(r"[*`]", "", v) for k, v in titles.items()}
+
+
+def render(doc, lines, titles):
+    # The manuscript opens with a metadata block and editorial notes. The
+    # cover already carries that information; rendering it again produced a
+    # second, repeated cover page.
+    i = next(k for k, l in enumerate(lines) if l.startswith("## "))
+    n = len(lines)
     while i < n:
         line = lines[i]
 
         # editorial notes -- never reach the marker
-        if line.startswith(">"):
-            i += 1
-            continue
-
-        if not line.strip() or line.strip() == "---":
+        if line.startswith(">") or not line.strip() or line.strip() == "---":
             i += 1
             continue
 
         m = re.match(r"^(#{1,3})\s+(.*)$", line)
         if m:
             level, text = len(m.group(1)), m.group(2).strip()
-            if level == 1 and text.startswith("Chapter"):
-                doc.add_paragraph().add_run().add_break(WD_BREAK.PAGE)
-            if text in ("Declaration", "Abstract", "Acknowledgements",
-                        "Table of Contents", "References", "Appendices"):
-                doc.add_paragraph().add_run().add_break(WD_BREAK.PAGE)
-            heading(doc, text, level)
             i += 1
-            # the static chapter list is replaced by a live field
-            if text == "Table of Contents":
-                add_toc_field(doc)
-                while i < n and not lines[i].startswith("**List of Tables**"):
-                    i += 1
+            if level == 1:
+                cm = re.match(r"^Chapter (\d+):\s*(.*)$", text)
+                if cm:
+                    chapter_heading(doc, cm.group(1), cm.group(2))
+                else:
+                    h = heading(doc, text, 1)
+                    h.paragraph_format.page_break_before = True
+                    add_tc(h, text, "C")
+            elif text == "Table of Contents":
+                front_heading(doc, "Contents")
+                add_toc(doc, r'TOC \o "2-3" \f C \h \z')
+                front_heading(doc, "List of Tables")
+                add_toc(doc, r"TOC \f T \h \z")
+                front_heading(doc, "List of Figures")
+                add_toc(doc, r"TOC \f F \h \z")
+                # the manuscript's static lists are replaced by the fields
+                i = next(k for k in range(i, n) if lines[k].startswith("# Chapter"))
+            elif text in FRONT:
+                front_heading(doc, text)
+            else:
+                heading(doc, text, level)
             continue
 
         fm = FIG_RE.match(line)
@@ -346,33 +522,45 @@ def render(doc, lines):
             j = i + 1
             while j < n and not lines[j].strip():
                 j += 1
-            caption = ""
+            cap = ""
             if j < n and CAP_RE.match(lines[j]):
                 cap_lines = []
                 while j < n and lines[j].strip():
                     cap_lines.append(lines[j].strip())
                     j += 1
-                caption = " ".join(cap_lines)
+                cap = " ".join(cap_lines)
                 i = j
             else:
                 i += 1
-            if path.exists():
-                add_figure(doc, path, caption)
+            if not path.exists():
+                raise SystemExit(f"refusing to build: figure missing at {path}")
+            add_figure(doc, path, cap, titles)
             continue
 
-        # standalone caption (table captions precede their table)
+        # A table caption precedes its table in the manuscript; the template
+        # sets it below, so it is held until the table has been drawn.
         if CAP_RE.match(line):
             cap = [line.strip()]
             i += 1
             while i < n and lines[i].strip() and not lines[i].lstrip().startswith("|"):
                 cap.append(lines[i].strip())
                 i += 1
-            cp = doc.add_paragraph()
-            cp.paragraph_format.space_before = Pt(10)
-            cp.paragraph_format.space_after = Pt(4)
-            cp.paragraph_format.keep_with_next = True
-            cp.paragraph_format.line_spacing = 1.15
-            add_runs(cp, " ".join(cap), size=9.5, color=MUTED)
+            j = i
+            while j < n and not lines[j].strip():
+                j += 1
+            text = " ".join(cap)
+            if j < n and lines[j].lstrip().startswith("|"):
+                rows = []
+                while j < n and lines[j].lstrip().startswith("|"):
+                    cells = [c for c in lines[j].strip().strip("|").split("|")]
+                    if not re.fullmatch(r"[\s:\-]+", "".join(cells)):
+                        rows.append(cells)
+                    j += 1
+                add_table(doc, rows)
+                caption(doc, text, titles, space_before=6)
+                i = j
+            else:
+                caption(doc, text, titles, space_before=10)
             continue
 
         if line.lstrip().startswith("|"):
@@ -384,6 +572,7 @@ def render(doc, lines):
                 i += 1
             if rows:
                 add_table(doc, rows)
+                doc.add_paragraph().paragraph_format.space_after = Pt(10)
             continue
 
         lm = re.match(r"^(\s*)([-*]|\d+\.)\s+(.*)$", line)
@@ -417,11 +606,76 @@ def render(doc, lines):
             i += 1
 
 
+# ------------------------------------------------------------------ the Word pass
+def _osa(script, timeout):
+    r = subprocess.run(["osascript", "-e", script], capture_output=True,
+                       text=True, timeout=timeout)
+    if r.returncode:
+        raise SystemExit(f"Word pass failed: {r.stderr.strip()}")
+    return r.stdout.strip()
+
+
+# Word is sandboxed: it can open a file it is handed, but it can only write
+# inside its own container without asking the user. Writing the PDF anywhere
+# else stalls on a permission prompt, so both outputs are saved there and
+# copied out.
+WORD_DATA = Path.home() / "Library/Containers/com.microsoft.Word/Data/Documents"
+
+
+def finalise_in_word():
+    """Fill in the contents and both lists, save, and export the PDF.
+
+    Word's scripting interface on this platform cannot close a document, so
+    each pass uses a name of its own: reopening a name Word still holds would
+    raise a dialog and stall. The working copy stays open in Word afterwards."""
+    if platform.system() != "Darwin" or not Path("/Applications/Microsoft Word.app").exists():
+        raise SystemExit("Word for Mac is needed to fill in the contents and export "
+                         "the PDF; rerun with --no-word to build the .docx alone")
+    WORD_DATA.mkdir(parents=True, exist_ok=True)
+    for old in WORD_DATA.glob("dissertation_word_pass_*"):
+        old.unlink()
+    stem = "dissertation_word_pass_" + datetime.now().strftime("%Y%m%d-%H%M%S")
+    name = stem + ".docx"
+    # Handed over inside the container as well: a file anywhere else may wait
+    # on the user to grant access, and "open" returns before Word has loaded
+    # the document, so the script waits for it to appear.
+    saved_docx, saved_pdf = WORD_DATA / name, WORD_DATA / (stem + ".pdf")
+    shutil.copy2(OUT, saved_docx)
+    steps = [
+        ("open", f'open (POSIX file "{saved_docx}")\n'
+                 'repeat 240 times\n'
+                 f'if (name of every document) contains "{name}" then return "{name}"\n'
+                 'delay 0.5\nend repeat\nerror "Word did not open the document"'),
+        ("fill in contents and lists",
+         f'set d to document "{name}"\n'
+         'set n to count of tables of contents of d\n'
+         'repeat with i from 1 to n\nupdate (table of contents i of d)\nend repeat\n'
+         'return n'),
+        ("save .docx", f'save as document "{name}" file name "{saved_docx}" '
+                       'file format format document\nreturn "saved"'),
+        ("export PDF", f'save as document "{name}" file name "{saved_pdf}" '
+                       'file format format PDF\nreturn "exported"'),
+    ]
+    for label, body in steps:
+        t0 = time.time()
+        script = ('with timeout of 600 seconds\ntell application "Microsoft Word"\n'
+                  f'{body}\nend tell\nend timeout')
+        out = _osa(script, timeout=660)
+        print(f"  word: {label} ({time.time() - t0:.0f}s) {out}")
+    if not (saved_docx.exists() and saved_pdf.exists()):
+        raise SystemExit("Word pass failed: Word did not write both files")
+    shutil.copy2(saved_docx, OUT)
+    shutil.copy2(saved_pdf, PDF)
+    print(f"  word: the working copy {name} is still open in Word; close it "
+          "without saving when convenient")
+
+
 def main():
+    use_word = "--no-word" not in sys.argv[1:]
     text = SRC.read_text()
     lines = text.splitlines()
 
-    # word count for the title page (chapters, excluding figure captions)
+    # word count for the cover (chapters, excluding figure captions)
     cut = next(k for k, l in enumerate(lines) if re.match(r"^#+\s*References", l, re.I))
     body = [l for l in lines[:cut] if not l.startswith(">")]
     ch1 = next(k for k, l in enumerate(body) if l.startswith("## 1.1"))
@@ -434,33 +688,30 @@ def main():
         if not skip and not l.startswith("!["):
             keep.append(l)
     words = len(re.findall(r"\S+", "\n".join(keep)))
+    if words > 12000:
+        raise SystemExit(f"refusing to build: {words:,} words exceeds the 12,000 limit")
 
     doc = Document()
     sec = doc.sections[0]
-    sec.top_margin = sec.bottom_margin = Inches(1.0)
-    sec.left_margin = sec.right_margin = Inches(1.25)
+    # A4 with 2.54 cm margins, as in the template
+    sec.page_width, sec.page_height = Cm(21.0), Cm(29.7)
+    sec.top_margin = sec.bottom_margin = Cm(2.54)
+    sec.left_margin = sec.right_margin = Cm(2.54)
+    # The cover carries no number and Acknowledgements is page 1.
+    sec.different_first_page_header_footer = True
+    sec.first_page_footer.is_linked_to_previous = False
+    start = OxmlElement("w:pgNumType")
+    start.set(qn("w:start"), "0")
+    sec._sectPr.insert_element_before(
+        start, "w:cols", "w:formProt", "w:vAlign", "w:noEndnote", "w:titlePg",
+        "w:textDirection", "w:bidi", "w:rtlGutter", "w:docGrid",
+        "w:printerSettings", "w:sectPrChange")
     add_page_numbers(sec)
-
-    normal = doc.styles["Normal"]
-    normal.font.name = BODY_FONT
-    normal.font.size = Pt(11)
-    normal.font.color.rgb = INK
+    ensure_styles(doc)
 
     title = lines[0].lstrip("# ").strip()
-    title_page(doc, {
-        "title": title,
-        "degree": "MSc Artificial Intelligence and Business Strategy",
-        "institution": "Aston University",
-        "project": "Project JBKS1",
-        "author_label": "Submitted by",
-        "author": "Uririe, Orume Dominic",
-        "supervisors": "Supervisors: Julien Barney and Kate Sugden",
-        "date": "September 2026",
-        "wordcount": f"{words:,} words (main text, excluding figure captions, "
-                     f"references and appendices)",
-    })
-
-    render(doc, lines[1:])
+    cover(doc, title, words)
+    render(doc, lines[1:], list_titles(lines))
 
     # Refuse to ship a document containing text written for the author.
     # A leak here reaches a marker, so it is a build failure, not a warning.
@@ -473,7 +724,8 @@ def main():
         raise SystemExit("refusing to build: em dashes present in the text")
     banned = ["delete before submission", "End of dissertation draft",
               "Remaining before submission", "requires you", "REGISTRY CHECK",
-              "Editorial status", "TODO", "FIXME"]
+              "Editorial status", "TODO", "FIXME", "Reproduce in full",
+              "Right-click", "Update field"]
     leaks = [b for b in banned if b.lower() in rendered.lower()]
     if leaks:
         raise SystemExit(f"refusing to build: editorial text leaked -> {leaks}")
@@ -482,8 +734,6 @@ def main():
     # whether they have the current version can check File > Properties instead
     # of guessing from a filename, which is how a day-old copy in a Downloads
     # folder came to be reviewed as though it were the submission.
-    import subprocess
-    from datetime import datetime, timezone
     try:
         commit = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=ROOT,
                                 capture_output=True, text=True).stdout.strip()
@@ -492,7 +742,7 @@ def main():
     built = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     core = doc.core_properties
     core.title = title
-    core.author = "Uririe, Orume Dominic"
+    core.author = COVER["author"]
     core.subject = "MSc Artificial Intelligence and Business Strategy, Aston University"
     core.category = "Dissertation, project JBKS1"
     core.keywords = ("agentic AI; code generation; software quality metrics; "
@@ -501,13 +751,16 @@ def main():
                      f"{words:,} words of main text excluding figure captions. "
                      "Generated by scripts/build_dissertation_docx.py; edit "
                      "docs/dissertation/DISSERTATION_FULL.md and rebuild.")
-    core.last_modified_by = "Uririe, Orume Dominic"
+    core.last_modified_by = COVER["author"]
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
     doc.save(OUT)
     print(f"  build stamp: {built}, commit {commit}")
+    print(f"  cover word count: {words:,}")
+    if use_word:
+        finalise_in_word()
+        print(f"wrote {PDF}  ({PDF.stat().st_size/1024:.0f} KB)")
     print(f"wrote {OUT}  ({OUT.stat().st_size/1024:.0f} KB)")
-    print(f"title-page word count: {words:,}")
 
 
 if __name__ == "__main__":

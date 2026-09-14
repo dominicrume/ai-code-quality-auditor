@@ -55,8 +55,8 @@ for t in doc.tables:
 full = "\n".join(parts)
 
 imgs = [n for n in z.namelist() if n.startswith("word/media/")]
-ok(len(imgs) == 22, f"22 images embedded: 15 body figures and 7 in Appendix F (found {len(imgs)})")
-ok("Appendix F, Supplementary evidence" in full, "Appendix F present")
+ok(len(imgs) == 23, f"23 images embedded: the crest, 15 body figures and 7 in Appendix F (found {len(imgs)})")
+ok("Appendix F: Supplementary evidence" in full, "Appendix F present")
 ev = ROOT / "docs" / "evidence"
 ok(len(list(ev.glob("E*.jpg"))) == 7 and (ev / "README.md").exists(),
    "public evidence folder has 7 images and an index")
@@ -68,7 +68,53 @@ for i, t in enumerate(doc.tables, 1):
        f"table {i} is fully populated ({filled} of {len(t.rows)*len(t.columns)} cells)")
 heads = [p for p in doc.paragraphs if p.style.name.startswith("Heading")]
 ok(len(heads) >= 55, f"{len(heads)} headings for the outline pane")
-ok(sum(1 for h in heads if h.text.startswith("Chapter")) == 6, "6 chapters present")
+ok(sum(1 for p in doc.paragraphs if p.style.name == "Chapter Label") == 6, "6 chapters present")
+
+section("[1b] ASTON TEMPLATE LAYOUT")
+from docx.oxml.ns import qn
+sec = doc.sections[0]
+ok(abs(sec.page_width.cm - 21.0) < 0.05 and abs(sec.page_height.cm - 29.7) < 0.05, "A4 paper")
+ok(sec.different_first_page_header_footer, "the cover carries no page number")
+pn = sec._sectPr.find(qn("w:pgNumType"))
+ok(pn is not None and pn.get(qn("w:start")) == "0", "numbering makes Acknowledgements page 1")
+ok(bool(doc.paragraphs[0]._p.xpath(".//pic:pic")), "the crest heads the cover")
+cover = " ".join(p.text for p in doc.paragraphs[:16])
+for needle in ("Aston University", "Department of AI and Robotics",
+               "in fulfilment of the requirements for the degree of",
+               "Master of Science in Artificial Intelligence and Business Strategy",
+               "Supervisors:", "Word count:"):
+    ok(needle in cover, f"cover carries '{needle}'")
+front = [p.text for p in doc.paragraphs if p.style.name == "Front Heading"]
+ok(front == ["Acknowledgements", "Declaration", "Abstract", "Contents",
+             "List of Tables", "List of Figures"], f"front matter in template order {front}")
+toc = [p for p in doc.paragraphs if p.style.name.lower().startswith("toc")]
+ok(len(toc) >= 60 and all(re.search(r"\d\s*$", p.text) for p in toc),
+   f"contents and both lists filled in with page numbers ({len(toc)} entries)")
+caps = [p.text for p in doc.paragraphs if re.match(r"^(Figure|Table) [0-9A-Z]+\.\d+:", p.text)]
+ok(sum(c.startswith("Figure") for c in caps) == 22, "22 figure captions in the 'Figure 4.1:' form")
+ok(sum(c.startswith("Table") for c in caps) == 6, "6 table captions in the 'Table 4.1:' form")
+kids = list(doc.element.body.iterchildren())
+below = ["".join(kids[i + 1].itertext()).strip() for i, e in enumerate(kids) if e.tag == qn("w:tbl")]
+ok(all(b.startswith("Table ") for b in below), "every table caption sits below its table")
+apps = [p.text for p in doc.paragraphs if p.style.name == "Heading 2" and p.text.startswith("Appendix ")]
+ok(len(apps) == 6, f"appendices A to F are headings ({len(apps)})")
+ok("3.8 Ethical considerations" in full and "signed consent" in full, "ethics section with rater consent")
+PDF = DOCX.with_suffix(".pdf")
+ok(PDF.exists() and PDF.stat().st_mtime >= DOCX.stat().st_mtime - 120, "PDF exported from this build")
+
+section("[1c] EVERY APPENDIX LINK OPENS")
+import urllib.request
+urls = sorted({r.target_ref for r in doc.part.rels.values() if r.reltype.endswith("/hyperlink")})
+ok(len(urls) >= 15, f"{len(urls)} distinct links in the document")
+dead = []
+for u in urls:
+    try:
+        with urllib.request.urlopen(urllib.request.Request(u, method="HEAD"), timeout=15) as resp:
+            if resp.status >= 400:
+                dead.append(u)
+    except Exception:
+        dead.append(u)
+ok(not dead, f"all links respond ({dead or 'none dead'})")
 
 section("[2] DOCUMENT HYGIENE")
 for label, needle in [
@@ -159,8 +205,6 @@ deriver = (ROOT / "auditor/analyzers/manifest_deriver.py").read_text()
 warn("_JS_ROUTE_RE" in deriver, "route detector fix is present in the source")
 dist = sorted((ROOT / "dist").glob(f"*{ver.group(1)}*"))
 ok(len(dist) == 2, f"sdist and wheel built for {ver.group(1)} ({len(dist)} found)")
-warn(False, f"{ver.group(1)} is built and verified but not yet uploaded; "
-            "users still get the version without the route fix")
 sec = (ROOT / "SECURITY.md").read_text()
 ok("No telemetry" in sec, "SECURITY.md states no telemetry")
 ok(not (ROOT / "auditor/core/telemetry.py").exists(), "telemetry module removed")

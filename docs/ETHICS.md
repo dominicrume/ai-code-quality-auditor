@@ -1,17 +1,29 @@
 # Ethics
 
-Maps to Section 6 of the MSc proposal.
+Maps to Section 6 of the approved MSc project proposal and to §3.8 of the
+dissertation.
+
+## Approval
+The study involves no human participants and collects no human-subject data.
+The approved project proposal records that research ethics approval is not
+required.
 
 ## Data
 - **Synthetic only.** All Agent Education System content (mock Tesco/Asda
   staff, mock students) is fabricated. No real PII enters the pipeline.
 - **No proprietary corporate data.** Ever.
-- **No human-subject data.** This study does not require Research Ethics
-  Approval as it does not collect human-subject data.
+
+## Human raters (inter-rater reliability, §4.7)
+Ikenna Onyedebelu and Matthew Brian Tahir labelled instrument output as
+independent assessors, not as research subjects. Both took part voluntarily
+and gave signed consent for their labels to be used and for their names to
+appear in the dissertation. Nothing else about them is recorded. Their sheets
+are in `data/labels/`.
 
 ## AI use and authorship
 - AI tools generate code as the **subject of the experiment**.
-- The dissertation manuscript is authored independently by the researcher.
+- AI assistance in building the instrument and preparing the manuscript is
+  declared, with its bounds, in the dissertation's Declaration.
 - All AI prompts and raw outputs are logged in `data/raw/` for audit.
 
 ## Cloud / data leakage
@@ -45,7 +57,7 @@ is excluded by construction.
 
 ## Disclosure of AI assistance in building the instrument
 Parts of the Auditor itself were drafted with agentic coding assistants.
-This is disclosed in the MSc methodology section. The Auditor is the
+This is disclosed in the dissertation's Declaration. The Auditor is the
 measuring instrument, not one of the measured artefacts — at experiment
 time each vendor implements the fixed spec independently, so AI
 involvement in the instrument's construction does not bias the measured
