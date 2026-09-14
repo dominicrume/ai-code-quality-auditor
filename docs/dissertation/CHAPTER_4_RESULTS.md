@@ -58,8 +58,7 @@ for every agentic condition and is reported here for shape consistency, with its
 interpretable value reserved for the human comparison in §4.6. The conditions
 thus occupy distinct trade-off profiles rather than a single ordering (Claude
 trading structural density for discipline, Replit trading specification fidelity
-and a large scaffolding footprint for breadth of generated infrastructure) and
-the per-metric and per-spec analyses that follow unpack each in turn before §4.5 sets out which differences the design can test.
+and a large scaffolding footprint for breadth of generated infrastructure), and the per-metric and per-spec analyses that follow unpack each in turn before §4.5 sets out which differences the design can test.
 
 ## 4.3 Per-metric findings
 
@@ -76,14 +75,13 @@ and the per-spec breakdown (§4.4) makes visible.
 (`init`, `add`, `list`, `export`, `validate`, `help`), under a fresh, isolated
 workspace and an explicit
 instruction stem prohibiting pipeline output, Replit Agent shipped a
-*data-pipeline CLI* in its captured session for that cell, defining `cmd_run`
-and `cmd_schedule` invoking a `run_pipeline` routine rather than the spec's
-structure. The behaviour matters because of the controls around it: the
+*data-pipeline CLI* in its captured session for that cell, with `run`, `schedule` and `check-config` subcommands around a
+`run_pipeline` routine rather than the spec's structure. The behaviour matters because of the controls around it: the
 workspace was confirmed clean before capture and the prompt explicitly forbade
 the pipeline shape, so the result cannot be attributed to contamination or an
 ambiguous brief. It is documented as a *measured architectural-prior dominance*
 (analytical note 001): the agent's pretrained scaffolding bias is strong enough
-to override an unambiguous, contradictory specification. This is the result that
+to override an unambiguous specification that contradicts it. This is the result that
 most sharply illustrates the dissertation's thesis (functional benchmarks, which
 would record only whether the produced pipeline's tests passed, are structurally
 incapable of detecting that the wrong artefact was built) and on which the
@@ -91,8 +89,7 @@ governance argument of Chapter 5 principally rests. One caveat is carried
 explicitly: this cell is an effective singleton under the replay design
 (Deviation 001), so its ten listed replications are mechanical copies of one
 session and contribute no independent evidence of stability. The finding rests
-on the controlled capture conditions and on direct code inspection; a live
-multi-session re-capture (§5.7) is the stated next step.
+on the controlled capture conditions and on direct code inspection; a live multi-session re-capture (§6.4) is the stated next step.
 
 ![What the specification asked for, and what was shipped](figures/fig_4_3_replit_evidence.png)
 
@@ -113,7 +110,7 @@ complexity achieved by scattering logic across duplicated scaffolding. The
 metric is most informative read alongside duplication.
 
 **Duplication.** Claude Code produced zero duplication across all 30 runs;
-Cursor averaged 0.9%, Antigravity 4.3%, and **Replit Agent 9.56%**, by far the
+Cursor averaged 0.90%, Antigravity 4.26%, and **Replit Agent 9.56%**, by far the
 largest ratio in the table. Inspection identifies the source unambiguously:
 Replit ships enterprise monorepo scaffolding (workspace configuration
 hierarchies, shared-utility libraries, OpenAPI/ORM code generation) regardless
@@ -128,8 +125,8 @@ findings inside test files, which the analyser originally counted: `B101` exists
 because assertions vanish under `python -O`, and that reasoning does not apply
 where the assertion *is* the test. Counting them meant the metric penalised the
 conditions that tested their own output most thoroughly, inflating claude_code
-from 9.65 to 42.05 and cursor_agent from 5.93 to 43.67. The correction is
-recorded as Erratum 001; it reverses no conclusion, and the corrected values are
+from 9.65 to 42.05 and cursor_agent from 5.93 to 43.67. The correction is recorded as Erratum 001; it swaps the order of those two
+conditions but reverses no inferential conclusion, and the corrected values are
 used throughout.
 
 The exclusion also exposes a difference the metric had been hiding. Whether a
@@ -142,10 +139,9 @@ inform governance must not make.
 
 The pattern inverts that of the other metrics. The two feature-dense vendors, Claude Code (9.65) and Cursor Agent
 (5.93 CWE-tagged findings per kLOC), score *highest*, while Replit records 0.00
-and Antigravity 1.47. Replit's zero does not indicate more secure output; it is
-a denominator artefact. Bandit scans Python, and Replit's output is dominated by
-TypeScript scaffolding with comparatively little Python, so the few Python
-issues are diluted across a large non-Python project. `security_density` is
+and Antigravity 1.47. Replit's zero does not indicate more secure output; it is a coverage artefact. Bandit scans only Python, and Replit's output is
+dominated by TypeScript scaffolding with comparatively little Python, so almost
+nothing it wrote was scanned and no finding was recorded in any run. `security_density` is
 therefore best read as a *per-language* density rather than a
 total-vulnerability count, and a companion metric, total CWE-tagged findings per
 run, would be needed to support a whole-project security claim (§5.2). 
@@ -156,8 +152,7 @@ run, would be needed to support a whole-project security claim (§5.2).
 language across all 30 runs per condition: Replit's output is 6% Python against
 52% TypeScript and 42% configuration, while every other condition is
 Python-first. Centre, the number of runs containing a test file. Right, security
-density against Python share. Replit's 0.00 has two causes and neither is
-security: almost nothing it wrote is scannable, and it wrote no tests to scan.
+density against Python share. Replit's 0.00 is not a security result: almost nothing it wrote is scannable.
 
 **Keystroke correction.** Structurally zero for every AI condition, because
 agents do not press keys. The metric exists for the `human_control` comparison
@@ -273,7 +268,7 @@ hallucinations and security density do not. A further correction for the four
 metrics tested here (0.0025) is not part of the registered plan, and neither
 result would survive it.
 
-A further distinction must be drawn between the two surviving results, because
+A further distinction must be drawn between the two significant results, because
 replication is not uniform even within the live conditions. Examining
 within-cell variance for each arm separately: on *complexity* both conditions
 vary across all three specifications, so the comparison rests on genuine
@@ -303,16 +298,14 @@ four-condition comparison in this study is *descriptive*, not inferential.
 ### 4.5.3 What the design does and does not license
 
 The cross-vendor differences in Table 4.1 are large, consistent, and
-mechanistically explained by direct inspection of the captured code, duplication
-spans 0.00% (Claude) to 9.56% (Replit) and hallucinations 0.00 to 1.33 per run,
-but for the two IDE-bound vendors they rest on one captured session per task.
+mechanistically explained by direct inspection of the captured code (duplication spans 0.00% to 9.56% and
+hallucinations 0.00 to 1.33 per run), but for the two IDE-bound vendors they rest on one captured session per task.
 They are therefore presented as **descriptive case evidence**, and the
 task-dependence claim (RQ3) is likewise reframed: the per-specification pattern
 in Table 4.2 shows that no vendor's hallucination behaviour is constant across
 task domains, which is a *descriptive* demonstration of task-conditionality and
-is reported as such, without an inferential interaction test.  Closing this gap requires live
-multi-session re-capture of the two IDE-bound vendors, which §6.4 identifies as
-the first priority of any continuation.
+is reported as such, without an inferential interaction test. Closing this gap requires live
+multi-session re-capture of the two IDE-bound vendors, which §6.4 sets out.
 
 ## 4.6 Human-control baseline
 
@@ -333,7 +326,7 @@ inferential comparison is made.
 | Complexity (cc) | 1.71 / 1.56 | 5.00 / 3.20 | 0.00 / 3.54 |
 | Duplication (%) | 0.00 / 3.59 | 0.00 / 5.87 | 0.00 / 1.57 |
 | Hallucinations (count) | 0.00 / 0.62 | 0.00 / 0.00 | 0.00 / 0.75 |
-| Correction frequency (per 1k) | 829.27 / 0.00 | 51.80 / 0.00 | 122.27 / 0.00 |
+| Keystroke correction (per 1k) | 829.27 / 0.00 | 51.80 / 0.00 | 122.27 / 0.00 |
 
 ![Human baseline against the agentic mean, per specification](figures/fig_4_7_human_vs_ai.png)
 
@@ -350,11 +343,9 @@ function definitions and the analyser measures per-function complexity, whereas
 the AI conditions wrapped the same logic in functions (3.1–4.1). The keystroke
 correction rate, the one metric where the human is the point of comparison, was
 51.8 per 1,000 on the representative complete session (`data_pipeline`, 6,619
-events), i.e. the researcher backspaced ~5% of the time. The
+events), i.e. the researcher backspaced about 5% of the time. The
 `agent_education_system` figure (829/1k) is a partial-capture outlier from the
-documented data-loss event and is not a representative authoring rate. The human
-baseline is interpreted as a reference floor and a validity check, not as
-evidence that hand-coding is superior.
+documented data-loss event and is not a representative authoring rate. 
 
 ## 4.7 Inter-rater reliability
 
@@ -374,7 +365,7 @@ worked. Threshold κ ≥ 0.6 (Landis and Koch, 1977).
 | Comparison | κ | Interpretation | Raw agreement |
 |---|---:|---|---:|
 | Rater 1 × Rater 2 | 0.870 | almost perfect | 94.4% |
-| Rater 1 × instrument | 0.853 | almost perfect | 94.4% |
+| Rater 1 × instrument | 0.852 | almost perfect | 94.4% |
 | Rater 2 × instrument | 0.727 | substantial | 88.9% |
 
 All three clear the threshold, so the metric's detection of scope drift is admissible for inferential use,
@@ -438,8 +429,8 @@ experiment.
 
 | Project | Files | Lines | Python | Security | Complexity | Duplication | Scope drift |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| kya-rails | 43 | 4,620 | 15 | 7.49 | 4.13 | 1.79% | 0.00 |
-| GovSignal | 30 | 1,923 | 17 | 2.26 | 4.79 | 0.89% | 4.00 |
+| kya-rails | 43 | 4,620 | 15 | 7.49 | 4.13 | 1.79% | 0 |
+| GovSignal | 30 | 1,923 | 17 | 2.26 | 4.79 | 0.89% | 4 |
 | This instrument | 141 | 13,136 | 86 | 3.14 | 3.58 | 4.01% | 12 |
 
 ![The same project before and after a specification was supplied](figures/fig_4_9_scope_needs_spec.png)
@@ -453,7 +444,7 @@ are unchanged, since they do not depend on knowing what was asked for. This is
 the study's argument in one image: fidelity is not a property of code that can
 be read off the code alone.
 
-Two points follow. Scope drift discriminates: `kya-rails` returns 0.00, the
+Two points follow. Scope drift discriminates: `kya-rails` returns 0, the
 reading the metric is designed to produce when output matches its brief, while
 `GovSignal` returns 4. A metric returning the same value on every real project
 would measure nothing. And `GovSignal` was audited by a third party on their own
@@ -473,8 +464,7 @@ pre-registration and the standing brief of 30 May 2026 and reproduced in
 eight HTTP endpoints belonging to a local web interface the declared design did
 not contain at all. The declaration described two commands and no web surface. The `fix` verb has
 since been removed from the published package (release 0.5.0).
-Git dates every addition to August 2026, months after the protocol was fixed and
-none of them required by the experiment.
+Git dates every addition to August 2026, months after the protocol was fixed, with none of them required by the experiment.
 
 This is the phenomenon the study measures, occurring in the author's own work,
 and it sharpens rather than undermines §5.3. The drift here is *deliberate and
@@ -493,23 +483,20 @@ an artefact of the wrong brief, not a finding; the figure of record is 12.
 
 ## 4.9 Summary of findings
 
-1. **Hallucination is the most consequential governance metric.** The four
-conditions span 0.00 to 1.33 off-spec features per run, a range that matters in
+1. **Hallucination is the most consequential governance metric.** The agentic conditions span 0.00 to 1.33 off-spec features per run, a range that matters in
 any deployment evaluation and that functional benchmarks do not surface, though
 between the two live tools the difference is not significant (§4.5.2).
 
 2. **Replit Agent's architectural prior dominates the specification.** Given a
    CLI specification under controlled conditions it ships a data pipeline; given
    a web-app specification, an enterprise TypeScript monorepo. The hallucination
-   count, the duplication figure (9.56%) and the security-density artefact (0.00
-   by Python dilution) are three readings of one underlying behaviour,
+   count, the duplication figure (9.56%) and the security-density artefact (0.00 because almost none of it is Python) are three readings of one underlying behaviour,
    triangulated by direct code inspection; its stability across independent
-   sessions awaits the live re-capture (§5.7).
+   sessions awaits the live re-capture (§6.4).
 
 3. **Claude Code produces the most disciplined output**, zero hallucinations and
 zero duplication across all 30 runs, at the cost of the highest structural
-density (mean complexity 3.35), read as denser rather than worse. Of its two
-components, the greater control-flow density relative to Cursor is the study's
+density (mean complexity 3.35), read as denser rather than worse. Of its two gaps from Cursor, the complexity gap is the study's
 single result supported by genuine replication in both arms; the duplication gap
 is large and consistent but rests on an arm with no within-cell variance and is
 reported descriptively (§4.5.2).
@@ -525,7 +512,7 @@ reported descriptively (§4.5.2).
 6. **Tool behaviour is not constant across task domains.** Every vendor's
    hallucination profile changes with the specification (Table 4.2), so the
    strongest external-validity claim is not "agent X is better than agent Y" but
-   "agent X behaved better *for this task type*." This is established
+   "agent X behaved better *for this task type*". This is established
    descriptively rather than by an interaction test, which the replay design
    cannot support (§4.5.3).
 

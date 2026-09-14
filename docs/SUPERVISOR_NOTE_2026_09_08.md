@@ -19,7 +19,7 @@ labelling the same code twice would inflate agreement by construction.
 | Comparison | κ |
 |---|---:|
 | Rater 1 × Rater 2 | 0.870 |
-| Rater 1 × instrument | 0.853 |
+| Rater 1 × instrument | 0.852 |
 | Rater 2 × instrument | 0.727 |
 
 All three clear the pre-registered 0.6 threshold, so §4.7 now reports a result

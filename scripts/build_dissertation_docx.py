@@ -191,7 +191,8 @@ def body_par(doc, text, size=11, space_after=8, justify=True):
     pf = p.paragraph_format
     pf.space_after = Pt(space_after)
     pf.line_spacing = 1.42
-    if justify:
+    # a long unbreakable URL stretches every gap on a justified line
+    if justify and "](http" not in text:
         p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
     add_runs(p, text, size=size)
     return p

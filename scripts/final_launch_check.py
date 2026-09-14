@@ -172,7 +172,7 @@ for metric, row in TABLE41.items():
 
 section("[4] KAPPA AS REPORTED")
 k = json.loads((ROOT / "data/labels/kappa_results.json").read_text())
-for v in ("0.870", "0.853", "0.727"):
+for v in ("0.870", "0.852", "0.727"):
     ok(v in full, f"pre-registered kappa {v} quoted")
 ok("circular" in full, "circularity of the post-repair value declared")
 r1 = {r["item_id"]: r["n_offspec_features"]

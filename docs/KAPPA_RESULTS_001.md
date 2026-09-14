@@ -15,7 +15,7 @@ stood when the raters labelled**. They are the values the thesis should quote.
 | Comparison | κ | Interpretation | Raw agreement |
 |---|---|---|---|
 | Rater 1 × Rater 2 | **0.870** | almost perfect | 94.4% |
-| Rater 1 × instrument | **0.853** | almost perfect | 94.4% |
+| Rater 1 × instrument | **0.852** | almost perfect | 94.4% |
 | Rater 2 × instrument | **0.727** | substantial | 88.9% |
 
 All three clear the pre-registered threshold of κ ≥ 0.60 (Landis and Koch, 1977).
@@ -30,7 +30,7 @@ human-instrument comparisons:
 | Comparison | κ before | κ after |
 |---|---|---|
 | Rater 1 × Rater 2 | 0.870 | 0.870 (unchanged — no instrument input) |
-| Rater 1 × instrument | 0.853 | 1.000 |
+| Rater 1 × instrument | 0.852 | 1.000 |
 | Rater 2 × instrument | 0.727 | 0.870 |
 
 **These post-repair values must not be reported as validation of the
@@ -160,7 +160,7 @@ instrument as it stood when the raters worked:
 
 This reads `data/reports/main_001_hallucinations_pre_erratum002.csv`, a snapshot
 of the hallucination column taken before Erratum 002 regenerated the report. It
-returns 0.870 / 0.853 / 0.727.
+returns 0.870 / 0.852 / 0.727.
 
 Running without the flag reads the current, repaired
 `data/reports/main_001.csv` and returns 0.870 / 1.000 / 0.870. Those are the

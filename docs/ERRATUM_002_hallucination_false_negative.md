@@ -84,10 +84,10 @@ and `data/reports/main_001.csv` has been regenerated.
 
 ## The repaired instrument is not thereby validated
 
-Repairing the defect raises κ(Rater 1, instrument) from 0.853 to 1.000 and
+Repairing the defect raises κ(Rater 1, instrument) from 0.852 to 1.000 and
 κ(Rater 2, instrument) from 0.727 to 0.870. **Those figures are circular and
 must not be quoted as validation.** The defect was identified by the raters'
 disagreement, and the repair was then measured against the labels that
-identified it. The pre-registered κ values — 0.870, 0.853, 0.727 — are computed
+identified it. The pre-registered κ values — 0.870, 0.852, 0.727 — are computed
 against the instrument as it stood when the raters worked, and remain the
 figures of record. See `docs/KAPPA_RESULTS_001.md`.

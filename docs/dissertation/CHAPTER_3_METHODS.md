@@ -64,8 +64,7 @@ artefacts of a fixed shape, a `codebase` (`{files: {path: content}, manifest:
 [feature_ids]}`) and an `interaction_log` (a list of typed events, where each
 type is one of `keystroke`, `backspace`, `delete`, or `agent_action`). For
 `human_control`, a `pynput` listener captures and classifies every key press at
-the OS level; for the agentic conditions, every vendor event (tool-call, file
-edit) is normalised to `agent_action` with vendor-native detail preserved in
+the OS level; for the agentic conditions, every vendor event (tool call, file edit) is normalised to `agent_action` with vendor-native detail preserved in
 sibling keys for forensics but hidden from the analysers. The contract is the
 boundary that makes a human and an agent comparable, and it is enforced at load
 time: malformed events abort the run rather than silently degrading a metric.
@@ -75,7 +74,7 @@ The normalisation this requires is shown in Figure 3.2.
 ![The capture contract](figures/fig_3_2_capture_contract.png)
 
 **Figure 3.2** The capture contract. A human pressing keys and an agent
-streaming tool-calls produce structurally unrelated traces; both are normalised
+streaming tool calls produce structurally unrelated traces; both are normalised
 into the same two artefacts, a `codebase` mapping and a typed `interaction_log`,
 before any analyser sees them. Vendor-native detail is preserved in sibling
 fields for forensics, but comparability is enforced at this boundary rather than
@@ -89,7 +88,7 @@ only the contract. This separation is what makes the comparison defensible: a
 critic cannot argue that a metric was implemented to favour one vendor, because
 the metric code has no way of knowing which vendor produced the artefact it is
 scoring. It also makes the instrument extensible (adding a fifth or sixth tool
-requires writing one adapter, not modifying any metric) which is the property
+requires writing one adapter, not modifying any metric), which is the property
 that allows third parties to reproduce and extend the study (§3.7, §6.4).
 
 ## 3.3 Capture procedure
@@ -102,11 +101,10 @@ capturing their streamed JSON event output line by line and persisting the raw
 stream alongside the contract-shaped events for forensic re-analysis. Claude
 Code is invoked in its non-interactive, permission-skipping mode (required
 because no human is present to confirm individual tool calls in an unattended
-run) and sandboxed to a per-run session directory; Cursor Agent is invoked under its free tier's automatic model selection, so the
-study does not fix which model produced its output (§5.7). The two IDE-bound tools
-(`replit_agent`, `antigravity`) expose no scriptable interface, Replit Agent
-runs inside a browser IDE and Antigravity inside a desktop IDE, and are
-therefore captured by a manual session in the vendor's interface, after which
+run) and sandboxed to a per-run session directory; Cursor Agent is invoked under its free tier's automatic model selection, as the pre-registration records, so the study does
+not fix which model produced its output (§5.7). The two IDE-bound tools
+(`replit_agent`, `antigravity`) expose no scriptable interface (Replit Agent runs inside a browser IDE and
+Antigravity inside a desktop IDE) and are therefore captured by a manual session in the vendor's interface, after which
 the produced files and event log are handed to a replay adapter that loads them
 through the *same* contract used by the CLI-driven conditions. The replay
 adapters share their loader and persistence code with their live counterparts;
@@ -116,8 +114,8 @@ licenses treating the conditions together, subject to the documented
 within-cell-variance consequence of replay (Deviation 001, §3.6). The `human_control` condition is detailed in §3.3.1 below.
 
 Each run records the model it used: `claude-sonnet-4-6` for Claude Code,
-automatic selection for Cursor Agent, Gemini 3.5 Flash (Medium) for Antigravity
-and Replit Agent's unversioned default. The live captures were committed on
+automatic selection for Cursor Agent, Gemini 3.5 Flash (Medium) for Antigravity, and an unversioned default for
+Replit Agent. The live captures were committed on
 31 May 2026 and the full four-tool matrix on 1 June 2026.
 
 ### 3.3.1 Human-control condition (as executed)
@@ -135,7 +133,7 @@ invocation, multi-attempt sessions were preserved by archiving each capture
 segment and concatenating them at scoring time; the human interaction log for a
 rep is thus the union of all capture segments for that spec (total typing effort
 including debugging). One unrecoverable data-loss event is recorded and carried
-as a limitation: for `agent_education_system`, an early ~2,133-event coding
+as a limitation: for `agent_education_system`, an early about 2,133-event coding
 segment was overwritten before the segment-archiving procedure existed, so that
 rep's correction frequency is computed from a 75-event surviving fixing segment
 and reported as a partial-capture outlier.
@@ -164,7 +162,7 @@ number. They bound the reading of a value; they do not affect its measurement.
 a temporary directory and invokes Bandit, counting only findings carrying a
 non-null CWE identifier (preserving the OWASP/MITRE framing of §2.2–2.3) and
 dividing by line count, scaled to one thousand lines. Assertion findings
-(`B101`) inside test files are excluded, see §4.3 and Erratum 001. An earlier
+(`B101`) inside test files are excluded (see §4.3 and Erratum 001). An earlier
 design queried the SonarCloud REST API; it was abandoned during the pilot
 (docs/PILOT_RESULTS.md §4.1) because per-project scoping shared one numerator
 across conditions while the denominator varied, producing artefactually large
@@ -172,15 +170,14 @@ per-kLOC figures for small codebases.
 
 *Cyclomatic complexity (§3.4.2).* `radon`'s control-flow visitor enumerates
 every function's McCabe number and the analyser reports the arithmetic mean.
-Files outside the source-suffix whitelist and inside excluded directories
+Files outside the source-suffix whitelist or inside excluded directories
 (virtual environments, caches, vendored packages) are removed by the codebase
 loader first, so the metric reflects produced code rather than transitive
 dependencies. As §5.5 discusses, the per-function basis is the source of the
 human baseline's CLI zero and a known cross-style confound.
 
 *Duplication (§3.4.3).* The analyser hashes every six-consecutive-line shingle
-across all source files (six being the conventional near-duplication window),
-counts the lines participating in any shingle of cardinality two or more, and
+across all source files, counts the lines participating in any shingle of cardinality two or more, and
 divides by total source lines. It captures structural redundancy, including the
 repeated-template scaffolding that drives the Replit result, rather than merely
 verbatim copy-paste.
@@ -198,8 +195,8 @@ token-matching heuristic; its validation against human judgement is reported in
 
 *Keystroke correction (§3.4.5).* The analyser counts `backspace` and `delete`
 events, divides by total `keystroke` count, and scales to one thousand. It is
-structurally zero for the four agentic conditions and is the only metric for
-which the human baseline produces a non-zero value by construction (§4.6, §5.5).
+structurally zero for the four agentic conditions, so only the human baseline
+can register a value on it (§4.6, §5.5).
 
 Scores reach a reader through a reporting layer, shown in Figure 3.4.
 

@@ -90,7 +90,7 @@ for _n, _p in [("doubled spaces before brackets", r"\s\s+\("),
 
 print("\n[5] KAPPA REPORTED CORRECTLY")
 kr = json.loads((ROOT / "data/labels/kappa_results.json").read_text())
-check("0.870" in s and "0.853" in s and "0.727" in s, "pre-registered kappa values present")
+check("0.870" in s and "0.852" in s and "0.727" in s, "pre-registered kappa values present")
 check("circular" in s, "circularity of post-repair kappa declared")
 # 1.000 is legitimate only inside the passage that disclaims it
 bad = [ln for ln in s.splitlines() if "1.000" in ln

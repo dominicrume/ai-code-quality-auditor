@@ -8,7 +8,7 @@ is a validation result until two people have filled in the answer sheets.
 ## Why a second study
 
 Study 001 validated one construct: *addition* — "what did the agent ship that
-nobody asked for?" — at κ = 0.870 / 0.853 / 0.727.
+nobody asked for?" — at κ = 0.870 / 0.852 / 0.727.
 
 `docs/FINDING_001_shape_substitution.md` shows that construct is blind to
 *substitution*. Given the `internal_tool_cli` brief, `antigravity` shipped a

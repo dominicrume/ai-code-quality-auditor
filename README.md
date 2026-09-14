@@ -76,7 +76,7 @@ auditor run --spec specs/agent_education_system.yaml \
 python scripts/compute_kappa.py --pre-erratum002      # the κ figures of record
 ```
 
-`compute_kappa.py --pre-erratum002` returns **0.870 / 0.853 / 0.727** — the
+`compute_kappa.py --pre-erratum002` returns **0.870 / 0.852 / 0.727** — the
 inter-rater agreement figures reported in the dissertation, computed against the
 instrument as it stood when the raters labelled. Running it without the flag
 returns the post-repair values, which are circular and are not the result; see
