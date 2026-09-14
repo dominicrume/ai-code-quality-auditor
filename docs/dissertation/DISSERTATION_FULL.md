@@ -1629,8 +1629,7 @@ Agentic coding tools are being adopted faster than the instruments needed to
 govern them are being built. This dissertation has argued, and shown
 empirically, that the dominant functional-correctness paradigm is necessary but
 not sufficient for responsible adoption: a tool can be fast and functionally
-correct while systematically shipping off-specification structure, redundant
-scaffolding, or diluted security exposure, and the organisation adopting it will
+correct while systematically shipping off-specification structure, redundant scaffolding, or unscanned security exposure, and the organisation adopting it will
 have no instrument with which to see this. By building a vendor-agnostic,
 pre-registered, blinded instrument and using it to surface exactly such behaviour, most strikingly an agent that builds a data
 pipeline when asked for a command-line tool, the study makes the case that *specification fidelity* and
@@ -1716,8 +1715,7 @@ Engineering*, SE-2(4), pp. 308–320.
 MITRE (2023) *Common Weakness Enumeration (CWE)*. Available at:
 https://cwe.mitre.org/ (Accessed: 4 August 2026).
 
-NIST (2023) *Artificial Intelligence Risk Management Framework (AI RMF 1.0)*
-(NIST AI 100-1). Gaithersburg, MD: National Institute of Standards and
+NIST (2023) *Artificial Intelligence Risk Management Framework (AI RMF 1.0)*, NIST AI 100-1. Gaithersburg, MD: National Institute of Standards and
 Technology.
 
 Nosek, B.A., Ebersole, C.R., DeHaven, A.C. and Mellor, D.T. (2018) 'The
