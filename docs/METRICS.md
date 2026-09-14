@@ -3,7 +3,7 @@
 Each metric lives in its own analyzer file. This document is the contract.
 
 ## 1. Security vulnerability density
-- **Languages (v2, from 0.4.1):** Python via Bandit, plus JavaScript and
+- **Languages (v2, from 0.5.0):** Python via Bandit, plus JavaScript and
   TypeScript via a curated CWE-tagged ruleset (`auditor/analyzers/js_security.py`).
   Every reading reports `coverage`, the share of source it could evaluate, so a
   density over part of a project is not mistaken for a verdict on all of it.
