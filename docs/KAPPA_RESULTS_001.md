@@ -2,8 +2,8 @@
 
 **Date:** 8 September 2026
 **Raters:** Ikenna Onyedebelu (Rater 1, MSc Data Science and AI) and Matthew Brian Tahir
-(Rater 2), labelling independently, neither having seen `data/reports/main_001.csv`
-and neither otherwise involved in the study
+(Rater 2), labelling independently, neither having seen `data/reports/main_001.csv`,
+neither otherwise involved in the study, and both named with their consent
 **Items:** 19 distinct codebases (30 sampled runs deduplicated per Deviation 001)
 **Scoreable N:** 18 (item_04's capture contains no files and was recorded `SKIP` by both raters)
 

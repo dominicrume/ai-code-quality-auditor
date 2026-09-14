@@ -380,8 +380,8 @@ pre-registered. Two raters independently labelled the 30-run hand-label sample, 
 19 distinct codebases (11 of the 30 rows are byte-identical replays under
 Deviation 001, and labelling identical code twice would inflate agreement by
 construction). Rater 1 was Ikenna Onyedebelu (MSc Data Science and AI) and Rater 2 Matthew
-Brian Tahir, named here with his consent; neither had any other involvement in
-the study. Neither rater saw `data/reports/main_001.csv`, and
+Brian Tahir, both named here with their consent; neither had any other
+involvement in the study. Neither rater saw `data/reports/main_001.csv`, and
 neither was told which condition produced which item. One capture contains no
 files and was recorded `SKIP` by both, giving N = 18 scoreable items. Labels are
 compared on the binary contrast, any off-specification feature against none.

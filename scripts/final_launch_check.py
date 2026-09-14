@@ -95,7 +95,7 @@ ok("Ikenna Onyedebelu" in full, "Rater 1 credited by name")
 ok("Matthew Brian Tahir" in full, "Rater 2 credited by name")
 ok("acted as Rater 1" not in full and "Rater 1 is the author" not in full,
    "the author is no longer described as a rater")
-ok("with his consent" in full, "consent to be named is recorded")
+ok("both named here with their consent" in full, "consent recorded for both raters")
 
 # ------------------------------------------------------------ document vs data
 section("[3] EVERY HEADLINE FIGURE AGAINST THE DATA")
