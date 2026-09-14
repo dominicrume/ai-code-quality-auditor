@@ -124,8 +124,8 @@ labels.
 The analysis is deliberately stratified by what the design supports. Between the
 two conditions captured live with genuine replication, Claude Code produces
 significantly less duplicated code (*p* = 0.003) and significantly more
-control-flow-dense code (*p* = 0.005) than Cursor Agent under Bonferroni
-correction. The four-condition comparison is reported as **descriptive**: the
+control-flow-dense code (*p* = 0.005) than Cursor Agent at the pre-registered Bonferroni threshold, though only the
+complexity difference rests on run-to-run variation in both tools. The four-condition comparison is reported as **descriptive**: the
 two IDE-bound conditions were captured once per cell and replayed (Deviation
 001), and once those cells are collapsed to their effective sample size no
 omnibus test reaches significance, while the condition-by-specification
@@ -335,8 +335,7 @@ the evaluation of agentic coding tools has inherited a *functional-correctness*
 paradigm that is mature, productive, and structurally blind to the quality and
 governance properties that determine the real cost of generated code.
 
-The review draws on 26 sources published between 1952 and 2024, fifteen of
-them since 2021. A source was included where it evaluates, secures, measures or
+The review draws on 29 sources published between 1949 and 2024, sixteen of them since 2021. A source was included where it evaluates, secures, measures or
 governs generated code, or sets a methodological standard this study adopts,
 and every entry was checked against its original arXiv, ACM Digital Library or
 publisher record.
@@ -458,7 +457,7 @@ sub-category of functional error.
 The governance framing connects the metric to the broader institutional turn
 toward AI risk management, exemplified by the NIST AI Risk Management Framework
 (NIST, 2023), which foregrounds the properties of being *valid, accountable and
-transparent*, and by the emerging regulatory landscape such as the EU AI Act. In
+transparent*, and by the emerging regulatory landscape such as the EU AI Act (European Union, 2024). In
 the operational language of enterprise AI practice, and of the Aston–Capgemini
 Centre of Excellence for Enterprise AI within which this work is situated, an
 agent that reliably ships off-specification structure is one whose output cannot
@@ -512,8 +511,6 @@ instrument, and in doing so addresses the gap directly.
 ---
 
 # Chapter 3: Methodology
-
-
 
 ## 3.1 Research design
 
@@ -610,9 +607,8 @@ capturing their streamed JSON event output line by line and persisting the raw
 stream alongside the contract-shaped events for forensic re-analysis. Claude
 Code is invoked in its non-interactive, permission-skipping mode (required
 because no human is present to confirm individual tool calls in an unattended
-run) and sandboxed to a per-run session directory; Cursor Agent is invoked under
-its free-tier automatic-model constraint, a limitation reported transparently
-and discussed where it bears on interpretation. The two IDE-bound tools
+run) and sandboxed to a per-run session directory; Cursor Agent is invoked under its free tier's automatic model selection, so the
+study does not fix which model produced its output (§5.7). The two IDE-bound tools
 (`replit_agent`, `antigravity`) expose no scriptable interface, Replit Agent
 runs inside a browser IDE and Antigravity inside a desktop IDE, and are
 therefore captured by a manual session in the vendor's interface, after which
@@ -622,8 +618,12 @@ adapters share their loader and persistence code with their live counterparts;
 the only difference is the source of the input bytes, so the analyser cannot
 distinguish a replayed capture from a live one. This equivalence is what
 licenses treating the conditions together, subject to the documented
-within-cell-variance consequence of replay (Deviation 001, §3.6). The
-`human_control` condition is detailed in §3.3.1 below.
+within-cell-variance consequence of replay (Deviation 001, §3.6). The `human_control` condition is detailed in §3.3.1 below.
+
+Each run records the model it used: `claude-sonnet-4-6` for Claude Code,
+automatic selection for Cursor Agent, Gemini 3.5 Flash (Medium) for Antigravity
+and Replit Agent's unversioned default. The live captures were committed on
+31 May 2026 and the full four-tool matrix on 1 June 2026.
 
 ### 3.3.1 Human-control condition (as executed)
 
@@ -741,13 +741,13 @@ because the deterministic-replay conditions contribute zero within-cell variance
 metric. Significance is assessed at a Bonferroni-corrected threshold of α = 0.01
 (0.05 across five metrics), a deliberately conservative choice that controls the
 family-wise error rate across the metric family. Significant omnibus tests are
-followed by the appropriate post-hoc: Tukey's HSD for an ANOVA omnibus, and
+followed by the appropriate post-hoc: Tukey's HSD (Tukey, 1949) for an ANOVA omnibus, and
 Dunn's test (Dunn, 1964) with Bonferroni adjustment for a Kruskal–Wallis
 omnibus; because every omnibus was non-parametric, Dunn's test is the post-hoc
 used throughout, and an earlier implementation that applied Tukey's HSD to a
-Kruskal–Wallis omnibus was corrected to match the pre-registration. Effect sizes
-are reported as η² for the omnibus and as rank-biserial correlations for
-pairwise comparisons, interpreted against Cohen's (1988) conventional benchmarks
+Kruskal–Wallis omnibus was corrected to match the pre-registration. Effect sizes were registered as η² for the omnibus and rank-biserial
+correlations for pairwise comparisons; because no omnibus is relied upon
+(§4.5), only the pairwise sizes are reported, interpreted against Cohen's (1988) conventional benchmarks
 for small, medium and large effects, and 95% confidence intervals on each
 condition mean are obtained by bootstrap resampling with 10,000 replicates
 (Efron, 1979).
@@ -799,10 +799,6 @@ for their labels to be used and their names to appear.
 
 # Chapter 4: Results
 
-*(Canonical, fully-detailed version at `docs/dissertation/CHAPTER_4_RESULTS.md`;
-numbers below are computed by `notebooks/statistical_analysis.ipynb` against
-`data/reports/main_001.csv`.)*
-
 ## 4.1 Overview
 
 The four agentic conditions produced 600 metric observations (4 conditions ×
@@ -815,8 +811,7 @@ reference point.
 Table 4.1 reports each metric's mean over N = 30 per condition (10 reps × 3
 specs; nominal N: the two IDE-bound conditions contribute three effective
 sessions each under the replay design, Deviation 001, with the inferential
-consequences analysed in §4.5). Lower is better; the best per row is shown in
-bold in the discussion.
+consequences analysed in §4.5). Lower is better on every row except complexity, which is two-sided (§2.3).
 
 **Table 4.1** Headline cross-vendor comparison: metric means over the nominal
 N = 30 per condition (10 replications × 3 specifications).
@@ -847,18 +842,16 @@ measurements and a column of copies is the clearest statement of what the
 design does and does not support.
 
 The table already reveals the study's central structural result: there is no
-single column that is best on every row. Of the five metrics, three produce a
-clear best-condition winner (Claude Code on hallucinations and duplication;
-Replit Agent on the raw security-density figure, subject to the artefact
-discussed below); one (`security_density`) requires interpretation rather than a
-naive lower-is-better reading; and one (`correction_freq`) is structurally zero
+single column that is best on every row. Of the five metrics, two produce a clear winner (Claude Code on hallucinations
+and duplication); two require interpretation rather than a lower-is-better
+reading, complexity because it is two-sided and security density because
+Replit's apparent lead is an artefact discussed below; and one (`correction_freq`) is structurally zero
 for every agentic condition and is reported here for shape consistency, with its
 interpretable value reserved for the human comparison in §4.6. The conditions
 thus occupy distinct trade-off profiles rather than a single ordering (Claude
 trading structural density for discipline, Replit trading specification fidelity
 and a large scaffolding footprint for breadth of generated infrastructure) and
-the per-metric and per-spec analyses that follow unpack each of these in turn
-before the statistical tests in §4.5 establish their significance.
+the per-metric and per-spec analyses that follow unpack each in turn before §4.5 sets out which differences the design can test.
 
 ## 4.3 Per-metric findings
 
@@ -939,9 +932,7 @@ were being counted as findings, the metric had been penalising thoroughness and
 rewarding its absence, which is the precise inversion an instrument built to
 inform governance must not make.
 
-The pattern inverts that of the other metrics, which makes it the clearest
-illustration of why an artefact-level, transparently-reported instrument is
-necessary. The two feature-dense vendors, Claude Code (9.65) and Cursor Agent
+The pattern inverts that of the other metrics. The two feature-dense vendors, Claude Code (9.65) and Cursor Agent
 (5.93 CWE-tagged findings per kLOC), score *highest*, while Replit records 0.00
 and Antigravity 1.47. Replit's zero does not indicate more secure output; it is
 a denominator artefact. Bandit scans Python, and Replit's output is dominated by
@@ -949,9 +940,7 @@ TypeScript scaffolding with comparatively little Python, so the few Python
 issues are diluted across a large non-Python project. `security_density` is
 therefore best read as a *per-language* density rather than a
 total-vulnerability count, and a companion metric, total CWE-tagged findings per
-run, would be needed to support a whole-project security claim (§5.2). Reporting
-this openly, rather than allowing Replit's 0.00 to read as a security win, is
-precisely the behaviour the instrument exists to enforce.
+run, would be needed to support a whole-project security claim (§5.2). 
 
 ![Language composition of each condition's output, and its effect on security density](figures/fig_4_4_language_composition.png)
 
@@ -996,7 +985,7 @@ statement that tool behaviour is task-conditional rather than uniform.
 Three patterns are visible by inspection. Cursor's hallucinations are confined
 to `agent_education_system`, the web-app spec; Antigravity's are likewise
 localised to that same web-app spec, where it averages a full off-spec route per
-run; and and Replit's are *heaviest by far on the CLI spec*, three off-spec
+run; and Replit's are *heaviest by far on the CLI spec*, three off-spec
 subcommands per run against one on the web-app spec and none on the pipeline,
 which is what the architectural-prior account predicts, since Replit's
 pipeline-shaped defaults are worst-fit when the brief asks for a command-line
@@ -1006,8 +995,7 @@ different, and misleading, ranking depending on which spec it happened to
 choose: a CLI-only study would have indicted Replit and left Antigravity looking
 clean, while a web-app-only study would have found Replit and Antigravity
 equally culpable at 1.00 apiece and Replit's most serious failure entirely
-invisible. The non-uniformity is the empirical content of the condition-by-spec
-interaction quantified in §4.5, and the reason the dissertation's
+invisible. The non-uniformity is descriptive, since the design cannot test the interaction (§4.5.3), and it is the reason the dissertation's
 external-validity claim is task-conditional throughout.
 
 ## 4.5 Statistical tests
@@ -1071,11 +1059,11 @@ Mann–Whitney *U* on each metric with rank-biserial effect sizes.
 | Hallucinations (count) | 390.0 | 0.0419 | 0.133 | 0.00 | 0.17 |
 | Security density (per kLOC) | 508.0 | 0.3668 | −0.129 | 9.65 | 5.93 |
 
-Under Bonferroni correction across the four metrics at α = 0.05
-(threshold 0.0125), **duplication and complexity differ significantly**;
-hallucinations and security density do not. Neither surviving result clears the
-stricter α = 0.01 Bonferroni threshold (0.0025), and this is stated plainly
-rather than obscured by choice of α.
+At the pre-registered per-metric threshold of α = 0.01 (0.05 across five
+metrics, §3.6), **duplication and complexity differ significantly**;
+hallucinations and security density do not. A further correction for the four
+metrics tested here (0.0025) is not part of the registered plan, and neither
+result would survive it.
 
 A further distinction must be drawn between the two surviving results, because
 replication is not uniform even within the live conditions. Examining
@@ -1114,12 +1102,7 @@ They are therefore presented as **descriptive case evidence**, and the
 task-dependence claim (RQ3) is likewise reframed: the per-specification pattern
 in Table 4.2 shows that no vendor's hallucination behaviour is constant across
 task domains, which is a *descriptive* demonstration of task-conditionality and
-is reported as such, without an inferential interaction test. Figure 4.1 (forest
-plot of per-condition means with bootstrap 95% confidence intervals) and Figure
-4.2 (violin plots of the per-condition distributions) visualise both the gaps
-and the degenerate distributions of the replay conditions; the collapsed violins
-for `replit_agent` and `antigravity` are themselves the clearest visual
-statement of the design's limitation. Closing this gap requires live
+is reported as such, without an inferential interaction test.  Closing this gap requires live
 multi-session re-capture of the two IDE-bound vendors, which §6.4 identifies as
 the first priority of any continuation.
 
@@ -1142,16 +1125,16 @@ inferential comparison is made.
 | Complexity (cc) | 1.71 / 1.56 | 5.00 / 3.20 | 0.00 / 3.54 |
 | Duplication (%) | 0.00 / 3.59 | 0.00 / 5.87 | 0.00 / 1.57 |
 | Hallucinations (count) | 0.00 / 0.62 | 0.00 / 0.00 | 0.00 / 0.75 |
+| Correction frequency (per 1k) | 829.27 / 0.00 | 51.80 / 0.00 | 122.27 / 0.00 |
 
 ![Human baseline against the agentic mean, per specification](figures/fig_4_7_human_vs_ai.png)
 
 **Figure 4.7** Table 4.4 at a glance. The human baseline is at or near zero on
 every artefact metric in every domain, the signature of a spec-minimal
 implementation rather than superior craft. The exception is complexity, where
-the human sits *above* the agentic mean on the pipeline and at exactly zero on
+the human sits *above* the agentic mean on the web app and the pipeline and at exactly zero on
 the CLI; that zero is the decomposition-style confound of §5.5, not a simpler
-program. | Correction frequency (per 1k) | 829.27 / 0.00 | 51.80 / 0.00 | 122.27
-/ 0.00 |
+program.
 
 Mean complexity was 1.71 (web app) and 5.00 (pipeline); for the CLI it was 0.00:
 a structural artefact, because the human wrote top-level script code with no
@@ -1172,8 +1155,7 @@ pre-registered. Two raters independently labelled the 30-run hand-label sample, 
 19 distinct codebases (11 of the 30 rows are byte-identical replays under
 Deviation 001, and labelling identical code twice would inflate agreement by
 construction). Rater 1 was Ikenna Onyedebelu (MSc Data Science and AI) and Rater 2 Matthew
-Brian Tahir, both named here with their consent; neither had any other
-involvement in the study. Neither rater saw `data/reports/main_001.csv`, and
+Brian Tahir, both named here with their consent; neither contributed to the study's design, its instrument or its main-study data. Neither rater saw `data/reports/main_001.csv`, and
 neither was told which condition produced which item. One capture contains no
 files and was recorded `SKIP` by both, giving N = 18 scoreable items. Labels are
 compared on the binary contrast, any off-specification feature against none.
@@ -1187,8 +1169,8 @@ worked. Threshold κ ≥ 0.6 (Landis and Koch, 1977).
 | Rater 1 × instrument | 0.853 | almost perfect | 94.4% |
 | Rater 2 × instrument | 0.727 | substantial | 88.9% |
 
-All three clear the threshold, so the hallucination metric is admissible for
-inferential use rather than exploratory reporting only.
+All three clear the threshold, so the metric's detection of scope drift is admissible for inferential use,
+on the terms below.
 
 ![Per-item comparison of both raters and the instrument](figures/fig_4_8_kappa_agreement.png)
 
@@ -1279,10 +1261,10 @@ instrument is ordinarily asserted; here it is a terminal transcript.
 *4.8.1 The instrument audits itself.* The third row is the most uncomfortable
 and the most useful. Scored against its own declared scope, transcribed from the
 pre-registration and the standing brief of 30 May 2026 and reproduced in
-`specs/auditor_instrument.yaml`, the instrument carries twelve capabilities
-nobody specified: four command-line verbs (`scan`, `watch`, `live`, `fix`) and
+`specs/auditor_instrument.yaml`, the instrument as audited carried twelve capabilities nobody specified: four command-line verbs (`scan`, `watch`, `live`, `fix`) and
 eight HTTP endpoints belonging to a local web interface the declared design did
-not contain at all. The declaration described two commands and no web surface.
+not contain at all. The declaration described two commands and no web surface. The `fix` verb has
+since been removed from the published package (release 0.5.0).
 Git dates every addition to August 2026, months after the protocol was fixed and
 none of them required by the experiment.
 
@@ -1303,9 +1285,10 @@ an artefact of the wrong brief, not a finding; the figure of record is 12.
 
 ## 4.9 Summary of findings
 
-1. **Hallucination is the most discriminating governance metric.** The four
-conditions span 0.00 to 1.33 off-spec features per run, a range meaningful in
-any deployment evaluation, and one functional benchmarks do not surface.
+1. **Hallucination is the most consequential governance metric.** The four
+conditions span 0.00 to 1.33 off-spec features per run, a range that matters in
+any deployment evaluation and that functional benchmarks do not surface, though
+between the two live tools the difference is not significant (§4.5.2).
 
 2. **Replit Agent's architectural prior dominates the specification.** Given a
    CLI specification under controlled conditions it ships a data pipeline; given
@@ -1370,16 +1353,11 @@ inferential result.
 
 ## 5.2 The security-density artefact and the per-language reading
 
-The security-density result requires careful interpretation and is a useful
-illustration of why a blinded, artefact-level instrument is necessary. Replit's
-0.00 finding does not mean its output is more secure; it means its Python
-footprint is small relative to the TypeScript scaffolding the static scanner
-does not score, diluting the per-kLOC density. The honest reading is that
-`security_density` measures *per-language vulnerability density*, and that a
-*total CWE-tagged findings per run* companion metric is required to make a
-total-security claim. This is reported transparently rather than concealed,
-because concealing it would convert a measurement artefact into a false
-governance signal, precisely the failure mode the instrument exists to prevent.
+Replit's 0.00 security density does not mean its output is more secure: its
+Python footprint is small beside TypeScript scaffolding the scanner does not
+score (§4.3). The metric is a *per-language* density, and a total-findings
+companion is needed before any whole-project security claim. Reporting the
+artefact rather than a security win is the instrument doing its job.
 
 ## 5.3 Specification fidelity as a first-class governance metric
 
@@ -1396,7 +1374,7 @@ shipping 9 to 10% scaffolding redundancy by default incurs technical debt
 The deeper point is that fidelity is *categorically* different from functional
 correctness, and the two move independently. A tool can be perfectly correct, its
 pipeline passing every test a pipeline should pass, while being entirely
-*infidel* to the specification, because the specification asked for something
+*unfaithful* to the specification, because the specification asked for something
 else. The functional paradigm (§2.1) cannot detect that divergence, because it
 evaluates the artefact against its own implied tests rather than against the
 brief. Fidelity is therefore not a refinement of correctness but an orthogonal
@@ -1460,8 +1438,9 @@ instrument's own validation rather than by an external reader: security density
 was inflated by counting assertions inside test files, penalising the conditions
 that tested most thoroughly (Erratum 001), and the route detector was blind to
 non-Python web frameworks, scoring an entire cell zero by construction rather
-than by judgement (Erratum 002). The second reversed a claim this study had
-previously advanced as its cleanest result.
+than by judgement (Erratum 002). The second overturned an earlier draft's claim that Replit's off-specification
+output was confined to the CLI specification, though no conclusion rested on
+that claim alone.
 
 ![Both errata, as first reported and as corrected](figures/fig_5_1_errata.png)
 
@@ -1566,8 +1545,10 @@ language: the omnibus is reported at three levels of conservatism, the nominal
 statistics are disowned as pseudoreplicated, the interaction statistics are
 withdrawn as undefined, and inference is confined to the two live conditions.
 What remains, the large descriptive gaps and the mechanism established by
-inspection, is genuine but labelled case evidence; a fully live re-capture would
-be required to convert it into inference.
+inspection, is genuine but labelled case evidence; a fully live re-capture would be required to convert it into inference.
+Versions are a further threat: Cursor's automatic selection need not hold one
+model across runs, and all four products change continuously, so the findings
+describe the tools as captured in mid-2026.
 
 *External validity*: three specifications across three domains, while broader
 than the single-task norm, do not span the space of software tasks, and the
@@ -1589,8 +1570,8 @@ This dissertation designed, built and applied a vendor-agnostic, pre-registered,
 blinded instrument for auditing the code-quality and governance behaviour of
 agentic AI coding workflows, and used it to compare four leading commercial tools
 across three task domains and five metrics. It answered its three research
-questions: a single capture contract *can* render heterogeneous workflows
-comparable (RQ1); the tools *do* differ, significantly so on duplication and
+questions: a single capture contract *can* render heterogeneous workflows comparable on
+artefact metrics, though not yet on process (RQ1); the tools *do* differ, significantly so on duplication and
 complexity between the two conditions the design replicates fully, and by large
 descriptive margins across all four (RQ2); and those differences are *not stable
 across task domains*, so tool quality is task-conditional (RQ3, established
@@ -1722,6 +1703,11 @@ of Systems and Software*, 203, 111734.
 Dunn, O.J. (1964) 'Multiple comparisons using rank sums', *Technometrics*, 6(3),
 pp. 241–252.
 
+European Union (2024) *Regulation (EU) 2024/1689 of the European Parliament and
+of the Council of 13 June 2024 laying down harmonised rules on artificial
+intelligence (Artificial Intelligence Act)*. Official Journal of the European
+Union, L 2024/1689.
+
 Efron, B. (1979) 'Bootstrap methods: another look at the jackknife', *The Annals
 of Statistics*, 7(1), pp. 1–26.
 
@@ -1778,10 +1764,16 @@ Sadowski, C., Aftandilian, E., Eagle, A., Miller-Cushon, L. and Jaspan, C. (2018
 'Lessons from building static analysis tools at Google', *Communications of the
 ACM*, 61(4), pp. 58–66.
 
+Shapiro, S.S. and Wilk, M.B. (1965) 'An analysis of variance test for normality
+(complete samples)', *Biometrika*, 52(3/4), pp. 591–611.
+
 Sarkar, A., Gordon, A.D., Negreanu, C., Poelitz, C., Srinivasa Ragavan, S. and
 Zorn, B. (2022) 'What is it like to program with artificial intelligence?',
 *Proceedings of the 33rd Annual Workshop of the Psychology of Programming
 Interest Group (PPIG)*.
+
+Tukey, J.W. (1949) 'Comparing individual means in the analysis of variance',
+*Biometrics*, 5(2), pp. 99–114.
 
 Vaithilingam, P., Zhang, T. and Glassman, E.L. (2022) 'Expectation vs.
 experience: evaluating the usability of code generation tools powered by large
@@ -1882,7 +1874,6 @@ index at [https://github.com/dominicrume/ai-code-quality-auditor/tree/main/docs/
 ![The results table before the errata](../evidence/E7_results_before_errata.jpg)
 
 **Figure F.7** The per-condition results as first produced, before Errata 001 and 002. Security density reads 42.05 and 43.67 for claude_code and cursor_agent, and replit_agent's hallucination mean 1.00; Chapter 4 reports the corrected 9.65, 5.93 and 1.33. Retained as a record of what the corrections changed.
-
 
 ---
 

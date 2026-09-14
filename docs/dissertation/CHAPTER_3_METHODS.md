@@ -7,8 +7,6 @@
 
 # Chapter 3: Methodology
 
-
-
 ## 3.1 Research design
 
 The study adopts a quantitative, between-conditions experimental design with
@@ -104,9 +102,8 @@ capturing their streamed JSON event output line by line and persisting the raw
 stream alongside the contract-shaped events for forensic re-analysis. Claude
 Code is invoked in its non-interactive, permission-skipping mode (required
 because no human is present to confirm individual tool calls in an unattended
-run) and sandboxed to a per-run session directory; Cursor Agent is invoked under
-its free-tier automatic-model constraint, a limitation reported transparently
-and discussed where it bears on interpretation. The two IDE-bound tools
+run) and sandboxed to a per-run session directory; Cursor Agent is invoked under its free tier's automatic model selection, so the
+study does not fix which model produced its output (§5.7). The two IDE-bound tools
 (`replit_agent`, `antigravity`) expose no scriptable interface, Replit Agent
 runs inside a browser IDE and Antigravity inside a desktop IDE, and are
 therefore captured by a manual session in the vendor's interface, after which
@@ -116,8 +113,12 @@ adapters share their loader and persistence code with their live counterparts;
 the only difference is the source of the input bytes, so the analyser cannot
 distinguish a replayed capture from a live one. This equivalence is what
 licenses treating the conditions together, subject to the documented
-within-cell-variance consequence of replay (Deviation 001, §3.6). The
-`human_control` condition is detailed in §3.3.1 below.
+within-cell-variance consequence of replay (Deviation 001, §3.6). The `human_control` condition is detailed in §3.3.1 below.
+
+Each run records the model it used: `claude-sonnet-4-6` for Claude Code,
+automatic selection for Cursor Agent, Gemini 3.5 Flash (Medium) for Antigravity
+and Replit Agent's unversioned default. The live captures were committed on
+31 May 2026 and the full four-tool matrix on 1 June 2026.
 
 ### 3.3.1 Human-control condition (as executed)
 
@@ -235,13 +236,13 @@ because the deterministic-replay conditions contribute zero within-cell variance
 metric. Significance is assessed at a Bonferroni-corrected threshold of α = 0.01
 (0.05 across five metrics), a deliberately conservative choice that controls the
 family-wise error rate across the metric family. Significant omnibus tests are
-followed by the appropriate post-hoc: Tukey's HSD for an ANOVA omnibus, and
+followed by the appropriate post-hoc: Tukey's HSD (Tukey, 1949) for an ANOVA omnibus, and
 Dunn's test (Dunn, 1964) with Bonferroni adjustment for a Kruskal–Wallis
 omnibus; because every omnibus was non-parametric, Dunn's test is the post-hoc
 used throughout, and an earlier implementation that applied Tukey's HSD to a
-Kruskal–Wallis omnibus was corrected to match the pre-registration. Effect sizes
-are reported as η² for the omnibus and as rank-biserial correlations for
-pairwise comparisons, interpreted against Cohen's (1988) conventional benchmarks
+Kruskal–Wallis omnibus was corrected to match the pre-registration. Effect sizes were registered as η² for the omnibus and rank-biserial
+correlations for pairwise comparisons; because no omnibus is relied upon
+(§4.5), only the pairwise sizes are reported, interpreted against Cohen's (1988) conventional benchmarks
 for small, medium and large effects, and 95% confidence intervals on each
 condition mean are obtained by bootstrap resampling with 10,000 replicates
 (Efron, 1979).
