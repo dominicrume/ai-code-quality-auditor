@@ -34,7 +34,6 @@ BANNER = """> **Generated file — do not edit.**
 """
 
 
-
 def _master_date() -> str:
     """The date the master last changed, not the date the script ran.
 
@@ -42,11 +41,12 @@ def _master_date() -> str:
     the morning after, so the sync check failed with no change to the text.
     """
     try:
-        out = subprocess.run(["git", "log", "-1", "--format=%cs", "--", str(MASTER)],
-                             capture_output=True, text=True, check=True).stdout.strip()
+        out = subprocess.run(["git", "log", "-1", "--format=%cs", "--", str(SRC)],
+                             cwd=ROOT, capture_output=True, text=True, check=True).stdout.strip()
         return out or date.today().isoformat()
     except (OSError, subprocess.CalledProcessError):
         return date.today().isoformat()
+
 
 def main() -> None:
     lines = SRC.read_text().splitlines()

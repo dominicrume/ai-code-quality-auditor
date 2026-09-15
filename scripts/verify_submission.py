@@ -138,7 +138,10 @@ r = subprocess.run(["git", "status", "--porcelain"], capture_output=True, text=T
 check(not r.stdout.strip(), "working tree clean")
 # chapter files are generated; they are stale only if they differ from the master
 import subprocess as _sp
-_sp.run([".venv/bin/python", "scripts/split_chapters.py"], capture_output=True)
+_split = _sp.run([".venv/bin/python", "scripts/split_chapters.py"], capture_output=True, text=True)
+# a generator that crashes writes nothing, which would pass the sync check below
+check(_split.returncode == 0, "chapter extracts regenerate without error"
+      + ("" if _split.returncode == 0 else f" ({_split.stderr.strip().splitlines()[-1]})"))
 r2 = _sp.run(["git", "status", "--porcelain", "docs/dissertation"],
              capture_output=True, text=True)
 check(not r2.stdout.strip(), "chapter extracts are in sync with the master")
