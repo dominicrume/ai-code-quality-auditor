@@ -34,3 +34,28 @@ def test_non_python_files_are_ignored():
                 "manifest": []}
     score = security_analyzer.analyze(codebase, [], {"name": "x"})
     assert score.value == 0.0
+
+
+def _large_file_with(line: str) -> str:
+    """Four hundred harmless lines and one line of interest."""
+    return "import urllib.request\n" + "\n".join(f"x{i} = {i}" for i in range(400)) + f"\n{line}\n"
+
+
+def test_serious_findings_are_named_whatever_the_density():
+    """One serious finding in a large file stays far below the density warning,
+    so it is named instead. From a field audit (docs/FIELD_REPORT_001.md)."""
+    codebase = {"files": {"svc/opener.py": _large_file_with("urllib.request.urlopen(url)")},
+                "manifest": []}
+    score = security_analyzer.analyze(codebase, [], {"name": "x"})
+    assert score.value < 50, "the density alone reads OK"
+    assert score.details, "a medium-severity finding must be named"
+    assert "1 medium" in score.details[0]
+    assert any("MEDIUM B310" in d and "svc/opener.py:402" in d for d in score.details[1:])
+
+
+def test_low_severity_findings_name_nothing():
+    """Only medium and high findings are listed; lows stay in the density."""
+    codebase = {"files": {"a.py": "import subprocess\n"}, "manifest": []}
+    score = security_analyzer.analyze(codebase, [], {"name": "x"})
+    assert score.value > 0
+    assert score.details is None

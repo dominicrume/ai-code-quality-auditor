@@ -136,6 +136,16 @@ duplication and 12 scope drift. Neither figure is wrong; they answer different q
 and a metric that did not move when you changed what you pointed it at would be useless.
 Always state the scanned path alongside the number.
 
+## In the field
+
+On 15 September 2026 a workshop team installed 0.5.0 from PyPI into a private
+health-advertising prototype (27 files, about 4,040 lines). The scan surfaced one real
+medium finding their own audit had missed: a URL opener that accepted `file:` paths. The
+other sixteen findings were already known. The composite security score still read OK,
+because one finding cannot move a density band, so the auditor now names every medium and
+high finding beside the score. Full account, including what the tool did not do:
+[`docs/FIELD_REPORT_001.md`](docs/FIELD_REPORT_001.md).
+
 ## Read in this order
 1. `docs/ARCHITECTURE.md` — how the pieces fit
 2. `docs/METHODOLOGY.md` — how an experiment is run

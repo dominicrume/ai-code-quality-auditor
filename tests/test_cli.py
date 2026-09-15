@@ -62,3 +62,12 @@ def test_experiment_command_writes_csv(tmp_path, monkeypatch):
     ])
     assert result.exit_code == 0, result.output
     assert (reports / "cli_exp_001.csv").is_file()
+
+
+def test_scan_lists_security_findings_to_review(tmp_path):
+    """A serious finding is printed by name under the table, whatever the band."""
+    (tmp_path / "svc.py").write_text("import urllib.request\nurllib.request.urlopen(url)\n")
+    result = CliRunner().invoke(main, ["scan", str(tmp_path)])
+    assert result.exit_code == 0, result.output
+    assert "Security findings to review" in result.output
+    assert "B310" in result.output

@@ -187,3 +187,21 @@ def test_asserts_in_production_code_are_still_findings(tmp_path):
     security = next(o for o in scan_directory(tmp_path).outcomes
                     if o.name == "security_density")
     assert security.value > 0, "an assert used as a production check must still count"
+
+
+def test_scan_names_serious_security_findings_without_changing_the_band(tmp_path):
+    """The band still follows the density; the finding is reported beside it."""
+    (tmp_path / "svc.py").write_text(
+        "import urllib.request\n" + "\n".join(f"x{i} = {i}" for i in range(400))
+        + "\nurllib.request.urlopen(url)\n")
+    outcome = _outcome(scan_directory(tmp_path), "security_density")
+    assert outcome.band == band_for("security_density", outcome.value) == "good"
+    assert outcome.details and any("MEDIUM B310" in d for d in outcome.details)
+
+
+def test_scan_keeps_scope_drift_details_out(tmp_path):
+    """The live page offers to strip drift items; the scan must not feed it."""
+    (tmp_path / "main.py").write_text("def f():\n    return 1\n")
+    for outcome in scan_directory(tmp_path).outcomes:
+        if outcome.name != "security_density":
+            assert outcome.details is None

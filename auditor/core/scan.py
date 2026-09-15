@@ -139,6 +139,9 @@ def scan_directory(path: Path, spec: dict | None = None) -> ScanResult:
             name=name, label=label, value=score.value, unit=score.unit,
             band=band_for(name, score.value),
             coverage=score.coverage, languages=score.languages,
+            # Security names its medium and high findings. Scope-drift details
+            # stay out of the scan: the live page would offer to strip them.
+            details=score.details if name == "security_density" else None,
         ))
 
     # correction_freq counts backspaces per thousand keystrokes, so it needs an

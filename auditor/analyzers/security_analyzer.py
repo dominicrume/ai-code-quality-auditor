@@ -98,10 +98,47 @@ def _counts(issues: list[dict], scan_dir: Path) -> list[dict]:
             continue
         rel = str(Path(issue["filename"]).relative_to(scan_dir)) \
             if str(issue["filename"]).startswith(str(scan_dir)) else issue["filename"]
-        if issue.get("test_id") == "B101" and _is_test_file(rel.replace("\\", "/")):
+        rel = rel.replace("\\", "/")
+        if issue.get("test_id") == "B101" and _is_test_file(rel):
             continue
-        kept.append(issue)
+        # the scan ran in a temporary directory; report the project's own path
+        kept.append({**issue, "filename": rel})
     return kept
+
+
+_SEVERITY_ORDER = {"HIGH": 0, "MEDIUM": 1, "LOW": 2}
+
+
+def _severity(finding: dict) -> str:
+    return str(finding.get("issue_severity") or "UNKNOWN").upper()
+
+
+def _review_details(findings: list[dict]) -> list[str] | None:
+    """Name every medium- or high-severity finding, whatever the density.
+
+    Density is the study's metric and its bands are calibrated for it: the
+    warning starts at 50 findings per thousand lines. A field audit of a
+    4,000-line health prototype (docs/FIELD_REPORT_001.md) had one real medium
+    finding, a URL opener that would accept file: paths, under a verdict of
+    OK. One serious finding is not a density problem, so it is named beside
+    the score rather than folded into it. The value and the band are unchanged.
+    """
+    serious = [f for f in findings if _severity(f) in ("HIGH", "MEDIUM")]
+    if not serious:
+        return None
+    tally: dict[str, int] = {}
+    for f in findings:
+        tally[_severity(f)] = tally.get(_severity(f), 0) + 1
+    order = sorted(tally, key=lambda s: _SEVERITY_ORDER.get(s, 3))
+    lines = [f"{len(findings)} findings: " + ", ".join(f"{tally[s]} {s.lower()}" for s in order)]
+    for f in sorted(serious, key=lambda f: (_SEVERITY_ORDER.get(_severity(f), 3),
+                                           str(f.get("filename", "")), f.get("line_number") or 0)):
+        cwe = (f.get("issue_cwe") or {}).get("id")
+        lines.append(f"{_severity(f)} {f.get('test_id', '')}"
+                     + (f" CWE-{cwe}" if cwe else "")
+                     + f" {f.get('filename', '?')}:{f.get('line_number', '?')}"
+                     + f" · {str(f.get('issue_text', '')).strip()[:90]}")
+    return lines
 
 
 def _scan_javascript(files: dict[str, str]) -> tuple[list[dict], int]:
@@ -137,6 +174,7 @@ def analyze(codebase: dict, interaction_log: list[dict], spec: dict,
         name="security_density",
         value=density,
         unit="per_kloc",
+        details=_review_details(issues + js_issues),
         scanned_lines=scanned,
         total_lines=total,
         languages=languages.present(files),

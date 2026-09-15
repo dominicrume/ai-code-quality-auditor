@@ -200,6 +200,16 @@ def scan_cmd(path: Path, spec: Path | None, as_json: bool, fail_on: str, decisio
                               "[dim]n/a[/dim]", f"[dim]{o.skipped_reason}[/dim]")
         console.print(table)
 
+        # A single serious finding never moves a density band, so name it.
+        security = next((o for o in result.outcomes if o.name == "security_density"
+                         and o.applicable and o.details), None)
+        if security:
+            from rich.markup import escape
+            console.print(f"\n[yellow]Security findings to review[/yellow] "
+                          f"[dim]({escape(security.details[0])})[/dim]")
+            for line in security.details[1:]:
+                console.print(f"  • {escape(line)}")
+
         if result.coverage_note:
             console.print(f"\n[yellow]Coverage:[/yellow] {result.coverage_note}")
         console.print()

@@ -67,6 +67,10 @@
   .card.na .val{font-size:1.35rem;color:var(--muted);font-weight:600}
   .unit{font-size:.76rem;color:var(--muted);font-family:var(--mono)}
   .why{font-size:.78rem;color:var(--muted);margin-top:.3rem;line-height:1.35}
+  .review{margin-top:.8rem;border-top:1px solid var(--line);padding-top:.5rem}
+  .review-h{font-size:.72rem;color:var(--warn);margin-bottom:.35rem;font-weight:600}
+  .review-i{font-family:var(--mono);font-size:.72rem;color:var(--text);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:.2rem}
   @media (prefers-reduced-motion:no-preference){
     .card.bump{animation:bump .5s cubic-bezier(.3,1.4,.5,1)}
     @keyframes bump{0%{transform:scale(1)}40%{transform:scale(1.045)}100%{transform:scale(1)}}
@@ -131,6 +135,7 @@ const note  = document.getElementById('note');
 const meta  = document.getElementById('meta');
 const briefBox = document.getElementById('briefBox');
 const fmt = v => Math.abs(v) >= 100 ? v.toFixed(0) : v.toFixed(2);
+const esc = t => String(t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let prev = {};
 
 function render(r){
@@ -160,6 +165,12 @@ function render(r){
           inner += `<button onclick="handleDrift('${item}', 'strip', this)" style="background: var(--bg-2); color: var(--bad); border: 1px solid var(--line); border-radius: 4px; padding: 0.15rem 0.3rem; font-size: 0.7rem; cursor: pointer;" title="Strip (Remove from Code)">Strip</button>`;
           inner += `</div></div>`;
         }
+        inner += `</div>`;
+      }
+      // one serious finding never moves a density band, so it is named here
+      if (m.name === 'security_density' && m.details && m.details.length > 1) {
+        inner += `<div class="review"><div class="review-h">To review · ${esc(m.details[0])}</div>`;
+        for (const item of m.details.slice(1)) inner += `<div class="review-i" title="${esc(item)}">${esc(item)}</div>`;
         inner += `</div>`;
       }
     }
