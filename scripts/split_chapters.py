@@ -11,6 +11,7 @@ up reading the wrong one. They are now derived, never edited.
 from __future__ import annotations
 
 import re
+import subprocess
 from datetime import date
 from pathlib import Path
 
@@ -33,6 +34,20 @@ BANNER = """> **Generated file — do not edit.**
 """
 
 
+
+def _master_date() -> str:
+    """The date the master last changed, not the date the script ran.
+
+    Stamping today's date made every extract differ from its committed copy
+    the morning after, so the sync check failed with no change to the text.
+    """
+    try:
+        out = subprocess.run(["git", "log", "-1", "--format=%cs", "--", str(MASTER)],
+                             capture_output=True, text=True, check=True).stdout.strip()
+        return out or date.today().isoformat()
+    except (OSError, subprocess.CalledProcessError):
+        return date.today().isoformat()
+
 def main() -> None:
     lines = SRC.read_text().splitlines()
     starts = [(i, l) for i, l in enumerate(lines) if re.match(r"^# Chapter \d", l)]
@@ -49,7 +64,7 @@ def main() -> None:
         while body and not body[-1].strip():
             body.pop()
         # figure paths are relative to docs/dissertation in both files
-        text = BANNER.format(when=date.today().isoformat()) + "\n".join(body) + "\n"
+        text = BANNER.format(when=_master_date()) + "\n".join(body) + "\n"
         p = OUT / CHAPTERS[key]
         p.write_text(text)
         n = len(re.findall(r"\S+", "\n".join(body)))
