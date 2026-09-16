@@ -10,8 +10,10 @@ here.
 
 Every image is cropped from an original screen capture to the region that
 carries evidence. Browser chrome, bookmarks, file paths and account details are
-removed; nothing else is altered. Originals are held by the author and are not
-published.
+removed; nothing else is altered. Plate F.9 is two regions of a single capture,
+stacked, with an unrelated paragraph between them dropped rather than masked;
+that is the only composite in the set. Originals are held by the author and are
+not published.
 
 | Plate | File | What it shows | Supports |
 |---|---|---|---|
@@ -22,3 +24,17 @@ published.
 | F.5 | `E5_pypi_versions.jpg` | Downloads by release over the quarter to 9 September 2026: 517, 479, 319 and 302 across four versions | §4.8, adoption |
 | F.6 | `E6_rater2_completion.jpg` | Rater 2's completed labelling screen, all nineteen items, including the item_16 count of 4 | §4.7 |
 | F.7 | `E7_results_before_errata.jpg` | The per-condition results table before Errata 001 and 002, retained as a record of what the corrections changed | §4.3, Errata 001–002 |
+| F.8 | `E8_live_scope_needs_spec.jpg` | The live interface on a codebase outside the study with no specification supplied: scope drift and rework both report `n/a` with the reason, while the three code-only metrics report normally | §4.8, Figure 4.9 |
+| F.9 | `E9_field_appraisal.jpg` | The user's own appraisal after auditing a second project, 15 September 2026: of seventeen findings one was new and material, the rest already known or accepted | §4.8 |
+| F.10 | `E10_watch_morning.jpg` | Continuous mode on that project at 11:09 on 16 September 2026: 47 files, 7,908 lines; security 4.87, complexity 5.77, duplication 1.36% | §4.8.2 |
+| F.11 | `E11_watch_evening.jpg` | The same project at 22:59 the same day: 49 files, 8,340 lines; security 5.29, complexity 5.91, duplication 1.29% | §4.8.2 |
+| F.12 | `E12_pypi_downloads_16sep.jpg` | Public installation counts to 16 September 2026: 3,100 all-time, 1,400 in thirty days, 63 in twenty-four hours | §4.8, adoption |
+
+A sixth capture from 16 September, showing the same readings as F.10 inside an
+editor window, is held with the originals and not published: it adds nothing to
+F.10 and carries unrelated working notes from another project.
+
+The scope drift figures visible in F.10 and F.11, 36 and 40, are **not** reported
+as findings anywhere in the dissertation. The specification they were scored
+against was not retained, and §4.8.1 is explicit that a scope drift figure is
+only as good as the brief behind it.

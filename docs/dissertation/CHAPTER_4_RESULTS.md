@@ -448,7 +448,7 @@ Two points follow. Scope drift discriminates: `kya-rails` returns 0, the
 reading the metric is designed to produce when output matches its brief, while
 `GovSignal` returns 4. A metric returning the same value on every real project
 would measure nothing. And `GovSignal` was audited by a third party on their own
-machine, so these readings occur in hands other than the author's.
+machine, so these readings occur in other hands.
 
 ![The published package installed by a third party](figures/fig_4_10_installation.jpg)
 
@@ -462,7 +462,7 @@ and the most useful. Scored against its own declared scope, transcribed from the
 pre-registration and the standing brief of 30 May 2026 and reproduced in
 `specs/auditor_instrument.yaml`, the instrument as audited carried twelve capabilities nobody specified: four command-line verbs (`scan`, `watch`, `live`, `fix`) and
 eight HTTP endpoints belonging to a local web interface the declared design did
-not contain at all. The declaration described two commands and no web surface. The `fix` verb has
+not contain. The declaration described two commands and no web surface. The `fix` verb has
 since been removed from the published package (release 0.5.0).
 Git dates every addition to August 2026, months after the protocol was fixed, with none of them required by the experiment.
 
@@ -471,15 +471,17 @@ and it sharpens rather than undermines §5.3. The drift here is *deliberate and
 dated*: each capability was chosen, committed with a message explaining it, and
 is visible to anyone reading the history. Replit's substitution of a pipeline
 for a command-line tool (§4.3.1) was none of those things. The governance
-distinction is therefore not between projects that stay in scope and projects
-that do not, since almost none stay in scope, but between scope expansion a
-reviewer can see and scope substitution a reviewer cannot.
+distinction is therefore not between projects that stay in scope, since almost
+none do, but between scope expansion a reviewer can see and substitution a
+reviewer cannot.
 
 One caveat on provenance. An earlier self-audit, retained in the evidence set,
 reported scope drift of 19. It scored the instrument against the study's
 demonstration specification for a student-course application, under which almost
 everything the instrument contains is off-specification by construction. That is
-an artefact of the wrong brief, not a finding; the figure of record is 12.
+an artefact of the wrong brief, not a finding; the figure of record is 12. The same
+caution excludes the scope drift counts in Figures F.10 and F.11, whose brief was
+not retained.
 
 ## 4.9 Summary of findings
 

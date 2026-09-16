@@ -45,3 +45,6 @@ evidence/prepared/
 
 # Pilot web-page snapshot, untracked since eb9f707; kept locally
 data/archive/
+
+# Evidence originals: cropped plates are published, raw captures are not
+docs/evidence/Screenshot*.png

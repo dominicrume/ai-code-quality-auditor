@@ -55,11 +55,11 @@ for t in doc.tables:
 full = "\n".join(parts)
 
 imgs = [n for n in z.namelist() if n.startswith("word/media/")]
-ok(len(imgs) == 23, f"23 images embedded: the crest, 15 body figures and 7 in Appendix F (found {len(imgs)})")
+ok(len(imgs) == 28, f"28 images embedded: the crest, 15 body figures and 12 in Appendix F (found {len(imgs)})")
 ok("Appendix F: Supplementary evidence" in full, "Appendix F present")
 ev = ROOT / "docs" / "evidence"
-ok(len(list(ev.glob("E*.jpg"))) == 7 and (ev / "README.md").exists(),
-   "public evidence folder has 7 images and an index")
+ok(len(list(ev.glob("E*.jpg"))) == 12 and (ev / "README.md").exists(),
+   "public evidence folder has 12 images and an index")
 ok(all(z.getinfo(n).file_size > 4000 for n in imgs), "no figure is a truncated file")
 ok(len(doc.tables) == 6, f"6 tables (found {len(doc.tables)})")
 for i, t in enumerate(doc.tables, 1):
@@ -91,7 +91,7 @@ toc = [p for p in doc.paragraphs if p.style.name.lower().startswith("toc")]
 ok(len(toc) >= 60 and all(re.search(r"\d\s*$", p.text) for p in toc),
    f"contents and both lists filled in with page numbers ({len(toc)} entries)")
 caps = [p.text for p in doc.paragraphs if re.match(r"^(Figure|Table) [0-9A-Z]+\.\d+:", p.text)]
-ok(sum(c.startswith("Figure") for c in caps) == 22, "22 figure captions in the 'Figure 4.1:' form")
+ok(sum(c.startswith("Figure") for c in caps) == 27, "27 figure captions in the 'Figure 4.1:' form")
 ok(sum(c.startswith("Table") for c in caps) == 6, "6 table captions in the 'Table 4.1:' form")
 kids = list(doc.element.body.iterchildren())
 below = ["".join(kids[i + 1].itertext()).strip() for i, e in enumerate(kids) if e.tag == qn("w:tbl")]

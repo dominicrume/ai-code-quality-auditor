@@ -201,6 +201,11 @@ engineering.
 - Figure F.5 Downloads by release
 - Figure F.6 Rater 2's completed labelling
 - Figure F.7 The results table before the errata
+- Figure F.8 The live interface with no specification supplied
+- Figure F.9 A user's appraisal of the instrument in the field
+- Figure F.10 Continuous mode on a second codebase, morning
+- Figure F.11 The same codebase that evening
+- Figure F.12 Public download counts to 16 September 2026
 
 ---
 
@@ -1234,7 +1239,7 @@ Two points follow. Scope drift discriminates: `kya-rails` returns 0, the
 reading the metric is designed to produce when output matches its brief, while
 `GovSignal` returns 4. A metric returning the same value on every real project
 would measure nothing. And `GovSignal` was audited by a third party on their own
-machine, so these readings occur in hands other than the author's.
+machine, so these readings occur in other hands.
 
 ![The published package installed by a third party](figures/fig_4_10_installation.jpg)
 
@@ -1248,7 +1253,7 @@ and the most useful. Scored against its own declared scope, transcribed from the
 pre-registration and the standing brief of 30 May 2026 and reproduced in
 `specs/auditor_instrument.yaml`, the instrument as audited carried twelve capabilities nobody specified: four command-line verbs (`scan`, `watch`, `live`, `fix`) and
 eight HTTP endpoints belonging to a local web interface the declared design did
-not contain at all. The declaration described two commands and no web surface. The `fix` verb has
+not contain. The declaration described two commands and no web surface. The `fix` verb has
 since been removed from the published package (release 0.5.0).
 Git dates every addition to August 2026, months after the protocol was fixed, with none of them required by the experiment.
 
@@ -1257,15 +1262,17 @@ and it sharpens rather than undermines §5.3. The drift here is *deliberate and
 dated*: each capability was chosen, committed with a message explaining it, and
 is visible to anyone reading the history. Replit's substitution of a pipeline
 for a command-line tool (§4.3.1) was none of those things. The governance
-distinction is therefore not between projects that stay in scope and projects
-that do not, since almost none stay in scope, but between scope expansion a
-reviewer can see and scope substitution a reviewer cannot.
+distinction is therefore not between projects that stay in scope, since almost
+none do, but between scope expansion a reviewer can see and substitution a
+reviewer cannot.
 
 One caveat on provenance. An earlier self-audit, retained in the evidence set,
 reported scope drift of 19. It scored the instrument against the study's
 demonstration specification for a student-course application, under which almost
 everything the instrument contains is off-specification by construction. That is
-an artefact of the wrong brief, not a finding; the figure of record is 12.
+an artefact of the wrong brief, not a finding; the figure of record is 12. The same
+caution excludes the scope drift counts in Figures F.10 and F.11, whose brief was
+not retained.
 
 ## 4.9 Summary of findings
 
@@ -1814,11 +1821,24 @@ vendor) and its automated test suite.
 
 ## Appendix F: Supplementary evidence
 
-Figures F.1 to F.7 are captures supporting results reported in Chapter 4 that
+Figures F.1 to F.12 are captures supporting results reported in Chapter 4 that
 are not already shown as figures in the body. Each is cropped from an original screen capture to the
 region carrying evidence, with browser chrome, bookmarks, file paths and account
 details removed and nothing else altered. The same images are published with an
 index at [https://github.com/dominicrume/ai-code-quality-auditor/tree/main/docs/evidence](https://github.com/dominicrume/ai-code-quality-auditor/tree/main/docs/evidence).
+
+Figures F.8 to F.12 were added on 16 September 2026. F.10 and F.11 are the same
+codebase watched in continuous mode eleven hours apart, and they carry a caution
+that §4.8.1 states in principle. Both screens display a scope drift count, 36 and
+then 40. Neither is reported as a finding anywhere in this dissertation, because
+the specification those counts were scored against was not retained. Where no
+specification is supplied at all the instrument refuses to produce the figure and
+says why (F.8), which is the behaviour the design intends; a brief that existed,
+produced a number and was then lost is the harder case, and the readings from it
+are worth nothing afterwards. The three metrics computed from code alone,
+security density, complexity and duplication, are unaffected by this and are
+reported in the captions. Provenance of the specification is part of the
+measurement, not an administrative detail.
 
 ![GovSignal audited by a third party](../evidence/E1_field_audit_govsignal.jpg)
 
@@ -1848,12 +1868,38 @@ index at [https://github.com/dominicrume/ai-code-quality-auditor/tree/main/docs/
 
 **Figure F.7** The per-condition results as first produced, before Errata 001 and 002. Security density reads 42.05 and 43.67 for claude_code and cursor_agent, and replit_agent's hallucination mean 1.00; Chapter 4 reports the corrected 9.65, 5.93 and 1.33. Retained as a record of what the corrections changed.
 
+![The live interface with no specification supplied](../evidence/E8_live_scope_needs_spec.jpg)
+
+**Figure F.8** The live interface on a codebase outside the study before any specification was supplied. Security, complexity and duplication report normally, because they are computed from the code alone. Scope drift reports `n/a`, "needs `--spec` to know what was asked for", and rework reports `n/a`, "not measurable from a directory". The instrument declines to return a figure it has no basis to compute. Supports §4.8 and Figure 4.9.
+
+![A user's appraisal of the instrument in the field](../evidence/E9_field_appraisal.jpg)
+
+**Figure F.9** The user's own appraisal after auditing a second project, 15 September 2026, reproduced from two regions of one capture with an unrelated paragraph between them omitted. Of seventeen findings, one was new to the user and material, a consortium witness accepting any URL scheme, now restricted to https with a test; the rest were low-severity notes already known and accepted. Retained because it limits the claim: "the tool earned its place for one medium finding, not for the rest."
+
+![Continuous mode on a second codebase, morning](../evidence/E10_watch_morning.jpg)
+
+**Figure F.10** Continuous mode on a codebase outside the study at 11:09 on 16 September 2026: 47 files, 7,908 lines, 46 of them Python, with security 4.87 per kLOC, complexity 5.77 and duplication 1.36%. Supports §4.8.2.
+
+![The same codebase that evening](../evidence/E11_watch_evening.jpg)
+
+**Figure F.11** The same codebase at 22:59 the same day: 49 files and 8,340 lines, with security 5.29, complexity 5.91 and duplication 1.29%. The scope drift counts visible in this figure and in Figure F.10 are excluded from the findings, for the reason given in §4.8.2: the specification they were scored against was not retained. Rework correctly reports `n/a`, since it cannot be derived from a directory without a captured session.
+
+![Public download counts to 16 September 2026](../evidence/E12_pypi_downloads_16sep.jpg)
+
+**Figure F.12** Downloads of the published package from PyPI to 16 September 2026: 3,100 all-time, 1,400 in the preceding thirty days and 63 in twenty-four hours. Figure F.4 records the same counter eleven days earlier, at 2,500 all-time.
+
 ---
 
 > **Editorial status (not part of the submission; stripped when the document is
 > rendered).** Built entirely on the study's real captured data. Chapters 1–6
-> are 11,569 words excluding figure captions, 12,429 including them, against a
-> hard 12,000 limit, confirm which convention the marking rubric applies.
+> are 11,993 words excluding figure captions against a hard 12,000 limit, as
+> counted by `scripts/verify_submission.py`; confirm which convention the marking
+> rubric applies. 16 September 2026: five plates added to Appendix F (F.8–F.12)
+> covering continuous-mode operation, a user's field appraisal and the download
+> counter at that date. The body carries one added sentence in §4.8.1; four
+> sentences elsewhere in §4.8 were tightened to stay under the limit, with no
+> change of meaning. The scope drift counts visible in F.10 and F.11 are reported
+> nowhere, because the brief behind them was not retained.
 > References verified; §4.5 re-analysed and rewritten (6 August 2026); Cohen's κ
 > collected and reported, Erratum 001 applied in the text and Erratum 002
 > applied throughout (8 September 2026); name and programme verified against the

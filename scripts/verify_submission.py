@@ -15,7 +15,7 @@ def warn(cond, msg):
 
 print("\n[1] FIGURES")
 refs = re.findall(r'!\[[^\]]*\]\(([^)]+)\)', s)
-check(len(refs) == 22, f"22 figures referenced, 7 of them in Appendix F (found {len(refs)})")
+check(len(refs) == 27, f"27 figures referenced, 12 of them in Appendix F (found {len(refs)})")
 for r in refs:
     check((ROOT / "docs/dissertation" / r).resolve().exists(), f"file exists: {r}")
 caps = re.findall(r'^\*\*Figure ([0-9.]+)\*\*', s, re.M)
