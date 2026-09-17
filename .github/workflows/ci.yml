@@ -9,12 +9,25 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: Install (with dashboard extras + bandit)
+      # ".[dashboard]" does not bring pytest, so the Tests step below exited
+      # 127 with "pytest: command not found" on every run this workflow has
+      # ever had. It was a required status check on main the whole time,
+      # which is worse than having no check: it reported green protection
+      # that did not exist. The test extras are now installed explicitly.
+      - name: Install (test, dashboard, notebook and recorder extras)
         run: |
           pip install -r requirements.lock
-          pip install -e ".[dashboard]" "pynput==1.8.2"
-      - name: Lint (ruff if configured, else skip)
-        run: pip install "ruff==0.14.5" && ruff check . || true
+          pip install -e ".[dev,all]" "pynput==1.8.2"
+      # Enforced narrowly and honestly. The full default ruff ruleset reports
+      # 234 findings on this tree, almost all stylistic; a step that ends in
+      # "|| true" is not a gate, it is decoration. These rules catch real
+      # defects — undefined names, unreachable code, mutable default
+      # arguments — and the tree is clean against them today, so a
+      # regression fails the build.
+      - name: Lint (correctness rules, enforced)
+        run: ruff check . --select E9,F63,F7,F82,F811,B006
+      - name: Lint (full ruleset, advisory)
+        run: ruff check . --statistics || true
       - name: Tests
         run: pytest -q
 
