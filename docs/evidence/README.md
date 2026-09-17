@@ -26,8 +26,8 @@ not published.
 | F.7 | `E7_results_before_errata.jpg` | The per-condition results table before Errata 001 and 002, retained as a record of what the corrections changed | §4.3, Errata 001–002 |
 | F.8 | `E8_live_scope_needs_spec.jpg` | The live interface on a codebase outside the study with no specification supplied: scope drift and rework both report `n/a` with the reason, while the three code-only metrics report normally | §4.8, Figure 4.9 |
 | F.9 | `E9_field_appraisal.jpg` | The user's own appraisal after auditing a second project, 15 September 2026: of seventeen findings one was new and material, the rest already known or accepted | §4.8 |
-| F.10 | `E10_watch_morning.jpg` | Continuous mode on that project at 11:09 on 16 September 2026: 47 files, 7,908 lines; security 4.87, complexity 5.77, duplication 1.36% | §4.8.2 |
-| F.11 | `E11_watch_evening.jpg` | The same project at 22:59 the same day: 49 files, 8,340 lines; security 5.29, complexity 5.91, duplication 1.29% | §4.8.2 |
+| F.10 | `E10_watch_morning.jpg` | Continuous mode on that project at 11:09 on 16 September 2026: 47 files, 7,908 lines; security 4.87, complexity 5.77, duplication 1.36% | §4.8.1 |
+| F.11 | `E11_watch_evening.jpg` | The same project at 22:59 the same day: 49 files, 8,340 lines; security 5.29, complexity 5.91, duplication 1.29% | §4.8.1 |
 | F.12 | `E12_pypi_downloads_16sep.jpg` | Public installation counts to 16 September 2026: 3,100 all-time, 1,400 in thirty days, 63 in twenty-four hours | §4.8, adoption |
 
 A sixth capture from 16 September, showing the same readings as F.10 inside an

@@ -134,7 +134,7 @@ module so the command line, the dashboard and the reporting client cannot give
 different verdicts for the same number. They bound how a value is read, not how
 it is measured.
 
-*Security density.* The captured codebase is written to a temporary directory and
+*Security density (§3.4.1).* The captured codebase is written to a temporary directory and
 scored by Bandit. Only findings carrying a CWE identifier are counted, divided by
 line count and scaled to a thousand lines. Assertion findings (`B101`) inside
 test files are excluded (§4.3, Erratum 001). An earlier design queried the
@@ -142,17 +142,17 @@ SonarCloud API and was abandoned during the pilot, because per-project scoping
 shared one numerator across conditions while the denominator varied, inflating
 small codebases.
 
-*Cyclomatic complexity.* `radon` enumerates every function's McCabe number and
+*Cyclomatic complexity (§3.4.2).* `radon` enumerates every function's McCabe number and
 the analyser reports the mean. Files outside the source whitelist, or inside
 virtual environments, caches and vendored packages, are removed first, so the
 metric reflects produced code rather than dependencies.
 
-*Duplication.* Every six-consecutive-line shingle is hashed across all source
+*Duplication (§3.4.3).* Every six-consecutive-line shingle is hashed across all source
 files. Lines in any shingle seen twice or more are divided by total source lines.
 This captures structural redundancy, including repeated template scaffolding, not
 merely verbatim copy-paste.
 
-*Hallucination.* A `manifest_deriver` scans for evidence of each declared feature,
+*Hallucination (§3.4.4).* A `manifest_deriver` scans for evidence of each declared feature,
 and for web routes and CLI subcommands mapping to no declared feature. The count
 of unmapped routes and commands is the score. Route detection covers the Python
 decorator form and the JavaScript call form, the latter added after the κ
@@ -160,7 +160,7 @@ validation found the detector blind to it (Erratum 002). Subcommand detection wa
 added after the main study revealed the Replit behaviour (analytical note 001).
 The deriver is a token-matching heuristic, validated in §4.7.
 
-*Keystroke correction.* `backspace` and `delete` events divided by total
+*Keystroke correction (§3.4.5).* `backspace` and `delete` events divided by total
 keystrokes, scaled to a thousand. Structurally zero for the agentic conditions.
 
 ![The hosted report view](figures/fig_3_4_report_dashboard.jpg)

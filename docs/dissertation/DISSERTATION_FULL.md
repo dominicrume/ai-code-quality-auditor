@@ -574,7 +574,7 @@ module so the command line, the dashboard and the reporting client cannot give
 different verdicts for the same number. They bound how a value is read, not how
 it is measured.
 
-*Security density.* The captured codebase is written to a temporary directory and
+*Security density (§3.4.1).* The captured codebase is written to a temporary directory and
 scored by Bandit. Only findings carrying a CWE identifier are counted, divided by
 line count and scaled to a thousand lines. Assertion findings (`B101`) inside
 test files are excluded (§4.3, Erratum 001). An earlier design queried the
@@ -582,17 +582,17 @@ SonarCloud API and was abandoned during the pilot, because per-project scoping
 shared one numerator across conditions while the denominator varied, inflating
 small codebases.
 
-*Cyclomatic complexity.* `radon` enumerates every function's McCabe number and
+*Cyclomatic complexity (§3.4.2).* `radon` enumerates every function's McCabe number and
 the analyser reports the mean. Files outside the source whitelist, or inside
 virtual environments, caches and vendored packages, are removed first, so the
 metric reflects produced code rather than dependencies.
 
-*Duplication.* Every six-consecutive-line shingle is hashed across all source
+*Duplication (§3.4.3).* Every six-consecutive-line shingle is hashed across all source
 files. Lines in any shingle seen twice or more are divided by total source lines.
 This captures structural redundancy, including repeated template scaffolding, not
 merely verbatim copy-paste.
 
-*Hallucination.* A `manifest_deriver` scans for evidence of each declared feature,
+*Hallucination (§3.4.4).* A `manifest_deriver` scans for evidence of each declared feature,
 and for web routes and CLI subcommands mapping to no declared feature. The count
 of unmapped routes and commands is the score. Route detection covers the Python
 decorator form and the JavaScript call form, the latter added after the κ
@@ -600,7 +600,7 @@ validation found the detector blind to it (Erratum 002). Subcommand detection wa
 added after the main study revealed the Replit behaviour (analytical note 001).
 The deriver is a token-matching heuristic, validated in §4.7.
 
-*Keystroke correction.* `backspace` and `delete` events divided by total
+*Keystroke correction (§3.4.5).* `backspace` and `delete` events divided by total
 keystrokes, scaled to a thousand. Structurally zero for the agentic conditions.
 
 ![The hosted report view](figures/fig_3_4_report_dashboard.jpg)
@@ -1111,6 +1111,11 @@ belonging to a local web interface the declared design did not contain. The decl
 verb has since been removed from the published package (release 0.5.0). Git dates
 every addition to August 2026, months after the protocol was fixed, none of them
 required by the experiment.
+
+The count is of the instrument as audited, at release 0.5.0. It drifted again
+afterwards: `history`, `forget` and `share` were added on 17 September 2026, for
+a local audit history and an opt-in share, taking the figure to fourteen. Dated,
+committed and visible, which is the distinction this section draws.
 
 This is the phenomenon the study measures, occurring in the author's own work,
 and it sharpens rather than undermines §5.3. The drift here is *deliberate and
@@ -1657,11 +1662,11 @@ measurement.
 
 ![Continuous mode on a second codebase, morning](../evidence/E10_watch_morning.jpg)
 
-**Figure F.10** Continuous mode on a codebase outside the study at 11:09 on 16 September 2026: 47 files, 7,908 lines, 46 of them Python, with security 4.87 per kLOC, complexity 5.77 and duplication 1.36%. Supports §4.8.2.
+**Figure F.10** Continuous mode on a codebase outside the study at 11:09 on 16 September 2026: 47 files, 7,908 lines, 46 of them Python, with security 4.87 per kLOC, complexity 5.77 and duplication 1.36%. Read with the note above and §4.8.1.
 
 ![The same codebase that evening](../evidence/E11_watch_evening.jpg)
 
-**Figure F.11** The same codebase at 22:59 the same day: 49 files and 8,340 lines, with security 5.29, complexity 5.91 and duplication 1.29%. The scope drift counts visible in this figure and in Figure F.10 are excluded from the findings, for the reason given in §4.8.2: the specification they were scored against was not retained. Rework correctly reports `n/a`, since it cannot be derived from a directory without a captured session.
+**Figure F.11** The same codebase at 22:59 the same day: 49 files and 8,340 lines, with security 5.29, complexity 5.91 and duplication 1.29%. The scope drift counts visible in this figure and in Figure F.10 are excluded from the findings, for the reason given above and in §4.8.1: the specification they were scored against was not retained. Rework correctly reports `n/a`, since it cannot be derived from a directory without a captured session.
 
 ![Public download counts to 16 September 2026](../evidence/E12_pypi_downloads_16sep.jpg)
 

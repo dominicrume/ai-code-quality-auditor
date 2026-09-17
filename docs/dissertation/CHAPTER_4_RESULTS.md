@@ -444,6 +444,11 @@ verb has since been removed from the published package (release 0.5.0). Git date
 every addition to August 2026, months after the protocol was fixed, none of them
 required by the experiment.
 
+The count is of the instrument as audited, at release 0.5.0. It drifted again
+afterwards: `history`, `forget` and `share` were added on 17 September 2026, for
+a local audit history and an opt-in share, taking the figure to fourteen. Dated,
+committed and visible, which is the distinction this section draws.
+
 This is the phenomenon the study measures, occurring in the author's own work,
 and it sharpens rather than undermines §5.3. The drift here is *deliberate and
 dated*: each capability was chosen, committed with a message explaining it, and
