@@ -45,7 +45,7 @@ inputs:
   version:
     description: Version of ai-code-quality-auditor to install.
     required: false
-    default: "0.5.1"
+    default: "0.5.2"
   python-version:
     description: Python interpreter version.
     required: false
