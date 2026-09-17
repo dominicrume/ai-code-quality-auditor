@@ -1,40 +1,60 @@
 name: AI Code Quality Auditor
 description: >
-  Score AI-generated code against a fixed spec on 5 metrics (hallucinations,
-  complexity, duplication, security, keystroke correction). Runs in CI on any
-  repo with a captured session in data/raw/<run_id>/.
+  Score the code in your repository on security-vulnerability density,
+  cyclomatic complexity, duplication and — with a spec — scope drift, and
+  optionally fail the build. Runs on the checked-out tree; no capture,
+  no setup.
 
-author: Dominic Rume
+author: O'Rume Dominic Uririe
 
 branding:
   icon: shield
   color: purple
 
+# This action used to call `auditor experiment --conditions ...`. There has
+# never been a --conditions option, so every run of it exited 2 on the first
+# command. It also required a pre-captured session under data/raw/<run-id>/,
+# which is not a thing a CI job has — the README told people to pass
+# github.run_id, which could never name one. The action now does what a CI
+# user actually wants and what the CLI actually supports: scan the code that
+# was just checked out.
+
 inputs:
-  run-id:
-    description: Identifier of the captured session (folder under data/raw/).
-    required: true
+  path:
+    description: Directory to audit, relative to the workspace.
+    required: false
+    default: "."
   spec:
-    description: Path to the YAML spec to score against.
+    description: >
+      Optional path to a spec YAML declaring what was asked for. Supplying it
+      turns on the scope-drift check, which is the metric this tool exists for.
+      Without it the other metrics still run and scope drift reports n/a.
     required: false
-    default: specs/agent_education_system.yaml
-  conditions:
-    description: Comma-separated list of conditions to score (default = all 5).
+    default: ""
+  fail-on:
+    description: >
+      Severity at which to fail the build — never, warn or critical. The
+      default is "never", so adding this action cannot break a pipeline on the
+      day it is added. Tighten it once you have seen a baseline.
     required: false
-    default: human_control,claude_code,cursor_agent,replit_agent,antigravity
+    default: never
+  decision-record:
+    description: Path to write an immutable JSON snapshot of the findings to.
+    required: false
+    default: auditor-report.json
+  version:
+    description: Version of ai-code-quality-auditor to install.
+    required: false
+    default: "0.5.1"
   python-version:
     description: Python interpreter version.
     required: false
     default: "3.11"
-  fail-on-hallucination:
-    description: Fail the build if any condition has hallucinations > 0.
-    required: false
-    default: "false"
 
 outputs:
-  report-csv:
-    description: Path to the generated CSV report.
-    value: ${{ steps.score.outputs.report }}
+  report-json:
+    description: Path to the JSON decision record.
+    value: ${{ steps.scan.outputs.report }}
 
 runs:
   using: composite
@@ -45,33 +65,42 @@ runs:
 
     - name: Install auditor
       shell: bash
-      run: |
-        pip install --upgrade pip
-        pip install "ai-code-quality-auditor==0.3.0"
+      run: pip install --upgrade "ai-code-quality-auditor==${{ inputs.version }}"
 
-    - name: Score captured session
-      id: score
+    - name: Scan
+      id: scan
       shell: bash
       env:
-        AUDITOR_RUN_ID: ${{ inputs.run-id }}
+        AUDITOR_PATH: ${{ inputs.path }}
         AUDITOR_SPEC: ${{ inputs.spec }}
-        AUDITOR_CONDITIONS: ${{ inputs.conditions }}
-        AUDITOR_FAIL_ON_HALLUCINATION: ${{ inputs.fail-on-hallucination }}
+        AUDITOR_FAIL_ON: ${{ inputs.fail-on }}
+        AUDITOR_RECORD: ${{ inputs.decision-record }}
       run: |
-        auditor experiment --run-id "$AUDITOR_RUN_ID" --spec "$AUDITOR_SPEC" \
-          --conditions "$AUDITOR_CONDITIONS"
-        REPORT="data/reports/${AUDITOR_RUN_ID}_comparison.csv"
-        echo "report=$REPORT" >> "$GITHUB_OUTPUT"
-        if [ "$AUDITOR_FAIL_ON_HALLUCINATION" = "true" ]; then
-          if grep -E ',hallucinations,[1-9]' "$REPORT" >/dev/null; then
-            echo "::error::Hallucinations detected"; exit 1
-          fi
+        set -o pipefail
+        args=("$AUDITOR_PATH" --fail-on "$AUDITOR_FAIL_ON"
+              --decision-record "$AUDITOR_RECORD" --no-history)
+        if [ -n "$AUDITOR_SPEC" ]; then
+          args+=(--spec "$AUDITOR_SPEC")
+        else
+          echo "::notice::No spec supplied, so scope drift reports n/a. Pass spec: to score what was built against what was asked for."
         fi
+        echo "report=$AUDITOR_RECORD" >> "$GITHUB_OUTPUT"
+        # Render to the job summary whether or not the gate trips, then let
+        # the gate's own exit code decide the build.
+        status=0
+        auditor scan "${args[@]}" | tee /tmp/auditor.txt || status=$?
+        {
+          echo '### AI Code Quality Auditor'
+          echo '```'
+          cat /tmp/auditor.txt
+          echo '```'
+        } >> "$GITHUB_STEP_SUMMARY"
+        exit $status
 
-    - name: Upload CSV + dashboard screenshots
+    - name: Upload the decision record
+      if: always()
       uses: actions/upload-artifact@v4
       with:
-        name: auditor-report-${{ inputs.run-id }}
-        path: |
-          data/reports/${{ inputs.run-id }}_comparison.csv
-          data/reports/${{ inputs.run-id }}_comparison.provenance.json
+        name: auditor-report
+        path: ${{ inputs.decision-record }}
+        if-no-files-found: warn

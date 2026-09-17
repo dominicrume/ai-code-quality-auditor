@@ -1,6 +1,11 @@
 # How a third party consumes the auditor as a GitHub Action.
-# Copy this file into your own repo at .github/workflows/auditor.yml
-# and edit the inputs.
+# Copy this file into your own repo at .github/workflows/auditor.yml.
+#
+# It also runs here, against this repository, on every push. That is
+# deliberate: an integration nobody runs is an integration nobody notices is
+# broken. This file previously passed `conditions:` and a `run-id` naming a
+# captured session, neither of which the tool has ever supported, and it had
+# been failing on its first command since it was written.
 name: Audit AI-generated code
 
 on:
@@ -15,7 +20,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dominicrume/ai-code-quality-auditor@main
         with:
-          run-id: ${{ github.run_id }}
+          path: auditor
           spec: specs/agent_education_system.yaml
-          conditions: claude_code,cursor_agent
-          fail-on-hallucination: "true"
+          # This repository is the instrument, not a deliverable built to that
+          # spec, so scope drift against it is not meaningful here and the gate
+          # stays advisory. In your repo, point spec: at what you asked for and
+          # raise this to critical once you have a baseline.
+          fail-on: never

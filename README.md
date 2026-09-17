@@ -25,9 +25,11 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dominicrume/ai-code-quality-auditor@main
         with:
-          run-id: ${{ github.run_id }}
-          conditions: claude_code,cursor_agent
+          spec: spec.yaml       # optional; turns on the scope-drift check
+          fail-on: never        # raise to warn or critical once you have a baseline
 ```
+It scans the tree you just checked out, writes the findings to the job summary
+and uploads a JSON decision record. It fails nothing until you ask it to.
 
 **📊 Live dashboard:** https://auditor-dashboard-rume.fly.dev/report/main_001_plus_human
 
