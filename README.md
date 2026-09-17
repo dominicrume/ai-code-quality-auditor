@@ -89,35 +89,49 @@ returns the post-repair values, which are circular and are not the result; see
 ## Case study: the instrument audits its own maker
 
 The fastest way to judge a measuring instrument is to point it at the person holding it.
-Run on this repository's own source, on 12 September 2026:
+Run on this repository's own source, on 17 September 2026:
 
 ```
 $ auditor scan auditor
-44 files · 3,971 lines · 44 analysable
-
-  Security     3.27 per kLOC   OK
-  Complexity   3.94 cc         WARN
-  Duplication  9.54 %          WARN
+  Security     3.15 per kLOC   OK    (14 findings: 1 medium, 13 low)
+  Complexity   4.03 cc         WARN
+  Duplication  7.84 %          WARN
 ```
 
-These figures move as the code does — adding the shape detector took duplication
-from 10.24% (RISK) to 9.54% (WARN) simply by adding lines that are not duplicated.
-A self-audit is a reading taken at a commit, not a badge; re-run it rather than
-trusting a number in a README.
+These figures move as the code does. Duplication went 10.24% → 9.54% when the shape
+detector added lines that are not duplicated, then 9.54% → 7.84% when the
+dashboard/live overlap below was resolved by deletion. A self-audit is a reading
+taken at a commit, not a badge; re-run it rather than trusting a number in a README.
 
 **We publish the warning rather than tuning it away**, because an instrument that hides
 its own findings cannot be trusted with anyone else's. Locating the duplication took one
-pass: it is dominated by 24 shingles shared across the four vendor adapters, plus 10
+pass: it was dominated by 24 shingles shared across the four vendor adapters, plus 10
 shared between `dashboard/app.py` and `live/server.py`.
 
-Those two findings get opposite verdicts, and saying so is the point:
+Those two findings got opposite verdicts, and saying so is the point:
 
 - **Accepted.** The adapters are deliberately thin files of one shape — one per vendor,
   each translating native output into the capture contract. Their similarity *is* the
   architecture (see Principles below). Collapsing them into a clever abstraction would
   buy a better duplication score and a worse codebase.
-- **Scheduled.** The dashboard/live overlap is genuine drift between two servers that
-  grew apart, and it is queued for a shared core.
+- **Resolved, and it mattered.** The dashboard/live overlap was two copies of the same
+  routes. Chasing the duplication score is what surfaced *why* they were duplicated: the
+  public report viewer had inherited `/api/scan` and `/api/drift/acknowledge` from the
+  local live server, where they are safe because that server binds to 127.0.0.1. On the
+  public host they were reachable with no authentication — one would walk any path the
+  container could read, the other would write to a file on the server. Nothing called
+  either. Deleting them closed the exposure and took duplication to 7.84%. A structural
+  metric found a security defect that the security metric did not.
+
+**The one medium finding is our scanner being wrong about us,** and it stays on the
+record as such. It flags `core/share.py:97` for opening a URL without restricting the
+scheme (B310, CWE-22). The line above it rejects anything that is not `https://`, so the
+`file:` path the rule is warning about cannot be reached. This is the mirror of
+[`docs/FIELD_REPORT_001.md`](docs/FIELD_REPORT_001.md), where the same rule caught a
+genuine one. We are not suppressing it: teaching the detector to recognise this
+particular guard, on the codebase that wrote the guard, is how an instrument starts
+agreeing with its author. A scanner with no false positives at this cost is a scanner
+that has been fitted to someone's code.
 
 The same pass over three neighbouring codebases, for calibration:
 
