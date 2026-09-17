@@ -81,14 +81,14 @@ consequences are recorded as errata in the text rather than corrected silently.
 **Use of generative AI.** The subject of this study is agentic AI coding tools,
 and I used such tools during the construction of the instrument and the
 preparation of this document. Their use is declared rather than concealed, and
-was bounded as follows. Software engineering: AI assistance was used in writing
-and refactoring the auditor's source code, which is published in full and
-covered by an automated test suite. Analysis: every statistic reported here is
+was bounded as follows. Software engineering: generative tools contributed to
+writing and refactoring the auditor's source code, which is published in full
+and covered by an automated test suite. Analysis: every statistic reported here is
 computed by scripts in the repository from the frozen captures, and every chart is regenerated from those same data files at build time, so no number in this
-document originates in a language model's output. Writing: AI assistance was
-used for drafting, structural editing and proofreading; the research questions,
-the experimental design, the interpretation of results and the conclusions are
-my own. I take full responsibility for the content of this dissertation.
+document originates in a language model's output. Writing: they contributed to
+drafting, structural editing and proofreading; the research questions, the
+experimental design, the interpretation of results and the conclusions are my
+own. I take full responsibility for the content of this dissertation.
 
 **Signed:** Uririe, Orume Dominic
 **Date:** September 2026
@@ -344,13 +344,15 @@ A second strand studies the developer rather than the artefact. Vaithilingam,
 Zhang and Glassman (2022) found programmers using completion tools were no
 faster, were more satisfied, and struggled to spot and repair wrong suggestions:
 the verification burden shifts rather than disappears. Sarkar et al. (2022)
-argued that AI assistance turns programming into specification and review rather
-than authorship, making fidelity to intent the critical variable. Barke, James
+argued that working alongside these tools turns programming into specification
+and review rather than authorship, making fidelity to intent the critical
+variable. Barke, James
 and Polikarpova (2023) found the quality cost concentrated in exploratory use.
 Peng et al. (2023) measured about 55% faster completion with GitHub Copilot,
 consistent with Ziegler et al. (2022), while Liang, Yang and Myers (2024)
-recorded lasting friction over trust and control. Together: AI assistance
-reliably changes process and does not reliably improve the artefact. That is the
+recorded lasting friction over trust and control. Together: such tools
+reliably change how programming is done and do not reliably improve what is
+produced. That is the
 warrant for measuring the artefact directly.
 
 ## 2.2 Security of AI-generated code
@@ -546,7 +548,7 @@ and the full four-tool matrix on 1 June 2026.
 The pre-registration specified 30 sessions of 60 minutes. The executed collection
 departed from that plan (**Deviation 003**): one completed session per
 specification (N = 1 per spec), run to feature completion rather than time-capped,
-with all in-IDE AI assistance disabled and verified. All six features of each
+with every in-IDE model feature switched off and verified. All six features of each
 specification were implemented and seen to run before scoring.
 
 The baseline is therefore a single-rep reference point, not a variance-bearing

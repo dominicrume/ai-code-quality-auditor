@@ -106,7 +106,7 @@ and the full four-tool matrix on 1 June 2026.
 The pre-registration specified 30 sessions of 60 minutes. The executed collection
 departed from that plan (**Deviation 003**): one completed session per
 specification (N = 1 per spec), run to feature completion rather than time-capped,
-with all in-IDE AI assistance disabled and verified. All six features of each
+with every in-IDE model feature switched off and verified. All six features of each
 specification were implemented and seen to run before scoring.
 
 The baseline is therefore a single-rep reference point, not a variance-bearing
