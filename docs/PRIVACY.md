@@ -20,7 +20,7 @@ being vague about its own behaviour.
 | `languages` | `["python", "typescript"]` | what the analysers could read |
 | `worst_band` | `warn` | the worst reading in that scan |
 | `metrics` | `{"security_density": {"value": 5.29, ...}}` | the numbers themselves |
-| `auditor_version` | `0.6.0` | which version produced them |
+| `auditor_version` | `0.5.1` | which version produced them |
 
 It never contains a file name, a function name, a finding, or a line of your code.
 
@@ -78,8 +78,8 @@ tell two projects apart within a submission without being able to identify eithe
 ## 5. What we can and cannot see
 
 To be explicit, because it has been asked: the maintainers of this tool have **no** record of
-your audits. None was ever collected. For every install before 0.6.0 there is no history at all,
-and from 0.6.0 there is a history that lives on your machine and comes to us only if you send it.
+your audits. None was ever collected. For every install before 0.5.1 there is no history at all,
+and from 0.5.1 there is a history that lives on your machine and comes to us only if you send it.
 
 The only figure the project has about its own use is the public PyPI download count, which says
 how often the package was installed and nothing whatever about what it found.

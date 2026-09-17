@@ -43,7 +43,7 @@ Worth stating plainly, because the tool reads source files:
   auditor-dashboard-rume.fly.dev, ships in the wheel but is not started by any
   CLI command. It can email an operator when someone submits the pilot form,
   and only when SMTP credentials are configured in the environment.)
-- **A local history, on your machine only.** From 0.6.0, `auditor scan` appends
+- **A local history, on your machine only.** From 0.5.1, `auditor scan` appends
   one line per scan to `~/.auditor/history.jsonl`: metric values, file and line
   counts, languages read, and the folder's path. It is yours. Read it with
   `auditor history`, find it with `auditor history --where`, delete it with
