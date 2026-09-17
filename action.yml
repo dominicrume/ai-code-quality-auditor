@@ -43,9 +43,17 @@ inputs:
     required: false
     default: auditor-report.json
   version:
-    description: Version of ai-code-quality-auditor to install.
+    description: >
+      Version specifier for ai-code-quality-auditor, appended to the package
+      name. Pin exactly (e.g. "==0.5.1") for a reproducible build.
+
+      The floor is 0.5.1 rather than 0.5.2 on purpose. 0.5.2 is a security
+      release for `auditor live`, the local watch server; this action runs
+      `auditor scan`, which that release does not change. Raising the floor to
+      a version that is not yet on PyPI would break every consumer, because
+      the action installs from the index and not from this repository.
     required: false
-    default: "0.5.2"
+    default: ">=0.5.1"
   python-version:
     description: Python interpreter version.
     required: false
@@ -65,7 +73,7 @@ runs:
 
     - name: Install auditor
       shell: bash
-      run: pip install --upgrade "ai-code-quality-auditor==${{ inputs.version }}"
+      run: pip install --upgrade "ai-code-quality-auditor${{ inputs.version }}"
 
     - name: Scan
       id: scan
