@@ -9,6 +9,7 @@ Design constraints, in priority order:
 """
 from __future__ import annotations
 
+import functools
 import json
 import queue
 import threading
@@ -156,6 +157,28 @@ def _same_origin(request) -> bool:
     return urlparse(origin).netloc == request.host
 
 
+def same_origin_required(view):
+    """Guard every state-changing route, not only the ones we remembered.
+
+    Three of the five POST routes below rewrite files in the watched project:
+    /api/remediate runs the remediation engine over the whole tree, and
+    /api/drift/strip deletes an endpoint from source. Until this decorator
+    existed only /api/brief checked the Origin header, so any page the user
+    had open in the same browser could have silently edited their working
+    copy. Opt-out is not available: a new POST route is guarded by default.
+    """
+    @functools.wraps(view)
+    def wrapped(*args, **kwargs):
+        if not _same_origin(request):
+            return jsonify({
+                "status": "error",
+                "error": "Cross-origin requests are not accepted.",
+                "message": "Cross-origin requests are not accepted.",
+            }), 403
+        return view(*args, **kwargs)
+    return wrapped
+
+
 def create_app(session: LiveSession) -> Flask:
     app = Flask(__name__, template_folder="templates")
     app.config["SESSION"] = session
@@ -176,15 +199,15 @@ def create_app(session: LiveSession) -> Flask:
         })
 
     @app.post("/api/brief")
+    @same_origin_required
     def brief():
-        if not _same_origin(request):
-            return jsonify({"error": "Cross-origin requests are not accepted."}), 403
         text = (request.get_json(silent=True) or {}).get("brief", "").strip()
         if not text:
             return jsonify({"error": "Type what you asked the agent to build."}), 400
         return jsonify(session.apply_brief(text))
 
     @app.post("/api/scan")
+    @same_origin_required
     def api_scan():
         """Headless scan trigger for enterprise integration."""
         data = request.get_json() or {}
@@ -216,6 +239,7 @@ def create_app(session: LiveSession) -> Flask:
         })
 
     @app.post("/api/remediate")
+    @same_origin_required
     def api_remediate():
         """Trigger the remediation engine."""
         try:
@@ -229,6 +253,7 @@ def create_app(session: LiveSession) -> Flask:
         return jsonify({"status": "success", "results": results.applied, "fixed": len(results.fixed)})
 
     @app.post("/api/drift/acknowledge")
+    @same_origin_required
     def api_drift_acknowledge():
         data = request.get_json() or {}
         item = data.get("item")
@@ -245,6 +270,7 @@ def create_app(session: LiveSession) -> Flask:
         return jsonify({"status": "success", "message": f"Acknowledged {item}"})
 
     @app.post("/api/drift/strip")
+    @same_origin_required
     def api_drift_strip():
         data = request.get_json() or {}
         item = data.get("item")

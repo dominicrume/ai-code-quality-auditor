@@ -69,8 +69,38 @@
   .why{font-size:.78rem;color:var(--muted);margin-top:.3rem;line-height:1.35}
   .review{margin-top:.8rem;border-top:1px solid var(--line);padding-top:.5rem}
   .review-h{font-size:.72rem;color:var(--warn);margin-bottom:.35rem;font-weight:600}
-  .review-i{font-family:var(--mono);font-size:.72rem;color:var(--text);
+  .review-i{font-family:var(--mono);font-size:.72rem;color:var(--ink);
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:.2rem}
+
+  /* ---------- scope drift: one benign action beside one destructive one ---------- */
+  .drift{margin-top:.8rem;border-top:1px solid var(--line);padding-top:.55rem}
+  .drift-h{font-size:.72rem;color:var(--muted);margin-bottom:.45rem}
+  .drift-row{display:flex;justify-content:space-between;align-items:center;
+    gap:.5rem;margin-bottom:.3rem}
+  .drift-name{font-family:var(--mono);font-size:.75rem;color:var(--ink);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+  .drift-acts{display:flex;gap:.3rem;flex:none}
+  .drift-acts button{font:600 .7rem/1 var(--mono);min-height:1.9rem;padding:0 .5rem;
+    border-radius:5px;border:1px solid var(--line);background:var(--paper);
+    color:var(--ink);cursor:pointer}
+  .drift-acts button:hover{border-color:var(--muted)}
+  .drift-acts .act-ack{color:var(--good);border-color:color-mix(in srgb,var(--good) 40%,var(--line))}
+  .drift-acts .act-strip{color:var(--critical);border-color:color-mix(in srgb,var(--critical) 40%,var(--line))}
+  /* Strip rewrites the user's source. It asks once before it does. */
+  .drift-acts .act-strip[data-armed="1"]{background:var(--critical);color:var(--paper);
+    border-color:var(--critical)}
+  .drift-acts button[data-state="done"]{background:var(--good);color:var(--paper);
+    border-color:var(--good)}
+  .drift-acts button[data-state="failed"]{background:var(--critical);color:var(--paper);
+    border-color:var(--critical)}
+  .drift-acts button:disabled{opacity:.6;cursor:default}
+
+  :where(a,button,textarea,[tabindex]):focus-visible{
+    outline:2px solid var(--accent);outline-offset:2px;border-radius:5px}
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;
+    overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+  .live.lost{color:var(--critical);border-color:var(--critical)}
+  .live.lost .dot{background:var(--critical);animation:none}
   @media (prefers-reduced-motion:no-preference){
     .card.bump{animation:bump .5s cubic-bezier(.3,1.4,.5,1)}
     @keyframes bump{0%{transform:scale(1)}40%{transform:scale(1.045)}100%{transform:scale(1)}}
@@ -102,9 +132,11 @@
 <div class="wrap">
   <header>
     <h1 id="proj">{{ project }}</h1>
-    <span class="live"><span class="dot"></span><span id="conn">watching</span></span>
+    <span class="live" role="status" aria-label="Connection"><span class="dot" aria-hidden="true"></span><span id="conn">watching</span></span>
   </header>
   <p class="sub" id="meta">starting…</p>
+  <p class="sr-only" id="announcer" role="status" aria-live="polite"></p>
+  <main>
 
   <section class="brief" id="briefBox" hidden>
     <h2>What did you ask the agent to build?</h2>
@@ -117,14 +149,15 @@
     </div>
   </section>
 
-  <div class="grid" id="cards"></div>
-  <div class="note" id="note" hidden></div>
+  <div class="grid" id="cards" aria-label="Metrics"></div>
+  <div class="note" id="note" role="note" hidden></div>
 
-  <h2 class="feed-title">Activity</h2>
-  <div class="feed" id="feed">
+  <h2 class="feed-title" id="feed-title">Activity</h2>
+  <div class="feed" id="feed" role="log" aria-labelledby="feed-title">
     <div class="idle" id="idle">Waiting for changes. Edit a file, or let your agent work —
       results update here automatically.</div>
   </div>
+  </main>
 </div>
 
 <script>
@@ -137,6 +170,16 @@ const briefBox = document.getElementById('briefBox');
 const fmt = v => Math.abs(v) >= 100 ? v.toFixed(0) : v.toFixed(2);
 const esc = t => String(t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let prev = {};
+
+// Everything on this page changes without the user acting. A screen reader
+// gets nothing from that unless something says so out loud.
+const announcer = document.getElementById('announcer');
+const say = msg => { announcer.textContent = msg; };
+const connEl = document.getElementById('conn');
+function setConn(text, lost){
+  connEl.textContent = text;
+  connEl.closest('.live').classList.toggle('lost', !!lost);
+}
 
 function render(r){
   meta.innerHTML = r.files === 0
@@ -155,15 +198,21 @@ function render(r){
     } else {
       inner += `<div class="val">${fmt(m.value)}</div><span class="unit">${m.unit}</span>`;
       if (m.name === 'hallucinations' && m.details && m.details.length > 0) {
-        inner += `<div style="margin-top: 1rem; border-top: 1px solid var(--line); padding-top: 0.5rem;">`;
-        inner += `<div style="font-size: 0.75rem; color: var(--muted); margin-bottom: 0.5rem;">Drift Detected:</div>`;
+        // Every value below comes from the user's own filenames and routes.
+        // It is escaped, and carried in data attributes rather than in an
+        // onclick string, so an apostrophe in a path cannot break — or
+        // extend — the handler it lands in.
+        inner += `<div class="drift"><div class="drift-h">Built but not asked for:</div>`;
         for (const item of m.details) {
-          inner += `<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">`;
-          inner += `<span style="font-family: var(--mono); font-size: 0.75rem; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 60%;" title="${item}">${item}</span>`;
-          inner += `<div style="display: flex; gap: 0.25rem;">`;
-          inner += `<button onclick="handleDrift('${item}', 'acknowledge', this)" style="background: var(--bg-2); color: var(--good); border: 1px solid var(--line); border-radius: 4px; padding: 0.15rem 0.3rem; font-size: 0.7rem; cursor: pointer;" title="Acknowledge (Add to Spec)">Ack</button>`;
-          inner += `<button onclick="handleDrift('${item}', 'strip', this)" style="background: var(--bg-2); color: var(--bad); border: 1px solid var(--line); border-radius: 4px; padding: 0.15rem 0.3rem; font-size: 0.7rem; cursor: pointer;" title="Strip (Remove from Code)">Strip</button>`;
-          inner += `</div></div>`;
+          const safe = esc(item);
+          inner += `<div class="drift-row">`
+            + `<span class="drift-name" title="${safe}">${safe}</span>`
+            + `<span class="drift-acts">`
+            + `<button type="button" class="act-ack" data-drift="acknowledge" data-item="${safe}"`
+            + ` aria-label="Acknowledge ${safe} — add it to the brief">Ack</button>`
+            + `<button type="button" class="act-strip" data-drift="strip" data-item="${safe}"`
+            + ` aria-label="Strip ${safe} — delete it from your source">Strip</button>`
+            + `</span></div>`;
         }
         inner += `</div>`;
       }
@@ -203,6 +252,10 @@ function addEvent(ev){
     }
   }
   if (!lines) lines = '<div class="line"><span>·</span><span>no metric changed</span></div>';
+  // Only band crossings are worth interrupting someone for; a decimal moving
+  // is not. The feed still records everything.
+  const crossed = ev.deltas.filter(d => d.changed_band);
+  if (crossed.length) say(crossed.map(d => `${d.label} ${d.before_band} to ${d.after_band}`).join('. '));
   const el = document.createElement('div');
   el.className = 'ev';
   el.innerHTML = `<div class="when">${when}</div><div class="files">${files||'—'}</div>${lines}`;
@@ -216,8 +269,14 @@ es.onmessage = e => {
   render(msg.report);
   if (msg.report.changed?.length || msg.deltas?.length) addEvent(msg);
 };
-es.onerror = () => { document.getElementById('conn').textContent = 'reconnecting'; };
-es.onopen  = () => { document.getElementById('conn').textContent = 'watching'; };
+es.onerror = () => {
+  // CLOSED means the browser has given up; anything else is a retry in
+  // flight. Saying "reconnecting" forever after a stopped server is a lie.
+  const dead = es.readyState === EventSource.CLOSED;
+  setConn(dead ? 'not running' : 'reconnecting', dead);
+  if (dead) say('The auditor stopped. Run auditor live again to resume.');
+};
+es.onopen  = () => setConn('watching', false);
 
 const btn = document.getElementById('briefBtn');
 btn.onclick = async () => {
@@ -239,31 +298,58 @@ btn.onclick = async () => {
   }
 };
 
-async function handleDrift(item, action, btn) {
+// Delegated: the cards are re-rendered on every scan, so per-button
+// listeners would be rebound a few times a second and leak.
+cards.addEventListener('click', async (e) => {
+  const btn = e.target.closest('button[data-drift]');
+  if (!btn || btn.disabled) return;
+  const action = btn.dataset.drift;
+  const item = btn.dataset.item;
+
+  // Strip deletes code from the working tree and there is no undo, so it
+  // asks once. Ack only edits the brief, so it does not.
+  if (action === 'strip' && btn.dataset.armed !== '1') {
+    btn.dataset.armed = '1';
+    btn.textContent = 'Delete it?';
+    setTimeout(() => {
+      if (btn.dataset.armed === '1') {
+        delete btn.dataset.armed;
+        btn.textContent = 'Strip';
+      }
+    }, 4000);
+    return;
+  }
+
   btn.disabled = true;
-  const originalText = btn.textContent;
-  btn.textContent = '...';
+  delete btn.dataset.armed;
+  btn.textContent = '…';
+  say(action === 'strip' ? `Stripping ${item}` : `Acknowledging ${item}`);
   try {
     const res = await fetch(`/api/drift/${action}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ item })
     });
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     if (res.ok) {
       btn.textContent = 'Done';
-      btn.style.color = 'white';
-      btn.style.background = 'var(--good)';
+      btn.dataset.state = 'done';
+      say(action === 'strip' ? `Stripped ${item}` : `Added ${item} to the brief`);
     } else {
-      btn.textContent = 'Error';
-      btn.style.background = 'var(--bad)';
-      btn.title = data.message || 'Error occurred';
+      btn.textContent = 'Failed';
+      btn.dataset.state = 'failed';
+      btn.title = data.message || data.error || `Request failed (${res.status})`;
+      btn.disabled = false;
+      say(`Could not ${action} ${item}: ${btn.title}`);
     }
   } catch (err) {
     btn.textContent = 'Failed';
-    btn.style.background = 'var(--critical)';
+    btn.dataset.state = 'failed';
+    btn.title = 'The auditor is not reachable.';
+    btn.disabled = false;
+    say('The auditor is not reachable.');
   }
-}
+});
 
 fetch('/api/state').then(r => r.json()).then(s => render(s.report));
 </script>

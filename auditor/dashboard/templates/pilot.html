@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Join the pilot for the AI Code Quality Auditor — an empirical safety harness for agentic AI coding systems.">
   <title>AI Coding Vendor Audit — Pilot Waitlist</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -247,10 +248,13 @@
       form { grid-template-columns: 1fr; }
     }
   </style>
+  {% include '_ux.html' %}
 </head>
 <body>
+  <a class="skip-link" href="#main">Skip to the waitlist form</a>
 <div class="wrap">
 
+  <main id="main">
   <div class="badge">PILOT WAITLIST · COHORT 1 · Q1 2027</div>
 
   <h1>Get your AI coding tool <span class="accent">scored on real metrics</span> — before your CFO asks how you justified the spend.</h1>
@@ -284,6 +288,14 @@
         <div class="label">off-spec endpoints per run. Concentrated in web-app specs.</div>
       </div>
     </div>
+    <p class="fineprint" style="margin-top:14px">
+      Read these as the protocol recorded them. <strong>Claude Code</strong> and
+      <strong>Cursor Agent</strong> contribute distinct captures per replication.
+      <strong>Replit Agent</strong> and <strong>Antigravity</strong> are IDE-bound: under
+      Deviation 001 each was captured once per cell and replayed, so their figures
+      describe one observed run per specification, not thirty independent ones. The
+      deviation is in the pre-registered protocol, not discovered after the fact.
+    </p>
     <p style="margin-top:14px"><a href="https://auditor-dashboard-rume.fly.dev/report/main_001" style="color:var(--accent-2);font-family:'JetBrains Mono',monospace;font-size:14px">→ Browse the live dashboard</a></p>
   </div>
 
@@ -327,19 +339,19 @@
       <form method="POST" action="/pilot">
         <div>
           <label for="name">Your name</label>
-          <input id="name" name="name" type="text" required>
+          <input autocomplete="name" id="name" name="name" type="text" required>
         </div>
         <div>
           <label for="email">Work email</label>
-          <input id="email" name="email" type="email" required>
+          <input autocomplete="email" id="email" name="email" type="email" required>
         </div>
         <div>
           <label for="company">Company</label>
-          <input id="company" name="company" type="text" required>
+          <input autocomplete="organization" id="company" name="company" type="text" required>
         </div>
         <div>
           <label for="role">Role / title</label>
-          <input id="role" name="role" type="text" required>
+          <input autocomplete="organization-title" id="role" name="role" type="text" required>
         </div>
         <div class="full">
           <label for="context">What AI coding tool(s) is your team using today, and what would you want scored?</label>
@@ -350,7 +362,7 @@
         </div>
       </form>
       <p class="fineprint">
-        Submissions are held privately by Dominic Rume. No marketing list, no third-party sharing. You can opt out at any time by replying to my outreach email. By submitting you confirm you have authority to engage a vendor on behalf of your organisation for an exploratory call.
+        Submissions are held privately by O&rsquo;Rume Dominic Uririe. No marketing list, no third-party sharing. You can opt out at any time by replying to my outreach email. By submitting you confirm you have authority to engage a vendor on behalf of your organisation for an exploratory call.
       </p>
     {% endif %}
   </div>
@@ -361,6 +373,7 @@
     <a href="https://pypi.org/project/ai-code-quality-auditor/">PyPI package</a>
     <a href="https://github.com/dominicrume/NEW-enterprise-ai-code-quality-auditor/blob/main/docs/EXPERIMENT_PROTOCOL.md">Pre-registered protocol</a>
   </div>
+  </main>
 
 </div>
 </body>

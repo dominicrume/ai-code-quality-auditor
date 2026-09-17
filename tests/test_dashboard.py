@@ -1,3 +1,4 @@
+import re
 """Dashboard smoke tests — index page lists reports, report page renders."""
 import csv
 import json
@@ -75,3 +76,34 @@ def test_report_page_shows_metric_guidance_and_adoption_summary(client):
 
 def test_unknown_report_is_404(client):
     assert client.get("/report/does_not_exist").status_code == 404
+
+
+# ------------------------------------------------- public surface is read-only
+
+def test_the_public_dashboard_serves_no_write_or_scan_routes():
+    """This viewer is on the open internet with no authentication.
+
+    It once carried copies of the local live server's /api/scan and
+    /api/drift/acknowledge. /api/scan would walk any path the container
+    could read and describe it back to an anonymous caller; the drift route
+    would write to spec.yaml on the server. Nothing in the UI called either.
+    """
+    from auditor.dashboard.app import app
+    unsafe = [
+        r for r in app.url_map.iter_rules()
+        if r.methods & {"POST", "PUT", "PATCH", "DELETE"}
+        and r.rule not in ("/pilot",)          # the waitlist form, and only that
+    ]
+    assert unsafe == [], f"public dashboard exposes write routes: {[r.rule for r in unsafe]}"
+
+
+def test_no_page_offers_an_action_the_app_cannot_perform():
+    """An 'Auto-Fix Issues' button shipped here POSTing to /api/remediate,
+    a route this app has never served. Every click ended in an alert()."""
+    from auditor.dashboard.app import app
+    served = {r.rule for r in app.url_map.iter_rules()}
+    c = app.test_client()
+    for path in ("/", "/pilot", "/report/main_001_plus_human"):
+        body = c.get(path).get_data(as_text=True)
+        for called in re.findall(r"""fetch\(\s*['"](/[^'"?]+)""", body):
+            assert called in served, f"{path} fetches {called}, which is not routed"

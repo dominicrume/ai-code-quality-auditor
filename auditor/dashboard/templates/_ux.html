@@ -1,0 +1,45 @@
+{# Shared head fragment for every dashboard page.
+
+   The three templates were copies of one design, so a focus ring fixed in
+   one of them stayed missing in the other two. Anything that must be true
+   of all three lives here and is included once per page. #}
+<link rel="icon" href="data:image/svg+xml,
+  <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'>
+    <rect width='32' height='32' rx='8' fill='%237c5cff'/>
+    <path d='M9 21l5-11 3 7 2-3 4 7z' fill='none' stroke='%23fff'
+          stroke-width='2.2' stroke-linejoin='round' stroke-linecap='round'/>
+  </svg>">
+<meta name="color-scheme" content="dark">
+<style>
+  /* Keyboard users had no visible focus anywhere on this dashboard. */
+  :where(a, button, input, textarea, select, [tabindex]):focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+  .skip-link {
+    position: absolute; left: 0.5rem; top: -3rem; z-index: 50;
+    background: var(--accent); color: #fff; font-weight: 600;
+    padding: 0.55rem 0.9rem; border-radius: 0 0 8px 8px;
+    text-decoration: none; transition: top 120ms ease;
+  }
+  .skip-link:focus { top: 0; }
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
+  /* Hover lift and card transitions are decoration; honour the setting. */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+    .card:hover { transform: none !important; }
+  }
+  /* Touch targets: the chips and view switches were under 32px on a phone. */
+  @media (pointer: coarse) {
+    button, .chip, .view-switch button { min-height: 2.75rem; }
+  }
+</style>

@@ -372,67 +372,15 @@ def api_report(run_id: str):
     return jsonify(data)
 
 
-@app.route("/api/scan", methods=["POST"])
-def api_scan():
-    """Trigger a headless scan of a directory."""
-    data = request.get_json() or {}
-    target_path = data.get("path", ".")
-    spec_path = data.get("spec", None)
-
-    from auditor.core.scan import scan_directory
-    import yaml
-
-    spec_data = None
-    if spec_path:
-        p = Path(spec_path)
-        if p.exists():
-            spec_data = yaml.safe_load(p.read_text())
-
-    result = scan_directory(Path(target_path), spec_data)
-    
-    return jsonify({
-        "status": "success",
-        "path": str(result.path),
-        "files": result.file_count,
-        "total_loc": result.total_loc,
-        "python_files": result.python_files,
-        "spec": result.spec_name,
-        "coverage_note": result.coverage_note,
-        "metrics": {
-            o.name: ({"value": o.value, "unit": o.unit, "band": o.band, "details": getattr(o, "details", None)}
-                     if o.applicable else {"skipped": o.skipped_reason})
-            for o in result.outcomes
-        },
-    })
-
-
-@app.route("/api/drift/acknowledge", methods=["POST"])
-def api_drift_acknowledge():
-    """Dynamically add the feature to .auditor/spec.yaml"""
-    from flask import request
-    import yaml
-    
-    data = request.get_json() or {}
-    item = data.get("item")
-    if not item:
-        return jsonify({"status": "error", "message": "No item provided"}), 400
-
-    spec_path = ROOT / ".auditor" / "spec.yaml"
-    if not spec_path.exists():
-        return jsonify({"status": "error", "message": "spec.yaml not found"}), 404
-
-    spec = yaml.safe_load(spec_path.read_text())
-    
-    features = spec.setdefault("features", [])
-    # Only add if not exists
-    if not any(f.get("id") == f"feature.{item}" for f in features):
-        features.append({
-            "id": f"feature.{item}",
-            "description": f"User explicitly acknowledged: {item}"
-        })
-        spec_path.write_text(yaml.dump(spec, sort_keys=False))
-
-    return jsonify({"status": "success", "message": f"Acknowledged {item}"})
+# /api/scan and /api/drift/acknowledge used to live here. They were copies of
+# the routes in auditor/live/server.py, which exist to serve a tool bound to
+# 127.0.0.1 and pointed at the operator's own working copy. On this host they
+# were reachable from the open internet with no authentication: /api/scan
+# would walk any path the container could read and report its structure back,
+# and /api/drift/acknowledge would write to .auditor/spec.yaml on the server.
+# Nothing in this dashboard called either of them. This viewer serves recorded
+# reports; it does not scan and it does not write. Removed rather than guarded,
+# because the safest version of a route with no callers is no route.
 
 
 if __name__ == "__main__":

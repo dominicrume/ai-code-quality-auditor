@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Five-condition comparisons of AI coding workflows against a fixed specification, from the AI Code Quality Auditor.">
   <title>AI Code Quality Auditor</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -91,20 +92,23 @@
     }
     .empty code { background: var(--bg-2); padding: 0.15rem 0.5rem; border-radius: 4px; font-family: 'JetBrains Mono', monospace; color: var(--text); }
   </style>
+  {% include '_ux.html' %}
 </head>
 <body>
+  <a class="skip-link" href="#main">Skip to reports</a>
   <div class="wrap">
-    <div class="nav">
+    <header class="nav">
       <div class="brand">
         <div class="brand-logo"></div>
         AI Code Quality Auditor
       </div>
-      <div class="nav-meta">
+      <nav class="nav-meta" aria-label="Site">
         <a href="/pilot" style="color: var(--pilot); text-decoration: none; margin-right: 16px; font-weight: 600;">Pilot waitlist →</a>
         {{ reports | length }} report{{ '' if reports|length == 1 else 's' }}
-      </div>
-    </div>
+      </nav>
+    </header>
 
+    <main id="main">
     <h1>Experiment reports</h1>
     <p class="lead">
       Five-condition comparisons of AI coding workflows against a fixed
@@ -137,6 +141,7 @@
       or <code>auditor experiment</code> for a real five-condition run.
     </div>
     {% endif %}
+    </main>
   </div>
 </body>
 </html>

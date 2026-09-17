@@ -199,3 +199,39 @@ def test_non_browser_client_still_works(client):
     """curl and tests send no Origin header and must not be locked out."""
     c, _ = client
     assert c.post("/api/brief", json={"brief": "Users can log in"}).status_code == 200
+
+
+def test_every_state_changing_route_rejects_cross_origin(client):
+    """The guard belongs to the route table, not to the route we remembered.
+
+    /api/remediate rewrites files across the project and /api/drift/strip
+    deletes an endpoint from source. Both were reachable from any page the
+    user had open until the guard became a decorator, so this test asserts
+    coverage of the whole POST surface rather than of one handler.
+    """
+    c, _ = client
+    evil = {"Origin": "https://evil.example"}
+    posts = {
+        "/api/brief": {"brief": "x"},
+        "/api/scan": {"path": "."},
+        "/api/remediate": {},
+        "/api/drift/acknowledge": {"item": "x"},
+        "/api/drift/strip": {"item": "x"},
+    }
+    for route, body in posts.items():
+        res = c.post(route, json=body, headers=evil)
+        assert res.status_code == 403, f"{route} accepted a cross-origin POST"
+
+
+def test_post_surface_is_fully_guarded(client):
+    """A POST route added later must not silently arrive unguarded."""
+    c, _ = client
+    app = c.application
+    post_rules = [
+        r for r in app.url_map.iter_rules()
+        if "POST" in r.methods and r.rule.startswith("/api/")
+    ]
+    assert post_rules, "no POST routes found — the introspection is wrong"
+    for rule in post_rules:
+        res = c.post(rule.rule, json={}, headers={"Origin": "https://evil.example"})
+        assert res.status_code == 403, f"{rule.rule} is not origin-guarded"

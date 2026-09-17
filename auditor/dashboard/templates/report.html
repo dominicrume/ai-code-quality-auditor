@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Assurance overview: security, complexity, duplication, scope drift and correction rate across five AI coding workflow conditions.">
   <title>{{ run_id }} · AI Code Quality Auditor</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -211,22 +212,25 @@
     .btn-primary:hover { background: #6b4cf0; }
     .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
   </style>
+  {% include '_ux.html' %}
 </head>
 <body>
+  <a class="skip-link" href="#main">Skip to the assurance overview</a>
   <div class="wrap">
 
     <!-- ===== NAV ===== -->
-    <div class="nav">
+    <header class="nav">
       <div class="brand">
         <div class="brand-logo"></div>
         AI Code Quality Auditor
       </div>
       <div style="display: flex; align-items: center; gap: 1rem;">
-        <button id="btn-remediate" class="btn-primary">✨ Auto-Fix Issues</button>
         <span class="run-id">{{ run_id }}</span>
         <a class="arrow-back" href="{{ url_for('index') }}">← all reports</a>
       </div>
-    </div>
+    </header>
+
+    <main id="main">
 
     {% if banner_kind == 'dissertation' %}
     <div class="banner" style="border-left: 4px solid #22c55e;">
@@ -384,6 +388,7 @@
       <pre>{{ provenance | tojson(indent=2) }}</pre>
     </details>
     {% endif %}
+  </main>
   </div>
 
   <script>
@@ -560,29 +565,11 @@
       METRICS.forEach(m => Plotly.Plots.resize(document.getElementById('bar-' + m)));
     });
 
-    document.getElementById('btn-remediate')?.addEventListener('click', async (e) => {
-      const btn = e.target;
-      btn.disabled = true;
-      btn.innerText = '⏳ Fixing...';
-      try {
-        const res = await fetch('/api/remediate', { method: 'POST' });
-        const data = await res.json();
-        if (data.status === 'success') {
-          const applied = data.results.applied;
-          const fixedCount = data.results.fixed ? data.results.fixed.length : 0;
-          alert(`Auto-fix complete!\nApplied: ${applied}\nFixed: ${fixedCount} issues.`);
-          location.reload();
-        } else {
-          alert('Remediation failed.');
-          btn.disabled = false;
-          btn.innerText = '✨ Auto-Fix Issues';
-        }
-      } catch (err) {
-        alert('Error calling remediation API');
-        btn.disabled = false;
-        btn.innerText = '✨ Auto-Fix Issues';
-      }
-    });
+    // An "Auto-Fix Issues" button used to sit in the nav above. It POSTed to
+    // /api/remediate, which this app has never served — the route belongs to
+    // the local `auditor live` server. Every click ended in an alert() saying
+    // the API could not be called. A published report is a record of a run
+    // that already happened; there is nothing here to fix in place.
   </script>
 </body>
 </html>
