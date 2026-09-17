@@ -43,6 +43,23 @@ Worth stating plainly, because the tool reads source files:
   auditor-dashboard-rume.fly.dev, ships in the wheel but is not started by any
   CLI command. It can email an operator when someone submits the pilot form,
   and only when SMTP credentials are configured in the environment.)
+- **A local history, on your machine only.** From 0.6.0, `auditor scan` appends
+  one line per scan to `~/.auditor/history.jsonl`: metric values, file and line
+  counts, languages read, and the folder's path. It is yours. Read it with
+  `auditor history`, find it with `auditor history --where`, delete it with
+  `auditor forget --all`, and switch it off entirely with `AUDITOR_NO_HISTORY=1`
+  or per scan with `--no-history`. Nothing in the scan path can send it: the
+  module that can open a socket is separate and is not imported by `scan`,
+  `watch` or `live`, which a test asserts.
+- **Sharing is opt-in, aggregate, and off unless you type it.** `auditor share`
+  prints exactly what it would send and sends nothing without both a `--to
+  https://...` destination and `--yes`. What it can carry is fixed by an
+  allowlist: metric values, units, bands, coverage, file and line counts,
+  languages, whether a specification was supplied, the tool version, the OS
+  family, the Python version, and a random installation id you can delete. What
+  it never carries: a path, a folder name, a specification name, a file name, a
+  finding, or a line of code. Projects appear as `p1`, `p2` inside one payload,
+  numbered afresh each time. See `docs/PRIVACY.md`.
 - **`auditor live` binds to `127.0.0.1` only** — the dashboard is not reachable
   from other machines on your network.
 - **Nothing is written outside the audited directory**, except the spec you

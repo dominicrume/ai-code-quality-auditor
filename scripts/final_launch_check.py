@@ -208,10 +208,24 @@ ok(len(dist) == 2, f"sdist and wheel built for {ver.group(1)} ({len(dist)} found
 sec = (ROOT / "SECURITY.md").read_text()
 ok("No telemetry" in sec, "SECURITY.md states no telemetry")
 ok(not (ROOT / "auditor/core/telemetry.py").exists(), "telemetry module removed")
-net = [str(p.relative_to(ROOT)) for p in (ROOT / "auditor").rglob("*.py")
-       if "urllib.request" in p.read_text(errors="ignore")
-       or "smtplib" in p.read_text(errors="ignore") and "dashboard" not in str(p)]
-ok(not net, f"no outbound HTTP on any path the CLI reaches ({net or 'none'})")
+# One module may open a socket: the opt-in `auditor share`. Every other file, and every path an
+# ordinary scan reaches, must have no way to send anything at all.
+ALLOWED_NET = {"auditor/core/share.py"}
+net = []
+for _p in (ROOT / "auditor").rglob("*.py"):
+    _rel = str(_p.relative_to(ROOT))
+    if "dashboard" in _rel or _rel in ALLOWED_NET:
+        continue
+    _src = _p.read_text(errors="ignore")
+    if any(t in _src for t in ("urllib.request", "smtplib", "httpx", "requests.post", "socket.create_connection")):
+        net.append(_rel)
+ok(not net, f"no outbound HTTP except the opt-in share ({net or 'none'})")
+reach = [f for f in ("auditor/core/scan.py", "auditor/core/watch.py", "auditor/core/history.py",
+                     "auditor/live/server.py")
+         if (ROOT / f).exists() and "core.share" in (ROOT / f).read_text(errors="ignore")]
+ok(not reach, f"scan, watch, live and history never import the sender ({reach or 'none'})")
+ok("auditor share" in sec and "opt-in" in sec.lower(), "SECURITY.md documents the opt-in share")
+ok((ROOT / "docs/PRIVACY.md").exists(), "privacy note published at docs/PRIVACY.md")
 orphan = [str(p.relative_to(ROOT)) for p in (ROOT / "auditor").rglob("*.pyc")
           if not p.with_suffix("").with_suffix(".py").exists()
           and not (p.parent.parent / (p.stem.split(".")[0] + ".py")).exists()]

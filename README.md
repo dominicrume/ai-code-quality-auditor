@@ -64,6 +64,10 @@ auditor scan .                                # the four spec-free metrics
 auditor scan . --spec spec.yaml               # adds the scope-drift check
 auditor scan . --fail-on critical             # gate a CI pipeline
 auditor live .                                # watch a folder on a dashboard
+auditor history                               # every scan this machine has recorded
+auditor history --project myapp               # one folder, with the change between scans
+auditor forget --all                          # delete that history, and the random ids
+auditor share                                 # see what an opt-in share would contain
 ```
 
 Reproduce the study instead:

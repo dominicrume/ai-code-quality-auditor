@@ -14,8 +14,17 @@ from pathlib import Path
 
 import click
 
+from auditor.core import history
 from auditor.core.experiment import build_default_adapters, run_experiment
 from auditor.core.runner import run_audit
+
+
+def _version() -> str:
+    try:
+        from importlib.metadata import version
+        return version("ai-code-quality-auditor")
+    except Exception:
+        return "unknown"
 
 CONDITIONS = ["human_control", "claude_code", "cursor_agent", "antigravity", "replit_agent"]
 
@@ -28,6 +37,8 @@ def main():
     Start here:       auditor live
     Audit a folder:   auditor scan .
     Watch a folder:   auditor watch .
+    Your own history: auditor history        (local only; auditor forget deletes it)
+    Share aggregates: auditor share          (off unless you run it)
     Run the study:    auditor experiment --run-label main_001 --reps 10
     """
 
@@ -129,7 +140,10 @@ BAND_MARK = {"good": "OK", "warn": "WARN", "critical": "RISK"}
               help="Exit non-zero at this severity, for CI gating.")
 @click.option("--decision-record", type=click.Path(dir_okay=False, path_type=Path),
               default=None, help="Write immutable JSON snapshot of findings to this file.")
-def scan_cmd(path: Path, spec: Path | None, as_json: bool, fail_on: str, decision_record: Path | None):
+@click.option("--no-history", is_flag=True,
+              help="Do not record this scan in your local history.")
+def scan_cmd(path: Path, spec: Path | None, as_json: bool, fail_on: str,
+             decision_record: Path | None, no_history: bool):
     """Audit a directory in place — no session, no setup.
 
     \b
@@ -148,6 +162,15 @@ def scan_cmd(path: Path, spec: Path | None, as_json: bool, fail_on: str, decisio
 
     spec_data = yaml.safe_load(spec.read_text()) if spec else None
     result = scan_directory(path, spec_data)
+
+    # Recorded on this machine, in the user's own home, and sent nowhere. `auditor history`
+    # reads it back, `auditor forget` deletes it, AUDITOR_NO_HISTORY=1 switches it off.
+    recorded = None
+    if not no_history:
+        try:
+            recorded = history.append(result, _version())
+        except OSError:
+            recorded = None          # a read-only home is not a reason to fail an audit
 
     payload = {
         "path": str(result.path),
@@ -212,6 +235,8 @@ def scan_cmd(path: Path, spec: Path | None, as_json: bool, fail_on: str, decisio
 
         if result.coverage_note:
             console.print(f"\n[yellow]Coverage:[/yellow] {result.coverage_note}")
+        if recorded:
+            console.print("[dim]saved to your local history · auditor history · auditor forget[/dim]")
         console.print()
 
     thresholds = {"never": None, "warn": ("warn", "critical"), "critical": ("critical",)}
@@ -378,3 +403,146 @@ def experiment_cmd(spec, run_id, run_label, reps, seed, skip,
     adapters = build_default_adapters(run_id, Path(captures_root))
     out = run_experiment(spec, run_id, adapters, reports_dir=reports_dir)
     click.echo(f"wrote {out}")
+
+
+@main.command("history")
+@click.option("--project", default=None,
+              help="One folder only: its id, or the folder's name as you would type it.")
+@click.option("--limit", default=20, show_default=True, type=int, help="Most recent N scans.")
+@click.option("--json", "as_json", is_flag=True, help="Emit the rows as JSON.")
+@click.option("--where", is_flag=True, help="Print where the file lives, and stop.")
+def history_cmd(project: str | None, limit: int, as_json: bool, where: bool):
+    """Every scan this machine has recorded. Local only: none of it has been sent anywhere.
+
+    \b
+      auditor history                 the last 20 scans
+      auditor history --project src   one folder, with the change between scans
+      auditor history --where         the file's location, to read or delete by hand
+    """
+    import json as _json
+
+    from rich.console import Console
+    from rich.table import Table
+
+    console = Console()
+    if where:
+        click.echo(history.history_path())
+        return
+
+    rows = history.trend(project) if project else history.rows()
+    if not rows:
+        console.print("\n[dim]No scans recorded yet. Run:[/dim] auditor scan .\n")
+        return
+    rows = rows[-limit:]
+    if as_json:
+        click.echo(_json.dumps(rows, indent=2))
+        return
+
+    table = Table(show_edge=False, header_style="dim", pad_edge=False)
+    for column in ("When", "Project", "Files", "Lines", "Security", "Complexity",
+                   "Duplication", "Scope drift"):
+        table.add_column(column, justify="right" if column not in ("When", "Project") else "left")
+    for row in rows:
+        metrics = row.get("metrics") or {}
+
+        def cell(name: str) -> str:
+            got = metrics.get(name) or {}
+            if got.get("value") is None:
+                return "[dim]n/a[/dim]"
+            moved = (row.get("delta") or {}).get(name)
+            arrow = ""
+            if isinstance(moved, (int, float)) and abs(moved) >= 0.005:
+                arrow = f" [dim]{'+' if moved > 0 else ''}{moved:.2f}[/dim]"
+            return f"{got['value']:.2f}{arrow}"
+
+        table.add_row(
+            str(row.get("at", ""))[:16].replace("T", " "),
+            Path(str(row.get("path", ""))).name or str(row.get("project", ""))[:8],
+            str(row.get("files", "")), str(row.get("loc", "")),
+            cell("security_density"), cell("complexity_mean"),
+            cell("duplication_pct"), cell("hallucinations"))
+    console.print()
+    console.print(table)
+    console.print(f"\n[dim]{len(history.rows())} scan(s) recorded in {history.history_path()}[/dim]")
+    console.print("[dim]Nothing has left this machine. `auditor share` is the only thing that "
+                  "sends, and only when you run it.[/dim]\n")
+
+
+@main.command("forget")
+@click.option("--project", default=None, help="Delete one folder's rows: its id or its name.")
+@click.option("--all", "all_", is_flag=True, help="Delete the whole history and the random ids.")
+@click.option("--yes", is_flag=True, help="Skip the confirmation.")
+def forget_cmd(project: str | None, all_: bool, yes: bool):
+    """Delete recorded scans. Your machine, your file, your decision.
+
+    \b
+      auditor forget --project src    remove one folder's rows
+      auditor forget --all            remove everything, including the random ids
+    """
+    if not project and not all_:
+        raise click.UsageError("choose --project <name> or --all")
+    target = "every recorded scan and the random ids" if all_ else f"the rows for {project!r}"
+    if not yes and not click.confirm(f"Delete {target}?"):
+        click.echo("Nothing was deleted.")
+        return
+    removed = history.forget(None if all_ else project)
+    click.echo(f"Deleted {removed} row(s).")
+
+
+@main.command("share")
+@click.option("--to", default=None, help="An https:// endpoint. Without it nothing is sent.")
+@click.option("--since", default=None, help="Only scans on or after this date (YYYY-MM-DD).")
+@click.option("--yes", is_flag=True, help="Send it. Without this the payload is only shown.")
+@click.option("--json", "as_json", is_flag=True, help="Print the payload as raw JSON.")
+def share_cmd(to: str | None, since: str | None, yes: bool, as_json: bool):
+    """Show, and only if you ask, send aggregate readings. Off unless you run it.
+
+    Metric values, counts and language mix leave. A path, a folder name, a specification name,
+    a file name or a line of code never does. The payload is printed first, every time.
+
+    \b
+      auditor share                          see exactly what would be sent
+      auditor share --to https://... --yes   send it
+    """
+    import json as _json
+
+    from rich.console import Console
+
+    from auditor.core import share as share_mod
+
+    console = Console()
+    rows = history.rows()
+    if not rows:
+        console.print("\n[dim]No scans recorded, so there is nothing to share.[/dim]\n")
+        return
+
+    payload = share_mod.build(rows, history.identity()["install"], since)
+    leaked = share_mod.leaks(payload, rows)
+    if leaked:                       # a widened allowlist must never quietly start sending names
+        console.print(f"\n[red]Refused:[/red] the payload would include {', '.join(leaked)}.\n")
+        raise SystemExit(1)
+
+    if as_json:
+        click.echo(_json.dumps(payload, indent=2))
+    else:
+        console.print(f"\n[bold]This is everything that would be sent[/bold] "
+                      f"[dim]({payload['scans']} scan(s), {payload['projects']} project(s))[/dim]")
+        console.print_json(_json.dumps(payload))
+        console.print("[dim]No path, no folder name, no specification name, no code.[/dim]")
+
+    def note(message: str) -> None:
+        # stderr, so `auditor share --json` pipes cleanly into another tool
+        click.echo(message, err=True) if as_json else console.print(f"\n[dim]{message}[/dim]\n")
+
+    if not to:
+        note("Nothing was sent. Add --to https://<endpoint> --yes to send it.")
+        return
+    if not yes:
+        note(f"Nothing was sent. Add --yes to send this to {to}.")
+        return
+    try:
+        status = share_mod.send(to, payload)
+    except Exception as exc:                          # noqa: BLE001 - the reason is for the user
+        console.print(f"\n[red]Not sent:[/red] {exc}\n")
+        raise SystemExit(1) from exc
+    console.print(f"\n[green]Sent[/green] {payload['scans']} scan(s) to {to} ({status}).\n")
