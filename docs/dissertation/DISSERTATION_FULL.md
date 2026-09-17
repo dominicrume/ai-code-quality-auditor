@@ -432,8 +432,8 @@ demands of the tools it audits.
 ## 2.6 Research gap
 
 The literature establishes five things. Functional benchmarks dominate, but are
-scope-limited and presuppose a test oracle green-field agentic work lacks. AI
-assistance changes process more reliably than it improves artefact quality.
+scope-limited and presuppose a test oracle green-field agentic work lacks. These tools change how programming is done more reliably than they
+improve what it produces.
 Generated code carries measurable security risk. The quality-metric tradition is
 mature and statically computable. Specification fidelity is governance-critical
 yet under-measured.
