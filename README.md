@@ -10,6 +10,13 @@
 > Quantifies where AI-assisted development fails at governance, security,
 > and ethical alignment — *before* the code reaches production.
 
+> **Reading this because of the dissertation?** *Measuring the Unmeasured* was submitted on
+> 22 September 2026 and its appendix links point at `main`, which has moved on since: the
+> instrument was released as 0.5.2, dashboard routes were closed, CI was repaired and the
+> self-audit was re-run. The repository exactly as the dissertation describes it is tagged
+> [`submission-2026-09-22`](https://github.com/dominicrume/ai-code-quality-auditor/tree/submission-2026-09-22).
+> Swap `main` for that tag in any appendix URL to see what the examiner was given.
+
 **🟢 Try it in 30 seconds:**
 ```bash
 pipx install ai-code-quality-auditor

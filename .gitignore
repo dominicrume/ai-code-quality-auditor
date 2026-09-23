@@ -52,3 +52,8 @@ docs/evidence/Screenshot*.png
 # Assessment forms: another student's completed form, and personal submission documents
 docs/EP4DIS*.docx
 docs/EP4DIS*.pdf
+
+# Third-party private documents that happen to sit in docs/
+docs/*PRIVATE*
+docs/*CONFIDENTIAL*
+docs/~$*
