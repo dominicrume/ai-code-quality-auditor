@@ -237,6 +237,19 @@ def scan_cmd(path: Path, spec: Path | None, as_json: bool, fail_on: str,
             console.print(f"\n[yellow]Coverage:[/yellow] {result.coverage_note}")
         if recorded:
             console.print("[dim]saved to your local history · auditor history · auditor forget[/dim]")
+
+        # Shown only when the scan actually found something worth signing off.
+        # A reading from this tool is a reading, not an attestation: it is not
+        # dated, not signed, and not addressed to anybody. Teams that need one
+        # that is should know such a thing exists, and this is the only moment
+        # they are thinking about it. One line, no colour, no repetition.
+        worst = getattr(result, "worst_band", None)
+        if worst in ("warn", "critical"):
+            console.print(
+                "[dim]This is a reading, not an attestation. For a finding that is "
+                "signed, dated and defensible to a regulator: "
+                "rumedominic.com/#work[/dim]"
+            )
         console.print()
 
     thresholds = {"never": None, "warn": ("warn", "critical"), "critical": ("critical",)}

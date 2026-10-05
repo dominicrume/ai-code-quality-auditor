@@ -163,6 +163,25 @@ duplication and 12 scope drift. Neither figure is wrong; they answer different q
 and a metric that did not move when you changed what you pointed it at would be useless.
 Always state the scanned path alongside the number.
 
+## When a reading is not enough
+
+Everything above is a reading. It is reproducible, it is honest about its own
+false positives, and it costs nothing. It is also not signed, not dated, and
+not addressed to anybody, which means it is not the thing a regulator, a board
+or an acquirer asks for.
+
+When the finding has to carry a name and a date, that is a different piece of
+work: one agent or workflow assessed against the Know Your AgenticAi standard,
+with a decision map of what the agent may decide alone, an auditability score,
+an accountability chain with named owners, a regulator-readiness verdict and a
+remediation plan. The framework is a pending UK patent application,
+GB2611754.9.
+
+**[The assurance engagement →](https://rumedominic.com/#work)**
+
+The instrument stays free and open source either way. That is deliberate: a
+measurement you have to pay for is a measurement you cannot check.
+
 ## In the field
 
 On 15 September 2026 a workshop team installed 0.5.0 from PyPI into a private
