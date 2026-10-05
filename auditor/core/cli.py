@@ -248,7 +248,7 @@ def scan_cmd(path: Path, spec: Path | None, as_json: bool, fail_on: str,
             console.print(
                 "[dim]This is a reading, not an attestation. For a finding that is "
                 "signed, dated and defensible to a regulator: "
-                "rumedominic.com/#work[/dim]"
+                "rumedominic.com/assurance[/dim]"
             )
         console.print()
 

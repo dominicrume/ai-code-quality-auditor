@@ -177,7 +177,7 @@ an accountability chain with named owners, a regulator-readiness verdict and a
 remediation plan. The framework is a pending UK patent application,
 GB2611754.9.
 
-**[The assurance engagement →](https://rumedominic.com/#work)**
+**[The assurance engagement →](https://rumedominic.com/assurance)**
 
 The instrument stays free and open source either way. That is deliberate: a
 measurement you have to pay for is a measurement you cannot check.
