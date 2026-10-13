@@ -57,3 +57,14 @@ docs/EP4DIS*.pdf
 docs/*PRIVATE*
 docs/*CONFIDENTIAL*
 docs/~$*
+
+# Correspondence and personal documents that happen to sit in docs/. These are
+# working files, not part of the instrument: docs/Subject.docx is a salary
+# negotiation naming a third party, and the compliance narrative is an
+# unpublished draft. A public repository is the wrong place for either.
+docs/Subject.docx
+docs/You buy an AI tool*.docx
+
+# Source video and stills for talks. 106MB of personal footage, no part of the
+# package, and git is the wrong store for binaries this size.
+media/
