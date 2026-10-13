@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.5.2 — 13 October 2026
+## 0.5.2 — 14 October 2026
 
 A security release, and the release that stops this tool doing the thing it
 exists to catch. If you use `auditor live`, upgrade for the first section. If
