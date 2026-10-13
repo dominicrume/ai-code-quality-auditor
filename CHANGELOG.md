@@ -1,8 +1,62 @@
 # Changelog
 
-## 0.5.2 — 17 September 2026
+## 0.5.2 — 13 October 2026
 
-A security release. If you use `auditor live`, upgrade.
+A security release, and the release that stops this tool doing the thing it
+exists to catch. If you use `auditor live`, upgrade for the first section. If
+you use `auditor scan`, read the second: four of the readings it printed were
+wrong, and three of those four were wrong in the direction that favoured the
+code being audited.
+
+### Fixed — readings that claimed more than was read
+
+- **Unreadable code was reported as `OK`.** A directory whose only Python file
+  would not parse printed `Security 0.00 OK`, `Complexity 0.00 OK`. The lines
+  of a file were added to the scanned total before the parse was attempted, so
+  coverage read 100%, the value stayed 0.00 for want of any finding, and 0.00
+  bands as OK. Coverage now counts what was read. Where a metric's languages
+  are present and nothing parsed, the row reads `unread` with the reason
+  instead of a band, the files are named, and the worst band is raised to at
+  least `warn`, so `--fail-on warn` no longer exits 0 on code nobody could
+  read. An unreadable file is an unknown, not a pass.
+- **Ignored and vendored files were measured.** Pointed at this repository,
+  `auditor scan` reported `Duplication 83.58 RISK`. The arithmetic was right
+  and the subject was wrong: it was describing `data/raw`, a frozen set of
+  research captures that git ignores and the project does not ship. `scan`,
+  `watch` and `live` now honour the project's own `.gitignore` and
+  `.auditorignore` and skip vendored directories. `--include-all` restores the
+  old behaviour. The same scan now reads 217 files instead of 2,300.
+- **Code duplication counted prose.** The metric needs no parser, so it had
+  been shingling Markdown too: 41,116 lines of documentation against 12,431 of
+  Python on this repository, which made three-quarters of the figure a
+  statement about a changelog. It now counts code only, and the same scan reads
+  `3.60 OK`. `analyze(..., version=1)` keeps the old behaviour so the published
+  study figures stay reproducible.
+- **A density was printed without its numerator.** Six lines of TypeScript with
+  one hardcoded password scored `250.00 RISK`, which is arithmetically true and
+  tells a reader nothing. Every density and mean now prints what it counted
+  beside it: `250.00 RISK · 1 finding`.
+
+### Added — the reading no other tool offers, now reachable
+
+- **`auditor init`** records what the project was asked to be, in plain
+  English, and writes it to `.auditor/spec.yaml` for you to edit. `scan` and
+  `watch` pick that file up automatically from then on.
+- **`auditor scan . --brief "a CLI with init, add and list"`** does the same
+  thing for one run without writing anything first.
+  Scope drift was the one metric no other tool offers and it was gated behind
+  hand-authoring YAML, which is why most scans reported four of five metrics as
+  `n/a`. A user already typed what they wanted once; that sentence is enough.
+- **Building the wrong kind of thing is now reported.** The scope-drift count
+  asks what *extra* was shipped, so it cannot see a substitution: an agent
+  given a CLI specification that ships an ETL package with no subcommands adds
+  nothing and scores 0.00, exactly like an agent that built the CLI correctly.
+  `shape_detector` had been computing that verdict since the study and the
+  report discarded it. It now appears as a sentence: *you asked for a
+  command-line tool, and what is here looks like a data pipeline*.
+  It is **not** a sixth metric and is **not** folded into the scope-drift
+  value. Either would change figures published in the dissertation, which is a
+  decision for an erratum rather than a side effect.
 
 ### Fixed — security
 

@@ -24,12 +24,38 @@ class MetricScore(BaseModel):
     total_lines: int | None = None
     languages: list[str] | None = None
 
+    # Files in this metric's own languages that would not parse. A value
+    # computed while these were skipped is not a reading about them, and a
+    # tool that prints 0.00 OK for code it could not read has reported the
+    # opposite of what it found. Named so the caller can refuse to band it.
+    unparsed: list[str] | None = None
+
+    # Findings an analyser made that are deliberately not folded into the
+    # value, because folding them in would change figures already published.
+    # Carried so the reporter can show them beside the number instead of
+    # discarding them, which is what used to happen.
+    diagnostics: dict | None = None
+
+    # How many things the value is a density or mean *of*. A density alone is
+    # unreadable at small sizes: 2 findings in 12 lines is 166.67 per kLOC.
+    count: int | None = None
+
     @property
     def coverage(self) -> float | None:
         """Fraction of source lines this metric was able to evaluate."""
         if not self.total_lines:
             return None
         return round((self.scanned_lines or 0) / self.total_lines, 4)
+
+    @property
+    def read_nothing(self) -> bool:
+        """True when there was source in this metric's languages and none parsed.
+
+        Distinct from "no source of this kind", which is a skip with a reason,
+        and from partial coverage, which is a caveat on a real reading. This is
+        the case that used to print ``0.00 OK``.
+        """
+        return bool(self.total_lines) and not self.scanned_lines
 
     @property
     def is_partial(self) -> bool:

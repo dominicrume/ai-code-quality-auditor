@@ -93,7 +93,10 @@ def test_python_project_reports_all_static_metrics(py_project):
 def test_scope_drift_requires_a_spec(py_project):
     without = _outcome(scan_directory(py_project), "hallucinations")
     assert not without.applicable
-    assert "--spec" in without.skipped_reason
+    # The reason must name the missing thing, not the flag: there are now
+    # three ways to supply it (--spec, --brief, and a spec `auditor init`
+    # wrote), so naming one of them in the reason would misdirect.
+    assert "what was asked for" in without.skipped_reason
 
     spec = {"name": "demo", "features": [{"id": "a.b"}]}
     with_spec = _outcome(scan_directory(py_project, spec), "hallucinations")

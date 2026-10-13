@@ -24,40 +24,53 @@ log = get_logger("complexity_analyzer")
 DEFAULT_VERSION = 2
 
 
-def _python_complexities(files: dict[str, str]) -> tuple[list[int], int]:
-    scores, loc = [], 0
+def _python_complexities(files: dict[str, str]) -> tuple[list[int], int, list[str]]:
+    """Scores, lines actually parsed, and the files that would not parse.
+
+    The lines of a file that raised used to be added to the scanned total
+    before the parse was attempted, so a directory of unparseable Python
+    reported full coverage and a mean of 0.00, which bands as OK. Coverage
+    now counts what was read, which is the only number it was ever meant
+    to be.
+    """
+    scores, loc, failed = [], 0, []
     for path, content in files.items():
         if not languages.in_languages(path, languages.PYTHON):
             continue
-        loc += len(content.splitlines())
         try:
             scores.extend(b.complexity for b in cc_visit(content))
         except (SyntaxError, ValueError) as e:
             log.warning("complexity: skipped %s (%s)", path, e)
-    return scores, loc
+            failed.append(path)
+            continue
+        loc += len(content.splitlines())
+    return scores, loc, failed
 
 
-def _js_complexities(files: dict[str, str]) -> tuple[list[int], int]:
-    scores, loc = [], 0
+def _js_complexities(files: dict[str, str]) -> tuple[list[int], int, list[str]]:
+    scores, loc, failed = [], 0, []
     for path, content in files.items():
         if not languages.in_languages(path, languages.TYPESCRIPT):
             continue
-        loc += len(content.splitlines())
         try:
             scores.extend(js_complexity.complexities(content))
         except Exception as e:                      # never fail a whole audit
             log.warning("complexity: skipped %s (%s)", path, e)
-    return scores, loc
+            failed.append(path)
+            continue
+        loc += len(content.splitlines())
+    return scores, loc, failed
 
 
 def analyze(codebase: dict, interaction_log: list[dict], spec: dict,
             version: int = DEFAULT_VERSION) -> MetricScore:
     files = codebase.get("files", {})
-    scores, scanned = _python_complexities(files)
+    scores, scanned, failed = _python_complexities(files)
     if version >= 2:
-        js_scores, js_loc = _js_complexities(files)
+        js_scores, js_loc, js_failed = _js_complexities(files)
         scores += js_scores
         scanned += js_loc
+        failed += js_failed
 
     suffixes = languages.PYTHON if version < 2 else (
         languages.PYTHON + languages.TYPESCRIPT)
@@ -71,4 +84,6 @@ def analyze(codebase: dict, interaction_log: list[dict], spec: dict,
         scanned_lines=scanned,
         total_lines=total,
         languages=languages.present(files),
+        unparsed=sorted(failed) or None,
+        count=len(scores) or None,
     )

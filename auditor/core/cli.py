@@ -36,6 +36,7 @@ def main():
     \b
     Start here:       auditor live
     Audit a folder:   auditor scan .
+    Turn on drift:    auditor init             (records what you asked for)
     Watch a folder:   auditor watch .
     Your own history: auditor history        (local only; auditor forget deletes it)
     Share aggregates: auditor share          (off unless you run it)
@@ -142,13 +143,19 @@ BAND_MARK = {"good": "OK", "warn": "WARN", "critical": "RISK"}
               default=None, help="Write immutable JSON snapshot of findings to this file.")
 @click.option("--no-history", is_flag=True,
               help="Do not record this scan in your local history.")
+@click.option("--brief", default=None, metavar="TEXT",
+              help="What you asked for, in plain English. Turns on scope drift.")
+@click.option("--include-all", is_flag=True,
+              help="Measure every file, including ignored and vendored ones.")
 def scan_cmd(path: Path, spec: Path | None, as_json: bool, fail_on: str,
-             decision_record: Path | None, no_history: bool):
+             decision_record: Path | None, no_history: bool,
+             brief: str | None, include_all: bool):
     """Audit a directory in place — no session, no setup.
 
     \b
       auditor scan .                       audit the current folder
-      auditor scan ./src --spec spec.yaml  include the scope-drift check
+      auditor scan . --brief "a CLI with init, add and list"
+      auditor scan ./src --spec spec.yaml  use a spec you wrote yourself
       auditor scan . --fail-on critical    gate a CI pipeline
       auditor scan . --decision-record out.json  write audit to disk
     """
@@ -160,8 +167,23 @@ def scan_cmd(path: Path, spec: Path | None, as_json: bool, fail_on: str,
 
     from auditor.core.scan import scan_directory
 
-    spec_data = yaml.safe_load(spec.read_text()) if spec else None
-    result = scan_directory(path, spec_data)
+    # Three ways to say what was asked for, in order of explicitness: a spec
+    # file, a sentence on the command line, or a spec this project already has.
+    # The third is what makes scope drift work on a bare `auditor scan .` once
+    # the project has been set up, instead of staying n/a forever.
+    spec_data, spec_origin = None, None
+    if spec:
+        spec_data, spec_origin = yaml.safe_load(spec.read_text()), str(spec)
+    elif brief:
+        from auditor.live.brief import build_spec, save_spec
+        spec_data = build_spec(brief, name=path.resolve().name.replace("-", "_") or "scan")
+        spec_origin = str(save_spec(path, spec_data))
+    else:
+        from auditor.live.brief import load_spec, spec_path_for
+        spec_data = load_spec(path)
+        spec_origin = str(spec_path_for(path)) if spec_data else None
+
+    result = scan_directory(path, spec_data, include_all=include_all)
 
     # Recorded on this machine, in the user's own home, and sent nowhere. `auditor history`
     # reads it back, `auditor forget` deletes it, AUDITOR_NO_HISTORY=1 switches it off.
@@ -178,12 +200,21 @@ def scan_cmd(path: Path, spec: Path | None, as_json: bool, fail_on: str,
         "total_loc": result.total_loc,
         "python_files": result.python_files,
         "spec": result.spec_name,
+        "spec_from": spec_origin,
         "coverage_note": result.coverage_note,
+        "unparsed_files": result.unparsed_files,
+        "shape_note": result.shape_note,
+        "honoured_ignores": result.honoured_ignores,
+        "worst_band": result.worst_band,
         "metrics": {
             o.name: ({"value": o.value, "unit": o.unit, "band": o.band,
                       "coverage": o.coverage, "languages": o.languages,
+                      "count": o.count,
                       "details": getattr(o, "details", None)}
-                     if o.applicable else {"skipped": o.skipped_reason})
+                     if o.applicable
+                     else {"skipped": o.skipped_reason,
+                           "unparsed": o.unparsed} if o.unparsed
+                     else {"skipped": o.skipped_reason})
             for o in result.outcomes
         },
     }
@@ -202,6 +233,7 @@ def scan_cmd(path: Path, spec: Path | None, as_json: bool, fail_on: str,
             f"[dim]{result.file_count} files · {result.total_loc} lines · "
             f"{result.readable_files} analysable"
             + (f" · spec: {result.spec_name}" if result.spec_name else "")
+            + ("" if result.honoured_ignores else " · including ignored files")
             + "[/dim]\n"
         )
 
@@ -214,14 +246,27 @@ def scan_cmd(path: Path, spec: Path | None, as_json: bool, fail_on: str,
             if o.applicable:
                 style = BAND_STYLE[o.band]
                 mark = f"[{style}]{BAND_MARK[o.band]}[/{style}]"
+                if o.total_note:
+                    mark += f"  [dim]{o.total_note}[/dim]"
                 if o.caveat:
                     mark += f"  [dim]{o.caveat}[/dim]"
                 table.add_row(f"[{style}]●[/{style}]", o.label,
                               f"{o.value:.2f}", mark)
+            elif o.unparsed:
+                # Not n/a, which reads as "does not apply here". The source
+                # applies and could not be read, and the row has to say so.
+                table.add_row("[yellow]▲[/yellow]", f"[yellow]{o.label}[/yellow]",
+                              "[yellow]unread[/yellow]",
+                              f"[yellow]{o.skipped_reason}[/yellow]")
             else:
                 table.add_row("[dim]○[/dim]", f"[dim]{o.label}[/dim]",
                               "[dim]n/a[/dim]", f"[dim]{o.skipped_reason}[/dim]")
         console.print(table)
+
+        if result.read_failure_note:
+            console.print(f"\n[yellow]Could not read:[/yellow] {result.read_failure_note}")
+        if result.shape_note:
+            console.print(f"\n[red]Wrong shape:[/red] {result.shape_note}")
 
         # A single serious finding never moves a density band, so name it.
         security = next((o for o in result.outcomes if o.name == "security_density"
@@ -235,6 +280,20 @@ def scan_cmd(path: Path, spec: Path | None, as_json: bool, fail_on: str,
 
         if result.coverage_note:
             console.print(f"\n[yellow]Coverage:[/yellow] {result.coverage_note}")
+
+        # Scope drift is the one reading no other tool offers, and it was
+        # unreachable without hand-written YAML, so most users never saw it.
+        # Say how to turn it on at the moment they are looking at it off.
+        if any(o.name == "hallucinations" and not o.applicable and not o.unparsed
+               for o in result.outcomes):
+            console.print(
+                '\n[dim]Scope drift is off because nothing says what you asked for. '
+                'Turn it on:[/dim]\n'
+                '  [cyan]auditor init[/cyan][dim] once, then it stays on, or[/dim]\n'
+                '  [cyan]auditor scan . --brief "a CLI with init, add and list"[/cyan]')
+        elif spec_origin:
+            console.print(f"[dim]measured against {spec_origin}[/dim]")
+
         if recorded:
             console.print("[dim]saved to your local history · auditor history · auditor forget[/dim]")
 
@@ -291,7 +350,10 @@ def watch_cmd(path: Path, spec: Path | None, interval: float):
 
     \b
       auditor watch .                       watch the current folder
-      auditor watch . --spec spec.yaml      see scope drift appear live
+      auditor watch . --spec spec.yaml      use a spec you wrote yourself
+
+    Scope drift appears automatically once `auditor init` has recorded what
+    you asked for.
 
     Leave this running while an agent works. Ctrl+C to stop.
     """
@@ -302,7 +364,11 @@ def watch_cmd(path: Path, spec: Path | None, interval: float):
     from auditor.core.watch import watch_directory
 
     console = Console()
-    spec_data = yaml.safe_load(spec.read_text()) if spec else None
+    if spec:
+        spec_data = yaml.safe_load(spec.read_text())
+    else:
+        from auditor.live.brief import load_spec
+        spec_data = load_spec(path)       # whatever `auditor init` recorded
     baseline = scan_directory(path, spec_data)
 
     console.print()
@@ -416,6 +482,63 @@ def experiment_cmd(spec, run_id, run_label, reps, seed, skip,
     adapters = build_default_adapters(run_id, Path(captures_root))
     out = run_experiment(spec, run_id, adapters, reports_dir=reports_dir)
     click.echo(f"wrote {out}")
+
+
+@main.command("init")
+@click.argument("path", type=click.Path(exists=True, file_okay=False, path_type=Path),
+                default=".")
+@click.option("--brief", default=None, metavar="TEXT",
+              help="What you asked for. One feature per line, or one sentence.")
+@click.option("--force", is_flag=True, help="Overwrite a spec this project already has.")
+def init_cmd(path: Path, brief: str | None, force: bool):
+    """Record what this project was asked to be, so scope drift stays on.
+
+    Scope drift is the reading that catches an agent building something other
+    than what was requested, and it needs a statement of what was requested.
+    That statement used to be a YAML file the user had to author by hand,
+    which is why four out of five metrics is what most scans reported. One
+    sentence here is enough, it is written to .auditor/spec.yaml in plain
+    sight, and it is yours to edit afterwards.
+
+    \b
+      auditor init
+      auditor init --brief "a CLI with init, add and list"
+      auditor init ./service --brief "$(cat REQUIREMENTS.md)"
+    """
+    from auditor.live.brief import build_spec, load_spec, save_spec, spec_path_for
+
+    target = spec_path_for(path)
+    if load_spec(path) and not force:
+        raise SystemExit(
+            f"{target} already exists. Edit it, or pass --force to replace it."
+        )
+
+    if not brief:
+        click.echo("What did you ask for? One feature per line. Blank line to finish.\n")
+        lines: list[str] = []
+        while True:
+            try:
+                line = input("  ")
+            except EOFError:
+                break
+            if not line.strip():
+                break
+            lines.append(line)
+        brief = "\n".join(lines)
+
+    if not brief.strip():
+        raise SystemExit("Nothing was written, so no spec was created.")
+
+    spec = build_spec(brief, name=path.resolve().name.replace("-", "_") or "project")
+    if not spec["features"]:
+        raise SystemExit("No features could be read from that. Try one per line.")
+
+    written = save_spec(path, spec)
+    click.echo(f"\nWrote {written}")
+    for feature in spec["features"]:
+        click.echo(f"  · {feature['description']}")
+    click.echo(f"\n{len(spec['features'])} features recorded. "
+               f"`auditor scan {path}` now reports scope drift.")
 
 
 @main.command("history")

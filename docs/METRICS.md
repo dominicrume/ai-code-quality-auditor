@@ -66,6 +66,16 @@ Each metric lives in its own analyzer file. This document is the contract.
   k-line shingle approach; reimplementing in-tree keeps duplication
   measurable for non-Java codebases without a SonarQube round-trip, and
   removes one external dependency from the metric.
+- **Which files count (version 2, default from 0.5.2):** code only, the
+  suffixes in `duplication_analyzer.CODE_ONLY`. The loader also ingests
+  Markdown, YAML and TOML for other purposes, and because this metric needs
+  no parser it had been measuring all of them. On this instrument's own
+  repository that was 41,116 lines of Markdown against 12,431 of Python, so
+  roughly three-quarters of the reported figure was a statement about prose.
+  Repeated prose in a changelog is not duplicated code. Version 1 counts
+  every ingested file and is retained so the published figures remain
+  reproducible: `analyze(..., version=1)` returns what
+  `data/reports/main_001.csv` records.
 - **Output:** `MetricScore(name="duplication_pct", value=float, unit="%")`.
 
 ## 4. Hallucination frequency
@@ -85,7 +95,50 @@ Each metric lives in its own analyzer file. This document is the contract.
   note 001 in PROTOCOL_DEVIATIONS.md). The heuristic is exploratory pending
   blind hand-label validation (Cohen's κ, dissertation §4.7); headline
   findings are additionally confirmed by direct code inspection.
-- **Output:** `MetricScore(name="hallucinations", value=float, unit="count")`.
+- **Known blind spot, and the diagnostic that covers it:** the count asks
+  what *extra* was shipped, so it cannot see a substitution. An agent given
+  a CLI specification that ships an ETL package with no subcommands adds
+  nothing and scores 0.00, the same as an agent that built the CLI correctly
+  (run_001; dissertation §6.4). `analyzers/shape_detector.py` separates those
+  cases by comparing the shape the spec asks for with the shape actually
+  built. From 0.5.2 its verdict is reported beside the metric, as a sentence,
+  whenever the detector is both in disagreement and confident.
+  It is deliberately **not a sixth metric and not folded into this value**:
+  doing either would change figures already published and is a decision for
+  an erratum, not a side effect. `MetricScore.diagnostics` carries it.
+- **Output:** `MetricScore(name="hallucinations", value=float, unit="count")`,
+  with `diagnostics={"shape": ..., "surface": ...}` on the derived path.
+
+## What the analysers are given, and what they claim
+
+These rules sit above the five metrics because a reading is only about the
+files the walk actually handed over.
+
+- **Ignored and vendored files (from 0.5.2).** The user-facing commands
+  (`scan`, `watch`, `live`) honour the project's own `.gitignore` and
+  `.auditorignore`, and skip `_shared.VENDOR_DIRS`. A repository's
+  `.gitignore` is its authoritative statement of what is not part of it, and
+  measuring a frozen data capture or a build output and reporting the result
+  as a property of the user's code is a false reading. `--include-all`
+  measures everything present.
+  Supported pattern syntax: comments, a trailing `/` for directory-only, a
+  leading or interior `/` for root-anchored, a bare name matching at any
+  depth, `*`, `?`, `[...]`, `**`, and `!` to re-include. **Not** supported:
+  `.gitignore` files in subdirectories, and `.git/info/exclude`.
+  The experiment path (`auditor run`, `auditor experiment`) is unchanged and
+  still walks every ingested file, so the figures in Table 4.1 remain
+  reproducible.
+- **Coverage counts what was read, not what was attempted (from 0.5.2).** A
+  file whose lines were added to the scanned total before the parse was
+  attempted made an unreadable project report full coverage and a value of
+  0.00, which bands as OK. Where a metric's languages are present and none of
+  the source parsed, the metric reports `unread` with the reason instead of a
+  band, and unreadable source raises the worst band to at least `warn`: an
+  unreadable file is an unknown, not a pass.
+- **Densities are reported with their numerator.** Two findings in twelve
+  lines is 166.67 per kLOC, which bands as RISK and tells a reader nothing
+  actionable. `MetricScore.count` carries what the value is a density or mean
+  of, and the reporter prints it beside the number.
 
 ## 5. Keystroke dynamics (correction frequency)
 - **Definition:** count of `backspace` + `delete` events per 1000

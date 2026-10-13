@@ -70,8 +70,11 @@ Audit any folder you already have, in one command:
 ```bash
 pip install ai-code-quality-auditor
 auditor scan .                                # the four spec-free metrics
-auditor scan . --spec spec.yaml               # adds the scope-drift check
+auditor init                                  # say what you asked for, once
+auditor scan .                                # now with scope drift, every run
+auditor scan . --brief "a CLI with add and list"   # or say it inline, no setup
 auditor scan . --fail-on critical             # gate a CI pipeline
+auditor scan . --include-all                  # measure ignored files too
 auditor live .                                # watch a folder on a dashboard
 auditor history                               # every scan this machine has recorded
 auditor history --project myapp               # one folder, with the change between scans
@@ -98,19 +101,29 @@ returns the post-repair values, which are circular and are not the result; see
 ## Case study: the instrument audits its own maker
 
 The fastest way to judge a measuring instrument is to point it at the person holding it.
-Run on this repository's own source, on 17 September 2026:
+Run on this repository's own source, on 13 October 2026, with 0.5.2:
 
 ```
 $ auditor scan auditor
-  Security     3.15 per kLOC   OK    (14 findings: 1 medium, 13 low)
-  Complexity   4.03 cc         WARN
-  Duplication  7.84 %          WARN
+  Security     2.82 per kLOC   OK     14 findings: 1 medium, 13 low
+  Complexity   4.31 cc         WARN   over 212 functions
+  Duplication  6.64 %          WARN   275 lines
 ```
 
-These figures move as the code does. Duplication went 10.24% → 9.54% when the shape
-detector added lines that are not duplicated, then 9.54% → 7.84% when the
-dashboard/live overlap below was resolved by deletion. A self-audit is a reading
-taken at a commit, not a badge; re-run it rather than trusting a number in a README.
+These figures move as the code does, and two of them moved in 0.5.2 because the
+instrument was corrected rather than because the code changed. Duplication went
+10.24% → 9.54% when the shape detector added lines that are not duplicated,
+9.54% → 7.84% when the dashboard/live overlap below was resolved by deletion,
+and 7.84% → 6.64% when the metric stopped counting Markdown as code. The
+version that reports a figure is part of the figure. A self-audit is a reading
+taken at a commit, not a badge; re-run it rather than trusting a number in a
+README.
+
+Pointed at the whole repository rather than at `auditor/`, 0.5.1 reported
+`Duplication 83.58 RISK`. That was a true count of `data/raw`, a frozen set of
+research captures git ignores and the package does not ship, and it is the
+defect that 0.5.2's ignore handling fixes. It is recorded here because an
+instrument that hides its own false alarms is not one to trust with yours.
 
 **We publish the warning rather than tuning it away**, because an instrument that hides
 its own findings cannot be trusted with anyone else's. Locating the duplication took one

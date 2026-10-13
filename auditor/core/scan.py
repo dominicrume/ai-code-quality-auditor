@@ -43,10 +43,31 @@ class MetricOutcome:
     details: list[str] | None = None
     coverage: float | None = None
     languages: list[str] | None = None
+    unparsed: list[str] | None = None
+    count: int | None = None
+    diagnostics: dict | None = None
 
     @property
     def applicable(self) -> bool:
         return self.skipped_reason is None
+
+    @property
+    def total_note(self) -> str | None:
+        """What the value is a density or a mean of.
+
+        A density is unreadable at small sizes: two findings in twelve lines is
+        166.67 per thousand, which bands as RISK and tells the reader nothing
+        they can act on. The count beside it does.
+        """
+        if self.count is None or not self.applicable:
+            return None
+        if self.name == "security_density":
+            return f"{self.count} finding{'s' if self.count != 1 else ''}"
+        if self.name == "complexity_mean":
+            return f"over {self.count} function{'s' if self.count != 1 else ''}"
+        if self.name == "duplication_pct":
+            return f"{self.count} line{'s' if self.count != 1 else ''}"
+        return None
 
     @property
     def caveat(self) -> str | None:
@@ -70,13 +91,71 @@ class ScanResult:
     readable_files: int = 0
     python_loc: int = 0
     spec_name: str | None = None
+    honoured_ignores: bool = True
     outcomes: list[MetricOutcome] = field(default_factory=list)
 
     @property
+    def unparsed_files(self) -> list[str]:
+        """Every file an analyser could not parse, named once."""
+        seen: list[str] = []
+        for o in self.outcomes:
+            for f in o.unparsed or []:
+                if f not in seen:
+                    seen.append(f)
+        return seen
+
+    @property
     def worst_band(self) -> Band:
+        """The worst reading, where code that would not parse counts as one.
+
+        A file the analysers could not read is an unknown, not a pass, and a
+        scan whose only outcome is an unknown must not exit 0 under
+        ``--fail-on warn``. Unreadable source therefore raises the floor to a
+        warning instead of leaving the default of "good" to speak for it.
+        """
         order = {"good": 0, "warn": 1, "critical": 2}
         bands = [o.band for o in self.outcomes if o.band]
+        if self.unparsed_files:
+            bands.append("warn")
         return max(bands, key=lambda b: order[b]) if bands else "good"
+
+    @property
+    def shape_note(self) -> str | None:
+        """The sentence for an agent that built the wrong kind of thing.
+
+        The hallucination count asks what extra was shipped, so it reads 0.00
+        when an agent replaces the brief rather than adding to it: in run_001
+        an agent given a CLI specification shipped an ETL package with no
+        subcommands and scored the same as the conditions that built the CLI
+        correctly. The shape detector separates those cases and its verdict was
+        being computed and then discarded. Reported only when the detector is
+        confident, because a low-margin guess about architecture is worse than
+        silence.
+        """
+        for o in self.outcomes:
+            shape = (o.diagnostics or {}).get("shape") or {}
+            if shape.get("mismatch") and shape.get("confident"):
+                why = ", ".join(shape.get("evidence") or []) or "no matching structure found"
+                return (
+                    f"you asked for {_SHAPE_WORDS.get(shape['specified_shape'], shape['specified_shape'])}, "
+                    f"and what is here looks like {_SHAPE_WORDS.get(shape['built_shape'], shape['built_shape'])} "
+                    f"({why}). The scope-drift count is about extra features and cannot see a "
+                    f"substitution, so it is not raised by this."
+                )
+        return None
+
+    @property
+    def read_failure_note(self) -> str | None:
+        """The sentence that has to appear when source would not parse."""
+        files = self.unparsed_files
+        if not files:
+            return None
+        shown = ", ".join(files[:3]) + (f" and {len(files) - 3} more" if len(files) > 3 else "")
+        return (
+            f"{len(files)} file{'s' if len(files) != 1 else ''} could not be parsed "
+            f"({shown}). Nothing is known about {'them' if len(files) != 1 else 'it'}: "
+            f"an unreadable file is an unknown, not a pass."
+        )
 
     @property
     def coverage_note(self) -> str | None:
@@ -102,6 +181,16 @@ class ScanResult:
         )
 
 
+# Plain words for the architectural shapes, for a sentence a user reads once.
+_SHAPE_WORDS = {
+    "cli": "a command-line tool",
+    "web_service": "a web service",
+    "data_pipeline": "a data pipeline",
+    "library": "a library",
+    "unknown": "something this tool cannot classify",
+}
+
+
 # label, analyser, and the predicate that decides whether it can run at all
 _METRICS = [
     ("security_density", "Security", security_analyzer),
@@ -111,10 +200,17 @@ _METRICS = [
 ]
 
 
-def scan_directory(path: Path, spec: dict | None = None) -> ScanResult:
-    """Audit ``path`` in place. No session, no capture, no cleanup."""
+def scan_directory(path: Path, spec: dict | None = None,
+                   include_all: bool = False) -> ScanResult:
+    """Audit ``path`` in place. No session, no capture, no cleanup.
+
+    By default the walk honours the project's own ``.gitignore`` and skips
+    vendored directories, because a reading about someone's repository should
+    describe the code they wrote. ``include_all`` measures everything present,
+    which is occasionally what an auditor wants and never a sensible default.
+    """
     path = Path(path).resolve()
-    codebase = load_codebase(path)
+    codebase = load_codebase(path, respect_ignores=not include_all)
     files = codebase.get("files", {})
 
     result = ScanResult(
@@ -127,6 +223,7 @@ def scan_directory(path: Path, spec: dict | None = None) -> ScanResult:
             if languages.in_languages(f, languages.PYTHON + languages.TYPESCRIPT)),
         python_loc=sum(len(c.splitlines()) for f, c in files.items() if f.endswith(".py")),
         spec_name=(spec or {}).get("name"),
+        honoured_ignores=not include_all,
     )
 
     for name, label, module in _METRICS:
@@ -135,10 +232,30 @@ def scan_directory(path: Path, spec: dict | None = None) -> ScanResult:
             result.outcomes.append(MetricOutcome(name=name, label=label, skipped_reason=reason))
             continue
         score = module.analyze(codebase, [], spec or {})
+
+        # There was source in this metric's languages and none of it parsed.
+        # The value is 0.00 because nothing was measured, and 0.00 bands as
+        # OK, so the tool would report a clean bill of health for code it
+        # could not read. That is the precise failure this instrument was
+        # built to detect in other tools, so it is reported as unread rather
+        # than banded. It is a skip with a reason, not a score.
+        if getattr(score, "read_nothing", False):
+            n = len(score.unparsed or [])
+            result.outcomes.append(MetricOutcome(
+                name=name, label=label, coverage=0.0, languages=score.languages,
+                unparsed=score.unparsed,
+                skipped_reason=(
+                    f"could not read any of it: {n} file{'s' if n != 1 else ''} "
+                    f"would not parse" if n else "none of the source could be parsed"),
+            ))
+            continue
+
         result.outcomes.append(MetricOutcome(
             name=name, label=label, value=score.value, unit=score.unit,
             band=band_for(name, score.value),
             coverage=score.coverage, languages=score.languages,
+            unparsed=score.unparsed, count=score.count,
+            diagnostics=getattr(score, "diagnostics", None),
             # Security names its medium and high findings. Scope-drift details
             # stay out of the scan: the live page would offer to strip them.
             details=score.details if name == "security_density" else None,
@@ -167,5 +284,5 @@ def _skip_reason(metric: str, r: ScanResult, spec: dict | None) -> str | None:
     if metric in ("security_density", "complexity_mean") and r.readable_files == 0:
         return "no Python, JavaScript or TypeScript files to analyse"
     if metric == "hallucinations" and not spec:
-        return "needs --spec to know what was asked for"
+        return "nothing yet says what was asked for"
     return None

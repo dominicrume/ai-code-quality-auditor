@@ -55,18 +55,36 @@ def _write_codebase(codebase: dict, dest: Path) -> int:
     return loc
 
 
-def _run_bandit(scan_dir: Path) -> list[dict]:
-    """Run Bandit and parse its JSON output. Empty list if no python files."""
+def _run_bandit(scan_dir: Path) -> tuple[list[dict], list[str]]:
+    """Run Bandit; return its findings and the files it could not parse.
+
+    Bandit reports an unparseable file in ``errors`` and still counts its lines
+    in ``metrics``. Taking only ``results`` therefore produced a density of 0.00
+    over source that was never read, which bands as OK. The error list is the
+    authoritative statement of what Bandit failed on, so it is carried out of
+    here rather than inferred.
+    """
     if not any(scan_dir.rglob("*.py")):
-        return []
+        return [], []
     proc = subprocess.run(
         ["bandit", "-r", str(scan_dir), "-f", "json", "-q"],
         capture_output=True, text=True, check=False,
     )
     if not proc.stdout.strip():
-        return []
-    data = json.loads(proc.stdout)
-    return data.get("results", [])
+        return [], []
+    try:
+        data = json.loads(proc.stdout)
+    except json.JSONDecodeError:
+        return [], []
+    failed = []
+    for err in data.get("errors") or []:
+        name = str(err.get("filename") or "")
+        try:
+            name = str(Path(name).resolve().relative_to(scan_dir.resolve()))
+        except (ValueError, OSError):
+            pass
+        failed.append(name.replace("\\", "/"))
+    return data.get("results", []), failed
 
 
 def _is_test_file(rel: str) -> bool:
@@ -130,7 +148,8 @@ def _review_details(findings: list[dict]) -> list[str] | None:
     for f in findings:
         tally[_severity(f)] = tally.get(_severity(f), 0) + 1
     order = sorted(tally, key=lambda s: _SEVERITY_ORDER.get(s, 3))
-    lines = [f"{len(findings)} findings: " + ", ".join(f"{tally[s]} {s.lower()}" for s in order)]
+    noun = "finding" if len(findings) == 1 else "findings"
+    lines = [f"{len(findings)} {noun}: " + ", ".join(f"{tally[s]} {s.lower()}" for s in order)]
     for f in sorted(serious, key=lambda f: (_SEVERITY_ORDER.get(_severity(f), 3),
                                            str(f.get("filename", "")), f.get("line_number") or 0)):
         cwe = (f.get("issue_cwe") or {}).get("id")
@@ -161,14 +180,18 @@ def analyze(codebase: dict, interaction_log: list[dict], spec: dict,
         scan_dir = Path(tmp) / "code"
         scan_dir.mkdir()
         py_loc = _write_codebase(codebase, scan_dir)
-        issues = _counts(_run_bandit(scan_dir), scan_dir)
+        raw_issues, unparsed = _run_bandit(scan_dir)
+        issues = _counts(raw_issues, scan_dir)
+        # Lines Bandit could not parse are not lines Bandit read.
+        py_loc -= sum(len((codebase.get("files", {}).get(f) or "").splitlines())
+                      for f in unparsed)
 
     js_issues, js_loc = ([], 0) if version < 2 else _scan_javascript(files)
     suffixes = languages.PYTHON if version < 2 else (
         languages.PYTHON + languages.TYPESCRIPT)
     _, total = languages.line_counts(files, suffixes)
 
-    scanned = py_loc + js_loc
+    scanned = max(py_loc + js_loc, 0)
     density = (len(issues) + len(js_issues)) / max(scanned, 1) * 1000
     return MetricScore(
         name="security_density",
@@ -178,4 +201,6 @@ def analyze(codebase: dict, interaction_log: list[dict], spec: dict,
         scanned_lines=scanned,
         total_lines=total,
         languages=languages.present(files),
+        unparsed=sorted(unparsed) or None,
+        count=len(issues) + len(js_issues),
     )

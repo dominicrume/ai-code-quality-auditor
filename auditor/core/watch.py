@@ -75,9 +75,14 @@ class WatchEvent:
 
 
 def fingerprint(path: Path) -> Fingerprint:
-    """Cheap change signature for every scorable file under ``path``."""
+    """Cheap change signature for every scorable file under ``path``.
+
+    Walks with the same ignore rules the scan applies, so the watcher cannot
+    wake on a file the audit will not read -- a build directory rewriting
+    itself would otherwise rescan the project on a loop.
+    """
     out: Fingerprint = {}
-    for rel, abs_path in iter_source_files(path):
+    for rel, abs_path in iter_source_files(path, respect_ignores=True):
         try:
             st = abs_path.stat()
         except OSError:

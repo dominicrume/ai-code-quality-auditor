@@ -6,6 +6,16 @@ Two paths:
   2. Otherwise auto-derive from the code itself (manifest_deriver) and
      count detected endpoints that do not map to any spec feature. This
      unblocks the metric for agentic adapters that do not emit a manifest.
+
+The count answers "what extra did it ship?" and is therefore blind to
+substitution: an agent that builds something else entirely adds nothing and
+scores 0.00, the same as an agent that built the right thing. That is the
+case the shape detector exists to separate, and its verdict now travels out
+of here in ``diagnostics`` so the reporter can show it.
+
+``diagnostics`` deliberately does **not** alter ``value``. Folding it in
+would change figures published in the dissertation, which is a decision to
+take with an erratum rather than as a side effect (manifest_deriver.derive).
 """
 from auditor.analyzers.manifest_deriver import derive
 from auditor.models.audit_result import MetricScore
@@ -15,6 +25,7 @@ def analyze(codebase: dict, interaction_log: list[dict], spec: dict) -> MetricSc
     spec_ids = {f["id"] for f in spec.get("features", [])}
     manifest = set(codebase.get("manifest", []))
 
+    diagnostics: dict | None = None
     if manifest:
         details = list(manifest - spec_ids)
         count = len(details)
@@ -22,10 +33,13 @@ def analyze(codebase: dict, interaction_log: list[dict], spec: dict) -> MetricSc
         d = derive(spec, codebase)
         details = d["hallucinated_endpoints"] + d.get("hallucinated_commands", [])
         count = len(details)
+        diagnostics = {"shape": d.get("shape"), "surface": d.get("surface")}
 
     return MetricScore(
-        name="hallucinations", 
-        value=float(count), 
+        name="hallucinations",
+        value=float(count),
         unit="count",
-        details=details
+        details=details,
+        diagnostics=diagnostics,
+        count=count,
     )
