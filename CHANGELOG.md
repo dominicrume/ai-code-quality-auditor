@@ -110,6 +110,14 @@ is the upgrade.
   wrong thing to put in front of a client. The sentence is the label on every
   surface; the id stays in the file, in the JSON and on hover, where a machine
   or a person matching rows needs it.
+- **`unreachable` requires evidence of absence, not absence of evidence.** The
+  verdict first rested on a definition not itself being a command or a route,
+  which describes most working code: a helper invoked by a route on the line
+  above was reported as something nothing exposes. It now also requires that
+  nothing in the codebase calls the name, and an exported name counts as
+  reached. This is a reference count rather than a call graph, and it is used
+  only to withhold the accusation, never to make one, because telling a team
+  their working feature is broken costs more than missing a finding.
 - **`unreachable` is a verdict in its own right.** Code that exists but that
   no user can invoke is neither delivered nor missing, and calling it either
   throws away the most useful thing an audit knows: where the work already is.

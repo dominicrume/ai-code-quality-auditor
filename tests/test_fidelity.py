@@ -311,3 +311,78 @@ def test_a_long_label_is_cut_on_a_word():
     short = v.short(20)
     assert len(short) <= 21 and short.endswith("…")
     assert not short[:-1].endswith(" ")
+
+
+# ------------------------------------- unreachable needs evidence of absence
+
+WIRED = {"files": {"api.py": textwrap.dedent("""
+    from flask import Flask
+    app = Flask(__name__)
+
+    @app.post("/claims")
+    def submit_claim():
+        claim = {}
+        notify_assessor(claim)
+        return claim
+
+    def notify_assessor(claim):
+        pass
+""")}, "manifest": []}
+
+ORPHANED = {"files": {"api.py": textwrap.dedent("""
+    from flask import Flask
+    app = Flask(__name__)
+
+    @app.post("/claims")
+    def submit_claim():
+        return {}
+
+    def notify_assessor(claim):
+        pass
+""")}, "manifest": []}
+
+NOTIFY_SPEC = {
+    "name": "claims", "version": "1.0.0",
+    "features": [
+        {"id": "submit.new.claim", "description": "Submit a new claim"},
+        {"id": "notify.assessor.when", "description": "Notify the assessor"},
+    ],
+}
+
+
+def _notify(codebase):
+    report = fidelity.assess(NOTIFY_SPEC, codebase)
+    return next(v for v in report.verdicts if v.feature_id == "notify.assessor.when")
+
+
+def test_a_helper_a_route_calls_is_delivered_not_unreachable():
+    """It was called unreachable while being called on the line above.
+
+    The verdict rested on the definition not itself being a route, which
+    describes most working code. Telling a team their working feature is
+    broken costs more trust than missing a finding does.
+    """
+    assert _notify(WIRED).status == fidelity.DELIVERED
+
+
+def test_a_helper_nothing_calls_is_still_unreachable():
+    """The verdict has to survive, or it was not worth having."""
+    v = _notify(ORPHANED)
+    assert v.status == fidelity.UNREACHABLE
+    assert "nothing exposes it" in v.reason()
+
+
+def test_a_declaration_is_not_a_use():
+    assert not defs.is_invoked("notify_assessor", {
+        "files": {"a.py": "def notify_assessor(claim):\n    pass\n"}})
+    assert defs.is_invoked("notify_assessor", {
+        "files": {"a.py": "def notify_assessor(c):\n    pass\n",
+                  "b.py": "notify_assessor({})\n"}})
+
+
+def test_an_exported_name_counts_as_reachable():
+    """A library exposes a function by exporting it, not by routing it."""
+    assert defs.is_invoked("formatDate", {
+        "files": {"i.ts": "export { formatDate };\n"}})
+    assert defs.is_invoked("format_date", {
+        "files": {"__init__.py": '__all__ = ["format_date"]\n'}})

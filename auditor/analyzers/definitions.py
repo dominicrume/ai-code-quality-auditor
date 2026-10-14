@@ -263,3 +263,45 @@ def matches(definition: Definition, feature_id: str) -> bool:
         return True
     meaningful = [w for w in name_words if w not in _AFFIXES] or name_words
     return bool(head & set(meaningful))
+
+
+# ------------------------------------------------------------- reachability
+
+# A call to `name(...)` that is not the line declaring it. Anchoring on the
+# declaration keywords is what separates "def notify_assessor(claim)" from
+# "notify_assessor(claim)" three lines above it.
+_DECLARES = re.compile(r"(?:\bdef\b|\bclass\b|\bfunction\b)\s*$")
+
+
+def is_invoked(name: str, codebase: dict, exclude: str | None = None) -> bool:
+    """True when something in the codebase calls ``name``.
+
+    Why this exists: the unreachable verdict used to rest on a definition not
+    being a command or a route, which calls a helper invoked by a route
+    "unreachable" when it is wired up and working. Telling a team their
+    working feature is broken costs more trust than missing a finding does,
+    so the verdict now requires evidence of absence rather than absence of
+    evidence.
+
+    This is a reference count, not a call graph. It cannot tell a live call
+    from one inside dead code, and it does not try: it is used only to
+    withhold an accusation, never to make one.
+    """
+    if not name:
+        return False
+    pattern = re.compile(r"\b" + re.escape(name) + r"\s*\(")
+    for path, content in (codebase.get("files") or {}).items():
+        for match in pattern.finditer(content):
+            line_start = content.rfind("\n", 0, match.start()) + 1
+            before = content[line_start:match.start()]
+            if _DECLARES.search(before):
+                continue          # this is the declaration, not a use
+            if exclude and path == exclude and before.strip() == "":
+                continue
+            return True
+    # Exported or re-exported by name, which is how a library exposes it.
+    for content in (codebase.get("files") or {}).values():
+        if re.search(r"(?:export\s*\{[^}]*\b" + re.escape(name)
+                     + r"\b|__all__[^\]]*[\"\']" + re.escape(name) + r"[\"\'])", content):
+            return True
+    return False

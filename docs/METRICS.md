@@ -119,7 +119,9 @@ Each metric lives in its own analyzer file. This document is the contract.
   specification is derived and the scope readings stay unavailable.
 - **The other half of the question (from 0.6.0):** `analyzers/fidelity.py`
   reports a verdict per specified feature -- `delivered`, `not_found`, or
-  `unreachable` (declared, but with nothing exposing it) -- each citing a file
+  `unreachable` (declared, nothing calls it and nothing exposes it; a helper a
+  route invokes is delivered, and the reachability check is a reference count,
+  used only to withhold the verdict and never to make it) -- each citing a file
   and line or stating plainly that it has none. `completeness` is the share
   delivered. This is reported as a table beside the five metrics and is
   **not** a sixth metric: it is not in the experiment CSV and does not enter

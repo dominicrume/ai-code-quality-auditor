@@ -179,7 +179,12 @@ def assess(spec: dict, codebase: dict) -> FidelityReport:
             status = DELIVERED
         elif internal:
             best = internal[0]
-            status = UNREACHABLE
+            # Only call it unreachable when nothing calls it. A helper invoked
+            # by a route is wired up and working, and telling a team otherwise
+            # costs more than missing a finding would: the verdict needs
+            # evidence of absence, not absence of evidence.
+            invoked = any(defs.is_invoked(d.name, codebase) for d in internal)
+            status = DELIVERED if invoked else UNREACHABLE
         else:
             best = None
             status = NOT_FOUND
