@@ -36,6 +36,28 @@ def _serialise(result: ScanResult, changed: list[str] | None = None) -> dict:
         "coverage_note": result.coverage_note,
         "worst_band": result.worst_band,
         "changed": changed or [],
+        "unparsed": result.unparsed_files,
+        "read_failure_note": result.read_failure_note,
+        "shape_note": result.shape_note,
+        # The per-feature verdict. This is the reading no tool without a
+        # specification can produce, and until now the live page did not show
+        # it at all: the server computed it and dropped it on the floor.
+        "fidelity": ({
+            "headline": result.fidelity.headline,
+            "delivered": len(result.fidelity.delivered),
+            "total": result.fidelity.total,
+            "completeness": result.fidelity.completeness,
+            "features": [
+                {"id": v.feature_id, "status": v.status, "mark": v.mark,
+                 "where": v.where, "reason": v.reason(),
+                 "description": v.description}
+                for v in result.fidelity.verdicts
+            ],
+            "extras": [
+                {"name": e.name, "kind": e.kind, "where": e.where}
+                for e in result.fidelity.extras
+            ],
+        } if result.fidelity and result.fidelity.total else None),
         "metrics": [
             {
                 "name": o.name, "label": o.label, "value": o.value,

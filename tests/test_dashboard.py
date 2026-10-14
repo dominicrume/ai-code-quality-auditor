@@ -107,3 +107,63 @@ def test_no_page_offers_an_action_the_app_cannot_perform():
         body = c.get(path).get_data(as_text=True)
         for called in re.findall(r"""fetch\(\s*['"](/[^'"?]+)""", body):
             assert called in served, f"{path} fetches {called}, which is not routed"
+
+
+# --------------------------------------------------------------- the redesign
+#
+# These exist because rebuilding the templates for the 0.6.0 look silently
+# dropped four things that were there for a reason, one of them a disclosure
+# about what the data is. A redesign is allowed to move anything except the
+# things below.
+
+def test_a_provenance_warning_is_always_shown(client):
+    """The disclosure must not depend on the rest of the page being rich.
+
+    It was rendered inside an `{% if spec_summary %}` block, so the one case
+    where it mattered most -- a thin report with little else on the page --
+    was the case where it vanished.
+    """
+    body = client.get("/report/test_001").get_data(as_text=True)
+    assert "synthetic data" in body
+    assert "Caution" in body
+
+
+def test_both_themes_are_available_on_every_page(client):
+    for path in ("/", "/report/test_001"):
+        body = client.get(path).get_data(as_text=True)
+        assert 'data-theme-set="light"' in body, path
+        assert 'data-theme-set="dark"' in body, path
+        # Resolved before first paint: a deferred script flashes white.
+        assert "auditor-theme" in body, path
+
+
+def test_the_shared_stylesheet_is_served(client):
+    resp = client.get("/static/theme.css")
+    assert resp.status_code == 200
+    css = resp.get_data(as_text=True)
+    # Both themes, and the dark one reachable by preference and by choice.
+    assert ":root[data-theme=\"dark\"]" in css
+    assert "prefers-color-scheme: dark" in css
+    assert "@media print" in css
+
+
+def test_bands_do_not_rely_on_colour_alone(client):
+    """A projected slide and a greyscale print both lose the hue."""
+    css = client.get("/static/theme.css").get_data(as_text=True)
+    for band in ("band-good", "band-warn", "band-critical", "band-unknown"):
+        assert f".{band}::before" in css, band
+
+
+def test_accessibility_work_survived_the_redesign(client):
+    for path in ("/", "/report/test_001"):
+        body = client.get(path).get_data(as_text=True)
+        assert "skip-link" in body, path
+        assert "focus-visible" in body, path
+        assert "prefers-reduced-motion" in body, path
+
+
+def test_the_charts_are_rebuilt_when_the_theme_changes(client):
+    """Plotly bakes colours in, so a toggle leaves them behind unless told."""
+    body = client.get("/report/test_001").get_data(as_text=True)
+    assert "themechange" in body
+    assert "getPropertyValue" in body      # colours read from the stylesheet

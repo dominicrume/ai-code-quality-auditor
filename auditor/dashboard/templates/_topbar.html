@@ -1,0 +1,45 @@
+{#- The sticky header, identical on every page, with the theme switch. -#}
+<header class="topbar no-print">
+  <div class="topbar-inner">
+    <a class="brand" href="/" style="text-decoration:none;color:inherit">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span>AI Code Quality Auditor
+        <small>{{ subtitle|default('Specification fidelity for generated code') }}</small>
+      </span>
+    </a>
+    <div class="row">
+      {% if nav_meta %}<span class="mono muted" style="font-size:.78rem">{{ nav_meta }}</span>{% endif %}
+      <div class="theme-toggle" role="group" aria-label="Colour theme">
+        <button type="button" data-theme-set="light" title="Light" aria-pressed="false">☀</button>
+        <button type="button" data-theme-set="dark"  title="Dark"  aria-pressed="false">☾</button>
+      </div>
+    </div>
+  </div>
+</header>
+<script>
+  (function () {
+    var buttons = Array.prototype.slice.call(document.querySelectorAll('[data-theme-set]'));
+    function current() {
+      var set = document.documentElement.dataset.theme;
+      if (set) return set;
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    function paint() {
+      var now = current();
+      buttons.forEach(function (b) {
+        b.setAttribute('aria-pressed', String(b.dataset.themeSet === now));
+      });
+    }
+    buttons.forEach(function (b) {
+      b.addEventListener('click', function () {
+        var next = b.dataset.themeSet;
+        document.documentElement.dataset.theme = next;
+        try { localStorage.setItem('auditor-theme', next); } catch (e) {}
+        paint();
+        // Charts carry baked-in colours, so they are redrawn on a theme change.
+        document.dispatchEvent(new CustomEvent('themechange', { detail: next }));
+      });
+    });
+    paint();
+  })();
+</script>

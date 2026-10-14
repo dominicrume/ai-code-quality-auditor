@@ -235,3 +235,27 @@ def test_post_surface_is_fully_guarded(client):
     for rule in post_rules:
         res = c.post(rule.rule, json={}, headers={"Origin": "https://evil.example"})
         assert res.status_code == 403, f"{rule.rule} is not origin-guarded"
+
+
+def test_the_live_page_shows_the_per_feature_verdict(client):
+    """The server computed the fidelity report and did not send it.
+
+    The live page is the demo surface for the one reading no other tool can
+    produce, and it was showing five metric cards and none of this.
+    """
+    c, _ = client
+    state = c.get("/api/state").get_json()
+    report = state["report"]
+    assert "fidelity" in report
+    page = c.get("/").get_data(as_text=True)
+    assert "renderFidelity" in page
+    assert 'id="fidBox"' in page
+
+
+def test_the_verdict_marks_are_not_colour_alone(client):
+    """A projector that crushes the reds must not erase a verdict."""
+    c, _ = client
+    page = c.get("/").get_data(as_text=True)
+    assert "fid-mark" in page
+    for status in ("fid-delivered", "fid-unreachable", "fid-not_found"):
+        assert status in page, status

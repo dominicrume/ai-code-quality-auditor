@@ -1,0 +1,301 @@
+/* AI Code Quality Auditor — one design system, two themes.
+ *
+ * Why this file exists: every page carried its own inline copy of the same
+ * colours, and the three surfaces had drifted into three different looks for
+ * the same numbers. An instrument that reports one verdict should look like
+ * one instrument.
+ *
+ * Two themes, because the page has two audiences. Dark is for a projector in
+ * a lit room. Light is for a screenshot that has to sit in a dissertation
+ * appendix and survive being printed in greyscale, which is why every band
+ * carries a glyph as well as a colour.
+ *
+ * Defaults to the reader's system setting, overridden by [data-theme] on
+ * <html> and remembered per browser.
+ */
+
+/* ---------------------------------------------------------------- tokens */
+
+:root {
+  /* Light is the base, because print and the appendix are the harder case. */
+  --ground:      #ffffff;
+  --raised:      #fbfaf9;
+  --sunken:      #f3f1ee;
+  --rule:        #e3e0db;
+  --rule-strong: #cdc8c0;
+
+  --ink:         #16130f;
+  --ink-soft:    #4a443c;
+  --ink-faint:   #857d72;
+
+  --accent:      #4c35d4;
+  --accent-ink:  #ffffff;
+  --accent-wash: #efecff;
+
+  --good:        #1a7f4b;
+  --good-wash:   #e8f5ed;
+  --warn:        #9a6309;
+  --warn-wash:   #fdf2e0;
+  --risk:        #b3261e;
+  --risk-wash:   #fdeceb;
+  --unknown:     #57534e;
+  --unknown-wash:#f1efec;
+
+  --shadow-1: 0 1px 2px rgba(22, 19, 15, .05), 0 1px 1px rgba(22, 19, 15, .04);
+  --shadow-2: 0 12px 28px -18px rgba(22, 19, 15, .28), 0 2px 6px -4px rgba(22, 19, 15, .12);
+
+  --display: 'Instrument Serif', Georgia, 'Times New Roman', serif;
+  --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  /* An 8px grid, named so a layout cannot invent its own spacing. */
+  --s1: .25rem; --s2: .5rem;  --s3: .75rem; --s4: 1rem;
+  --s5: 1.5rem; --s6: 2rem;   --s7: 3rem;   --s8: 4rem;
+  --radius: 10px;
+  --radius-lg: 16px;
+  --measure: 68ch;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ground:      #0a0b10;
+    --raised:      #12141c;
+    --sunken:      #171a24;
+    --rule:        #242834;
+    --rule-strong: #343a4a;
+
+    --ink:         #eceef4;
+    --ink-soft:    #a8aebf;
+    --ink-faint:   #6e748a;
+
+    --accent:      #9d8cff;
+    --accent-ink:  #14101f;
+    --accent-wash: #1b1733;
+
+    --good:        #4ade80;
+    --good-wash:   #12251b;
+    --warn:        #f5b74f;
+    --warn-wash:   #2a2113;
+    --risk:        #ff6b61;
+    --risk-wash:   #2d1615;
+    --unknown:     #8b91a4;
+    --unknown-wash:#1c1f28;
+
+    --shadow-1: 0 1px 2px rgba(0, 0, 0, .4);
+    --shadow-2: 0 18px 40px -22px rgba(0, 0, 0, .75), 0 2px 8px -4px rgba(0, 0, 0, .5);
+  }
+}
+
+:root[data-theme="dark"] {
+  --ground:      #0a0b10;
+  --raised:      #12141c;
+  --sunken:      #171a24;
+  --rule:        #242834;
+  --rule-strong: #343a4a;
+
+  --ink:         #eceef4;
+  --ink-soft:    #a8aebf;
+  --ink-faint:   #6e748a;
+
+  --accent:      #9d8cff;
+  --accent-ink:  #14101f;
+  --accent-wash: #1b1733;
+
+  --good:        #4ade80;
+  --good-wash:   #12251b;
+  --warn:        #f5b74f;
+  --warn-wash:   #2a2113;
+  --risk:        #ff6b61;
+  --risk-wash:   #2d1615;
+  --unknown:     #8b91a4;
+  --unknown-wash:#1c1f28;
+
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, .4);
+  --shadow-2: 0 18px 40px -22px rgba(0, 0, 0, .75), 0 2px 8px -4px rgba(0, 0, 0, .5);
+}
+
+/* ----------------------------------------------------------------- base */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Every figure in this instrument is a number that gets compared to another
+ * number in the row above it, so the digits have to line up. */
+.num, table, .metric-value, .stat-value {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+
+h1, h2, h3 { font-weight: 400; letter-spacing: -.015em; margin: 0; line-height: 1.15; }
+h1 { font-family: var(--display); font-size: clamp(2rem, 5vw, 3rem); }
+h2 { font-family: var(--display); font-size: clamp(1.35rem, 3vw, 1.75rem); }
+h3 { font-family: var(--sans); font-size: 1rem; font-weight: 600; letter-spacing: 0; }
+
+p { margin: 0 0 var(--s4); max-width: var(--measure); }
+code, kbd, pre { font-family: var(--mono); font-size: .875em; }
+code { background: var(--sunken); padding: .1em .35em; border-radius: 4px; }
+
+.lead { font-size: 1.0625rem; color: var(--ink-soft); max-width: var(--measure); }
+.muted { color: var(--ink-faint); }
+.mono  { font-family: var(--mono); }
+
+/* An eyebrow: the small all-caps label above a heading. */
+.eyebrow {
+  font-size: .6875rem; font-weight: 600; letter-spacing: .09em;
+  text-transform: uppercase; color: var(--ink-faint);
+  margin-bottom: var(--s2);
+}
+
+/* --------------------------------------------------------------- layout */
+
+.wrap { max-width: 1200px; margin: 0 auto; padding: var(--s6) var(--s5) var(--s8); }
+.wrap-narrow { max-width: 820px; }
+.stack > * + * { margin-top: var(--s5); }
+.row { display: flex; align-items: center; gap: var(--s3); flex-wrap: wrap; }
+.spread { display: flex; align-items: center; justify-content: space-between; gap: var(--s4); flex-wrap: wrap; }
+
+.section { padding-top: var(--s6); }
+.section + .section { border-top: 1px solid var(--rule); margin-top: var(--s6); }
+
+.grid { display: grid; gap: var(--s4); }
+.grid-cards { grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); }
+.grid-stats { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+
+/* ----------------------------------------------------------------- nav */
+
+.topbar {
+  position: sticky; top: 0; z-index: 20;
+  background: color-mix(in srgb, var(--ground) 88%, transparent);
+  backdrop-filter: saturate(180%) blur(12px);
+  border-bottom: 1px solid var(--rule);
+}
+.topbar-inner {
+  max-width: 1200px; margin: 0 auto; padding: var(--s3) var(--s5);
+  display: flex; align-items: center; justify-content: space-between; gap: var(--s4);
+}
+.brand { display: flex; align-items: center; gap: var(--s3); font-weight: 600; letter-spacing: -.01em; }
+.brand-mark {
+  width: 26px; height: 26px; border-radius: 7px; flex: none;
+  background: conic-gradient(from 210deg, var(--accent), var(--good), var(--warn), var(--accent));
+  box-shadow: var(--shadow-1);
+}
+.brand small { display: block; font-weight: 400; font-size: .75rem; color: var(--ink-faint); letter-spacing: 0; }
+
+/* ---------------------------------------------------------------- cards */
+
+.card {
+  background: var(--raised);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-lg);
+  padding: var(--s5);
+  box-shadow: var(--shadow-1);
+}
+a.card { color: inherit; text-decoration: none; display: block; transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease; }
+a.card:hover { transform: translateY(-2px); border-color: var(--rule-strong); box-shadow: var(--shadow-2); }
+a.card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* A single headline figure. */
+.stat { background: var(--raised); border: 1px solid var(--rule); border-radius: var(--radius); padding: var(--s4); }
+.stat-label { font-size: .75rem; color: var(--ink-faint); font-weight: 500; }
+.stat-value { font-family: var(--display); font-size: 2rem; line-height: 1.1; margin-top: var(--s1); }
+.stat-note  { font-size: .75rem; color: var(--ink-faint); margin-top: var(--s1); }
+
+/* ---------------------------------------------------- bands and verdicts */
+
+/* Colour is never the only carrier: each band has a glyph, so the page still
+ * reads in greyscale and to a reader who cannot distinguish red from green. */
+.band {
+  display: inline-flex; align-items: center; gap: .4em;
+  font-size: .75rem; font-weight: 600; letter-spacing: .02em;
+  padding: .2em .6em .25em; border-radius: 999px;
+  border: 1px solid transparent; white-space: nowrap;
+}
+.band::before { font-size: .9em; line-height: 1; }
+.band-good    { color: var(--good);    background: var(--good-wash);    border-color: color-mix(in srgb, var(--good) 28%, transparent); }
+.band-good::before { content: "●"; }
+.band-warn    { color: var(--warn);    background: var(--warn-wash);    border-color: color-mix(in srgb, var(--warn) 28%, transparent); }
+.band-warn::before { content: "▲"; }
+.band-critical, .band-risk { color: var(--risk); background: var(--risk-wash); border-color: color-mix(in srgb, var(--risk) 28%, transparent); }
+.band-critical::before, .band-risk::before { content: "■"; }
+.band-unknown { color: var(--unknown); background: var(--unknown-wash); border-color: var(--rule); }
+.band-unknown::before { content: "○"; }
+
+.tag {
+  font-size: .6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em;
+  padding: .2em .55em; border-radius: 6px;
+  background: var(--sunken); color: var(--ink-faint); border: 1px solid var(--rule);
+}
+.tag-accent { background: var(--accent-wash); color: var(--accent); border-color: color-mix(in srgb, var(--accent) 30%, transparent); }
+
+/* ---------------------------------------------------------------- tables */
+
+table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+thead th {
+  text-align: left; font-size: .6875rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .07em; color: var(--ink-faint);
+  padding: 0 var(--s3) var(--s2); border-bottom: 1px solid var(--rule-strong);
+  white-space: nowrap;
+}
+tbody td { padding: var(--s3); border-bottom: 1px solid var(--rule); vertical-align: top; }
+tbody tr:last-child td { border-bottom: 0; }
+tbody tr:hover td { background: var(--sunken); }
+td.right, th.right { text-align: right; }
+.table-scroll { overflow-x: auto; margin-inline: calc(var(--s3) * -1); padding-inline: var(--s3); }
+
+/* ----------------------------------------------------------- the toggle */
+
+.theme-toggle {
+  display: inline-flex; align-items: center; gap: var(--s2);
+  background: var(--raised); border: 1px solid var(--rule);
+  border-radius: 999px; padding: .25rem; cursor: pointer;
+  color: var(--ink-soft);
+}
+.theme-toggle button {
+  all: unset; cursor: pointer; display: grid; place-items: center;
+  width: 28px; height: 24px; border-radius: 999px; font-size: .8rem;
+  color: var(--ink-faint); transition: background .14s ease, color .14s ease;
+}
+.theme-toggle button[aria-pressed="true"] { background: var(--accent-wash); color: var(--accent); }
+.theme-toggle button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* -------------------------------------------------------------- motion */
+
+@keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.rise { animation: rise .4s cubic-bezier(.2, .7, .2, 1) both; }
+.rise-2 { animation-delay: .06s; }
+.rise-3 { animation-delay: .12s; }
+.rise-4 { animation-delay: .18s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .rise, .rise-2, .rise-3, .rise-4 { animation: none; }
+  a.card:hover { transform: none; }
+}
+
+/* ---------------------------------------------------------------- print */
+
+@media print {
+  :root { --ground: #fff; --raised: #fff; --ink: #000; }
+  .topbar, .theme-toggle, .no-print { display: none !important; }
+  .wrap { padding: 0; max-width: none; }
+  .card { border: 1px solid #bbb; box-shadow: none; break-inside: avoid; }
+  a { text-decoration: none; color: #000; }
+}
+
+@media (max-width: 640px) {
+  .wrap { padding: var(--s5) var(--s4) var(--s7); }
+  .topbar-inner { padding: var(--s3) var(--s4); }
+}
