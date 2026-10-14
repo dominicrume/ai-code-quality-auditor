@@ -1,31 +1,29 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  {% include "_head.html" %}
   <meta name="description" content="Join the pilot for the AI Code Quality Auditor — an empirical safety harness for agentic AI coding systems.">
   <title>AI Coding Vendor Audit — Pilot Waitlist</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   <style>
+    /* This page carried a third copy of the palette, so the same accent was
+       one purple here and another on the report page. The names below are
+       aliases onto the shared tokens in /theme.css; --accent, --good and
+       --warn are deliberately absent, because redefining them here would
+       shadow the shared ones and undo both themes. */
     :root {
-      --bg-0: #0b0d12;
-      --bg-1: #11141c;
-      --bg-2: #181d28;
-      --txt-0: #f3f5fa;
-      --txt-1: #9aa3b8;
-      --txt-2: #5b6478;
-      --accent: #7c5cff;
-      --accent-2: #9b8aff;
-      --good: #22c55e;
-      --warn: #f59e0b;
-      --bad: #ef4444;
-      --border: #232a3a;
+      --bg-0: var(--ground);
+      --bg-1: var(--raised);
+      --bg-2: var(--sunken);
+      --txt-0: var(--ink);
+      --txt-1: var(--ink-soft);
+      --txt-2: var(--ink-faint);
+      --accent-2: color-mix(in srgb, var(--accent) 75%, var(--ink));
+      --bad: var(--risk);
+      --border: var(--rule);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: 'Inter', system-ui, sans-serif;
+      font-family: var(--sans);
       background: var(--bg-0);
       color: var(--txt-0);
       line-height: 1.6;
@@ -247,10 +245,21 @@
     @media (max-width: 600px) {
       form { grid-template-columns: 1fr; }
     }
+
+    /* The theme switch, placed as a floating control because this page has
+       its own header rather than the shared topbar. */
+    .theme-float { position: fixed; top: 1rem; right: 1rem; z-index: 40; }
+    @media print { .theme-float { display: none; } }
   </style>
   {% include '_ux.html' %}
 </head>
 <body>
+  <div class="theme-float no-print">
+    <span class="theme-toggle" role="group" aria-label="Colour theme">
+      <button type="button" data-theme-set="light" title="Light" aria-pressed="false">&#9728;</button>
+      <button type="button" data-theme-set="dark"  title="Dark"  aria-pressed="false">&#9790;</button>
+    </span>
+  </div>
   <a class="skip-link" href="#main">Skip to the waitlist form</a>
 <div class="wrap">
 

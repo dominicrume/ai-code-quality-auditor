@@ -53,4 +53,30 @@
     var t = localStorage.getItem('auditor-theme');
     if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
   } catch (e) { /* private mode: the system setting still applies */ }
+
+  // The switch itself, defined once for every page that includes this head.
+  // Any page can place the markup; none of them needs its own copy of this,
+  // which is how three pages ended up with three slightly different ones.
+  document.addEventListener('DOMContentLoaded', function () {
+    var buttons = Array.prototype.slice.call(document.querySelectorAll('[data-theme-set]'));
+    if (!buttons.length) return;
+    function current() {
+      return document.documentElement.dataset.theme
+        || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    }
+    function paint() {
+      var now = current();
+      buttons.forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.themeSet === now)); });
+    }
+    buttons.forEach(function (b) {
+      b.addEventListener('click', function () {
+        document.documentElement.dataset.theme = b.dataset.themeSet;
+        try { localStorage.setItem('auditor-theme', b.dataset.themeSet); } catch (e) {}
+        paint();
+        // Charts bake their colours in, so they are told to redraw.
+        document.dispatchEvent(new CustomEvent('themechange', { detail: b.dataset.themeSet }));
+      });
+    });
+    paint();
+  });
 </script>

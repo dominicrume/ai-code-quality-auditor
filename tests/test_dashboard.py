@@ -129,12 +129,26 @@ def test_a_provenance_warning_is_always_shown(client):
 
 
 def test_both_themes_are_available_on_every_page(client):
-    for path in ("/", "/report/test_001"):
+    """Every page, including the pilot page, which had a third palette.
+
+    The assertion counts rendered buttons rather than looking for the
+    attribute name, because the shared handler contains the selector string
+    and made a page with no switch at all look like it had one.
+    """
+    for path in ("/", "/report/test_001", "/pilot"):
         body = client.get(path).get_data(as_text=True)
-        assert 'data-theme-set="light"' in body, path
-        assert 'data-theme-set="dark"' in body, path
-        # Resolved before first paint: a deferred script flashes white.
+        assert body.count('<button type="button" data-theme-set') == 2, path
+        # Resolved before first paint: a deferred script flashes the wrong one.
         assert "auditor-theme" in body, path
+        assert "/theme.css" in body, path
+
+
+def test_no_page_carries_its_own_palette(client):
+    """Three copies of the colours is how the three surfaces drifted apart."""
+    for path in ("/", "/report/test_001", "/pilot"):
+        body = client.get(path).get_data(as_text=True)
+        for stale in ("#0b0d12", "#11141c", "#7c5cff", "#232a3a", "#0F766E"):
+            assert stale not in body, f"{stale} in {path}"
 
 
 def test_the_shared_stylesheet_is_served(client):

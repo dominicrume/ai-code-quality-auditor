@@ -16,30 +16,3 @@
     </div>
   </div>
 </header>
-<script>
-  (function () {
-    var buttons = Array.prototype.slice.call(document.querySelectorAll('[data-theme-set]'));
-    function current() {
-      var set = document.documentElement.dataset.theme;
-      if (set) return set;
-      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-    }
-    function paint() {
-      var now = current();
-      buttons.forEach(function (b) {
-        b.setAttribute('aria-pressed', String(b.dataset.themeSet === now));
-      });
-    }
-    buttons.forEach(function (b) {
-      b.addEventListener('click', function () {
-        var next = b.dataset.themeSet;
-        document.documentElement.dataset.theme = next;
-        try { localStorage.setItem('auditor-theme', next); } catch (e) {}
-        paint();
-        // Charts carry baked-in colours, so they are redrawn on a theme change.
-        document.dispatchEvent(new CustomEvent('themechange', { detail: next }));
-      });
-    });
-    paint();
-  })();
-</script>
