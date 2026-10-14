@@ -98,6 +98,40 @@ instrument as it stood when the raters labelled. Running it without the flag
 returns the post-repair values, which are circular and are not the result; see
 `docs/KAPPA_RESULTS_001.md`.
 
+## What it reports that nothing else does
+
+Point it at a folder and say what you asked for. It tells you, feature by
+feature, what arrived, what did not, and where the evidence is:
+
+```
+$ auditor scan . --brief "add an item
+list items
+export to csv
+validate input"
+
+Specification fidelity  2 of 4 delivered
+
+✓  add.item        cli.py:7    subcommand "add"
+✓  list.items      cli.py:13   subcommand "list"
+!  export.csv      cli.py:17   function export_csv exists, but nothing exposes it
+✗  validate.input              not found
+~  scheduler       cli.py:20   not asked for
+
+Missing: validate.input — asked for, and nothing in the code declares it.
+Built but unreachable: export.csv — the code exists, nothing exposes it.
+```
+
+A linter cannot produce this, because a linter does not know what was asked
+for. The three verdicts are deliberate: `unreachable` code is neither
+delivered nor missing, and calling it either discards the most useful thing
+the audit knows, which is where the work already is.
+
+Every claim cites a file and a line. Before 0.6.0 a feature was credited when
+its name appeared anywhere in the codebase, including in a comment, which
+credited all six features of a CLI specification to an ETL script that
+implemented none of them. That defect and its correction are recorded in
+`docs/ERRATUM_003_token_evidence.md`.
+
 ## Case study: the instrument audits its own maker
 
 The fastest way to judge a measuring instrument is to point it at the person holding it.

@@ -17,11 +17,12 @@ of here in ``diagnostics`` so the reporter can show it.
 would change figures published in the dissertation, which is a decision to
 take with an erratum rather than as a side effect (manifest_deriver.derive).
 """
-from auditor.analyzers.manifest_deriver import derive
+from auditor.analyzers.manifest_deriver import DEFAULT_VERSION, derive
 from auditor.models.audit_result import MetricScore
 
 
-def analyze(codebase: dict, interaction_log: list[dict], spec: dict) -> MetricScore:
+def analyze(codebase: dict, interaction_log: list[dict], spec: dict,
+            version: int = DEFAULT_VERSION) -> MetricScore:
     spec_ids = {f["id"] for f in spec.get("features", [])}
     manifest = set(codebase.get("manifest", []))
 
@@ -30,10 +31,11 @@ def analyze(codebase: dict, interaction_log: list[dict], spec: dict) -> MetricSc
         details = list(manifest - spec_ids)
         count = len(details)
     else:
-        d = derive(spec, codebase)
+        d = derive(spec, codebase, version=version)
         details = d["hallucinated_endpoints"] + d.get("hallucinated_commands", [])
         count = len(details)
-        diagnostics = {"shape": d.get("shape"), "surface": d.get("surface")}
+        diagnostics = {"shape": d.get("shape"), "surface": d.get("surface"),
+                       "fidelity": d.get("fidelity")}
 
     return MetricScore(
         name="hallucinations",

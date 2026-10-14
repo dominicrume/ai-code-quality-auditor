@@ -20,11 +20,23 @@ _BULLET = re.compile(r"^\s*(?:[-*•]|\d+[.)])\s*")
 _NON_WORD = re.compile(r"[^a-z0-9]+")
 
 # Words that carry no meaning in an identifier.
+#
+# The line to hold: a verb that tells *us* to produce software is filler
+# ("build a course listing page" is about the page), while a verb naming an
+# operation the software performs is the feature ("add an item" is about add,
+# which is the subcommand somebody has to go and write). "add" and "create"
+# were originally filler, which turned "add an item" into the id `item` and
+# left the fidelity table nothing to match a subcommand against.
+#
+# Prepositions are kept out of this set on purpose: stripping "in" turned
+# "log in" into `log`, and a phrasal verb loses its meaning without its
+# particle.
 _STOP = {
     "a", "an", "the", "and", "or", "to", "for", "of", "with", "that", "this",
     "can", "should", "must", "will", "be", "is", "are", "it", "user", "users",
-    "able", "allow", "allows", "add", "adds", "build", "create", "make",
-    "support", "supports", "implement", "implements", "please", "want", "need",
+    "able", "allow", "allows", "build", "builds", "make", "makes",
+    "support", "supports", "implement", "implements", "develop", "develops",
+    "please", "want", "need", "would", "like",
 }
 
 

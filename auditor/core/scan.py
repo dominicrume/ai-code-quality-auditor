@@ -120,6 +120,19 @@ class ScanResult:
         return max(bands, key=lambda b: order[b]) if bands else "good"
 
     @property
+    def fidelity(self):
+        """The per-feature verdict, when a specification was supplied.
+
+        ``FidelityReport`` or None. This is the reading no tool without a
+        specification can produce, so it is the one the report leads with.
+        """
+        for o in self.outcomes:
+            report = (o.diagnostics or {}).get("fidelity")
+            if report is not None:
+                return report
+        return None
+
+    @property
     def shape_note(self) -> str | None:
         """The sentence for an agent that built the wrong kind of thing.
 

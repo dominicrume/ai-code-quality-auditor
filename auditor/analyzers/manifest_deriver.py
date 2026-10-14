@@ -30,7 +30,13 @@ from __future__ import annotations
 
 import re
 
+from auditor.analyzers import fidelity
 from auditor.analyzers.shape_detector import classify_surface, shape_mismatch
+
+# 1 = token evidence, the analyser the published study ran with.
+# 2 = structural evidence: a feature is credited only where the codebase
+#     declares something a user can reach. Default for new audits.
+DEFAULT_VERSION = 2
 
 
 # Web routes, Python decorator form: @app.get("/path"), @router.post("/path").
@@ -118,18 +124,34 @@ def _extract_cli_commands(blob: str) -> list[str]:
     return sorted(commands)
 
 
-def derive(spec: dict, codebase: dict) -> dict:
+def derive(spec: dict, codebase: dict, version: int = DEFAULT_VERSION) -> dict:
     """Return implementation + hallucination evidence.
 
     Output shape::
 
         {
             "implemented": [feature_id, ...],
+            "missing": [feature_id, ...],      # version 2
+            "unreachable": [feature_id, ...],  # version 2
             "hallucinated_endpoints": [route, ...],
             "hallucinated_commands": [cli_command, ...],
+            "fidelity": FidelityReport | None, # version 2
             "shape": {...},      # see shape_detector.shape_mismatch
             "surface": {...},    # see shape_detector.classify_surface
         }
+
+    **Version 1 credits a feature on token evidence**: the terminal segment of
+    the feature id appearing anywhere in every file concatenated together.
+    Given a six-feature CLI specification and an ETL script implementing none
+    of it, that rule credited five of the six, because ``add``, ``list``,
+    ``export``, ``validate`` and ``remove`` occur in the script's comments. It
+    is retained unchanged so the published figures stay reproducible.
+
+    **Version 2 credits a feature only where the codebase declares something**
+    a user can reach (``analyzers/definitions.py``), cites the file and line,
+    and distinguishes a feature that is absent from one that is defined but
+    unreachable. It is the default for new audits, and it changes the value of
+    this metric: see docs/ERRATA.md.
 
     The ``shape`` and ``surface`` keys are additive. They are **not** folded
     into the hallucination count, because doing so would change figures already
@@ -143,6 +165,21 @@ def derive(spec: dict, codebase: dict) -> dict:
     score as the two conditions that built the CLI correctly — because it added
     nothing. It replaced. ``shape["mismatch"]`` is what separates those cases.
     """
+    if version >= 2:
+        report = fidelity.assess(spec, codebase)
+        return {
+            "implemented": [v.feature_id for v in report.delivered],
+            "missing": [v.feature_id for v in report.missing],
+            "unreachable": [v.feature_id for v in report.unreachable],
+            "hallucinated_endpoints": sorted(e.name for e in report.extras
+                                             if e.kind == "route"),
+            "hallucinated_commands": sorted(e.name for e in report.extras
+                                            if e.kind == "command"),
+            "fidelity": report,
+            "shape": shape_mismatch(spec, codebase),
+            "surface": classify_surface(codebase),
+        }
+
     blob = "\n".join(codebase.get("files", {}).values())
     spec_features = [f["id"] for f in spec.get("features", [])]
     implemented = [fid for fid in spec_features if _evidence(blob, fid)]
@@ -161,8 +198,11 @@ def derive(spec: dict, codebase: dict) -> dict:
 
     return {
         "implemented": implemented,
+        "missing": [f for f in spec_features if f not in implemented],
+        "unreachable": [],
         "hallucinated_endpoints": hallucinated_endpoints,
         "hallucinated_commands": hallucinated_commands,
+        "fidelity": None,
         "shape": shape_mismatch(spec, codebase),
         "surface": classify_surface(codebase),
     }

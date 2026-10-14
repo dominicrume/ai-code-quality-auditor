@@ -204,6 +204,17 @@ def scan_cmd(path: Path, spec: Path | None, as_json: bool, fail_on: str,
         "coverage_note": result.coverage_note,
         "unparsed_files": result.unparsed_files,
         "shape_note": result.shape_note,
+        "fidelity": ({
+            "delivered": [v.feature_id for v in result.fidelity.delivered],
+            "missing": [v.feature_id for v in result.fidelity.missing],
+            "unreachable": [v.feature_id for v in result.fidelity.unreachable],
+            "completeness_pct": result.fidelity.completeness,
+            "features": [{"id": v.feature_id, "status": v.status,
+                          "where": v.where, "evidence": v.evidence}
+                         for v in result.fidelity.verdicts],
+            "extras": [{"name": e.name, "kind": e.kind, "where": e.where}
+                       for e in result.fidelity.extras],
+        } if result.fidelity and result.fidelity.total else None),
         "honoured_ignores": result.honoured_ignores,
         "worst_band": result.worst_band,
         "metrics": {
@@ -236,6 +247,8 @@ def scan_cmd(path: Path, spec: Path | None, as_json: bool, fail_on: str,
             + ("" if result.honoured_ignores else " · including ignored files")
             + "[/dim]\n"
         )
+
+        _render_fidelity(console, result)
 
         table = Table(show_edge=False, header_style="dim", pad_edge=False)
         table.add_column("")
@@ -315,6 +328,53 @@ def scan_cmd(path: Path, spec: Path | None, as_json: bool, fail_on: str,
     trigger = thresholds[fail_on]
     if trigger and result.worst_band in trigger:
         raise SystemExit(1)
+
+
+_FIDELITY_STYLE = {"delivered": "green", "unreachable": "yellow", "not_found": "red"}
+
+
+def _render_fidelity(console, result):
+    """The per-feature verdict table, with a file and line for every claim.
+
+    This goes above the metric bands because it is the reading no tool without
+    a specification can produce. A density is something a developer glances at;
+    a list of what was asked for, what arrived, and where it is, is something
+    they act on.
+    """
+    from rich.table import Table
+
+    report = getattr(result, "fidelity", None)
+    if report is None or not report.total:
+        return
+
+    console.print(f"[bold]Specification fidelity[/bold]  [dim]{report.headline}[/dim]\n")
+
+    table = Table(show_edge=False, show_header=False, pad_edge=False, box=None)
+    table.add_column("", width=1)
+    table.add_column("")
+    table.add_column("", style="dim")
+    table.add_column("", style="dim")
+    for v in report.verdicts:
+        style = _FIDELITY_STYLE[v.status]
+        table.add_row(f"[{style}]{v.mark}[/{style}]",
+                      f"[{style}]{v.name}[/{style}]",
+                      v.where or "", v.reason())
+    for e in report.extras:
+        table.add_row("[magenta]~[/magenta]", f"[magenta]{e.name}[/magenta]",
+                      e.where, "not asked for")
+    console.print(table)
+
+    # The two findings worth a sentence, because a mark in a table is easy to
+    # read past and both of these are things somebody has to go and do.
+    if report.missing:
+        console.print(f"\n[red]Missing:[/red] "
+                      f"{', '.join(v.name for v in report.missing)} "
+                      f"[dim]— asked for, and nothing in the code declares it.[/dim]")
+    if report.unreachable:
+        console.print(f"[yellow]Built but unreachable:[/yellow] "
+                      f"{', '.join(v.name for v in report.unreachable)} "
+                      f"[dim]— the code exists, nothing exposes it.[/dim]")
+    console.print()
 
 
 def _render_scan_table(console, result):

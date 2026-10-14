@@ -1,5 +1,75 @@
 # Changelog
 
+## 0.6.0 — 14 October 2026
+
+The release that answers the whole question. Until now the tool asked "did
+anything extra appear?" and answered it by searching for words. It now asks
+"was each thing you asked for actually built?", answers it from what the code
+declares, and cites a file and a line for every claim.
+
+### Changed — the evidence rule (see docs/ERRATUM_003_token_evidence.md)
+
+- **A feature was credited as delivered when a word appeared anywhere in the
+  codebase.** `manifest_deriver._evidence` concatenated every file into one
+  string and asked whether the feature id's terminal token was in it. A word
+  in a comment satisfied it; on Python `cli.list` was satisfied by `list(x)`.
+  Measured: a six-feature CLI specification against an ETL script implementing
+  none of it credited **all six**, and reported drift of 0, because a credited
+  feature suppresses the unrequested command that would otherwise be counted.
+  That is the mechanism behind the finding in §6.4, recorded there as a
+  limitation and corrected here as the defect it was.
+- A feature is now credited only where the codebase **declares** something:
+  a registered subcommand, an HTTP route, a function, a class or an export,
+  indexed with its file and line by the new `analyzers/definitions.py`. The
+  match is on the feature's head token, and a scaffolding name such as `cli`
+  is never evidence on its own — it had been crediting four features to a
+  single `def cli()` group function.
+- `version=1` retains the old rule unchanged, so the published study figures
+  stay exactly reproducible. This is the arrangement already used for security
+  density and complexity after Erratum 001. Version 2 is the default, because
+  an instrument whose default over-credits delivery reports in the direction
+  that flatters the code it is auditing.
+
+### Added — what is missing, which was never reported
+
+- **`auditor scan` now prints a per-feature verdict table.** Every specified
+  feature is `delivered`, `not_found`, or `unreachable`, each with the file and
+  line of its evidence or a plain statement that there is none:
+
+  ```
+  Specification fidelity  2 of 6 delivered
+
+  ✓  add.item        cli.py:7    subcommand "add"
+  ✓  list.items      cli.py:13   subcommand "list"
+  !  export.csv      cli.py:17   function export_csv exists, but nothing exposes it
+  ✗  validate.input              not found
+  ✗  show.help                   not found
+  !  remove.item     store.py:1  function remove_item exists, but nothing exposes it
+  ~  scheduler       cli.py:20   not asked for
+  ```
+
+- **`unreachable` is a verdict in its own right.** Code that exists but that
+  no user can invoke is neither delivered nor missing, and calling it either
+  throws away the most useful thing an audit knows: where the work already is.
+- The verdicts are in `--json` under `fidelity`, with `completeness_pct`, so a
+  pipeline can gate on what is missing rather than on a density.
+- Where a specification names no shape, whether delivery means something
+  invokable is inferred from the project's own delivered features rather than
+  assumed.
+
+### Fixed
+
+- **A brief discarded the verb, which is the feature.** `slugify` treated
+  `add`, `create` and `remove` as filler, so "add an item" became the id
+  `item` and "export to csv" became `csv`: the action somebody has to go and
+  build was dropped and the object kept, leaving nothing for a subcommand to
+  match. Verbs that name an operation the software performs are kept; verbs
+  that merely instruct us to produce software ("build a course listing page")
+  are still filler. Prepositions are no longer stripped, because "log in"
+  without its particle is `log`.
+- A feature is no longer credited to a different verb on the same noun:
+  `remove.item` was being satisfied by `def add_item`.
+
 ## 0.5.2 — 14 October 2026
 
 A security release, and the release that stops this tool doing the thing it

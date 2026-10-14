@@ -95,6 +95,24 @@ Each metric lives in its own analyzer file. This document is the contract.
   note 001 in PROTOCOL_DEVIATIONS.md). The heuristic is exploratory pending
   blind hand-label validation (Cohen's κ, dissertation §4.7); headline
   findings are additionally confirmed by direct code inspection.
+- **Evidence rule (version 2, default from 0.6.0):** a feature is credited
+  only where the codebase declares something -- a registered subcommand, an
+  HTTP route, a function, a class or an export -- indexed with its file and
+  line by `analyzers/definitions.py`. The match is on the feature's *head*
+  token, the first dotted segment that is not a scaffolding word, so
+  `remove.item` is not satisfied by `def add_item` and no feature is satisfied
+  by a bare `def cli()`.
+  Version 1 credited a feature when the terminal token appeared anywhere in
+  every file concatenated together, which a word in a comment satisfied; it is
+  retained for reproducibility and documented in
+  `docs/ERRATUM_003_token_evidence.md`.
+- **The other half of the question (from 0.6.0):** `analyzers/fidelity.py`
+  reports a verdict per specified feature -- `delivered`, `not_found`, or
+  `unreachable` (declared, but with nothing exposing it) -- each citing a file
+  and line or stating plainly that it has none. `completeness` is the share
+  delivered. This is reported as a table beside the five metrics and is
+  **not** a sixth metric: it is not in the experiment CSV and does not enter
+  Table 4.1.
 - **Known blind spot, and the diagnostic that covers it:** the count asks
   what *extra* was shipped, so it cannot see a substitution. An agent given
   a CLI specification that ships an ETL package with no subcommands adds
