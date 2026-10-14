@@ -12,7 +12,7 @@
 
 > **Reading this because of the dissertation?** *Measuring the Unmeasured* was submitted on
 > 22 September 2026 and its appendix links point at `main`, which has moved on since: the
-> instrument was released as 0.5.2, dashboard routes were closed, CI was repaired and the
+> instrument was released as 0.6.0, dashboard routes were closed, CI was repaired and the
 > self-audit was re-run. The repository exactly as the dissertation describes it is tagged
 > [`submission-2026-09-22`](https://github.com/dominicrume/ai-code-quality-auditor/tree/submission-2026-09-22).
 > Swap `main` for that tag in any appendix URL to see what the examiner was given.
@@ -135,7 +135,7 @@ implemented none of them. That defect and its correction are recorded in
 ## Case study: the instrument audits its own maker
 
 The fastest way to judge a measuring instrument is to point it at the person holding it.
-Run on this repository's own source, on 13 October 2026, with 0.5.2:
+Run on this repository's own source, on 14 October 2026, with 0.6.0:
 
 ```
 $ auditor scan auditor
@@ -144,7 +144,7 @@ $ auditor scan auditor
   Duplication  6.64 %          WARN   275 lines
 ```
 
-These figures move as the code does, and two of them moved in 0.5.2 because the
+These figures move as the code does, and two of them moved in 0.6.0 because the
 instrument was corrected rather than because the code changed. Duplication went
 10.24% → 9.54% when the shape detector added lines that are not duplicated,
 9.54% → 7.84% when the dashboard/live overlap below was resolved by deletion,
@@ -156,7 +156,7 @@ README.
 Pointed at the whole repository rather than at `auditor/`, 0.5.1 reported
 `Duplication 83.58 RISK`. That was a true count of `data/raw`, a frozen set of
 research captures git ignores and the package does not ship, and it is the
-defect that 0.5.2's ignore handling fixes. It is recorded here because an
+defect that 0.6.0's ignore handling fixes. It is recorded here because an
 instrument that hides its own false alarms is not one to trust with yours.
 
 **We publish the warning rather than tuning it away**, because an instrument that hides

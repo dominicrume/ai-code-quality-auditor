@@ -208,6 +208,18 @@ def create_app(session: LiveSession) -> Flask:
     # a page that renders once and then silently never updates.
     session.start()
 
+    @app.get("/theme.css")
+    def theme_css():
+        """The same stylesheet the dashboard serves.
+
+        This page had its own palette, so the two surfaces showed the same
+        verdicts in different colours. One file, served from auditor.assets.
+        """
+        from auditor.assets import theme_css as _css
+
+        return Response(_css(), mimetype="text/css",
+                        headers={"Cache-Control": "public, max-age=300"})
+
     @app.get("/")
     def index():
         return render_template("live.html", project=session.project.name)

@@ -66,7 +66,7 @@ Each metric lives in its own analyzer file. This document is the contract.
   k-line shingle approach; reimplementing in-tree keeps duplication
   measurable for non-Java codebases without a SonarQube round-trip, and
   removes one external dependency from the metric.
-- **Which files count (version 2, default from 0.5.2):** code only, the
+- **Which files count (version 2, default from 0.6.0):** code only, the
   suffixes in `duplication_analyzer.CODE_ONLY`. The loader also ingests
   Markdown, YAML and TOML for other purposes, and because this metric needs
   no parser it had been measuring all of them. On this instrument's own
@@ -119,7 +119,7 @@ Each metric lives in its own analyzer file. This document is the contract.
   nothing and scores 0.00, the same as an agent that built the CLI correctly
   (run_001; dissertation §6.4). `analyzers/shape_detector.py` separates those
   cases by comparing the shape the spec asks for with the shape actually
-  built. From 0.5.2 its verdict is reported beside the metric, as a sentence,
+  built. From 0.6.0 its verdict is reported beside the metric, as a sentence,
   whenever the detector is both in disagreement and confident.
   It is deliberately **not a sixth metric and not folded into this value**:
   doing either would change figures already published and is a decision for
@@ -132,7 +132,7 @@ Each metric lives in its own analyzer file. This document is the contract.
 These rules sit above the five metrics because a reading is only about the
 files the walk actually handed over.
 
-- **Ignored and vendored files (from 0.5.2).** The user-facing commands
+- **Ignored and vendored files (from 0.6.0).** The user-facing commands
   (`scan`, `watch`, `live`) honour the project's own `.gitignore` and
   `.auditorignore`, and skip `_shared.VENDOR_DIRS`. A repository's
   `.gitignore` is its authoritative statement of what is not part of it, and
@@ -146,7 +146,7 @@ files the walk actually handed over.
   The experiment path (`auditor run`, `auditor experiment`) is unchanged and
   still walks every ingested file, so the figures in Table 4.1 remain
   reproducible.
-- **Coverage counts what was read, not what was attempted (from 0.5.2).** A
+- **Coverage counts what was read, not what was attempted (from 0.6.0).** A
   file whose lines were added to the scanned total before the parse was
   attempted made an unreadable project report full coverage and a value of
   0.00, which bands as OK. Where a metric's languages are present and none of

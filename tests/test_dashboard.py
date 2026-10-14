@@ -138,7 +138,9 @@ def test_both_themes_are_available_on_every_page(client):
 
 
 def test_the_shared_stylesheet_is_served(client):
-    resp = client.get("/static/theme.css")
+    # Served from auditor.assets, not from this app's own static directory,
+    # because the live page serves the identical file at the same path.
+    resp = client.get("/theme.css")
     assert resp.status_code == 200
     css = resp.get_data(as_text=True)
     # Both themes, and the dark one reachable by preference and by choice.
@@ -149,7 +151,7 @@ def test_the_shared_stylesheet_is_served(client):
 
 def test_bands_do_not_rely_on_colour_alone(client):
     """A projected slide and a greyscale print both lose the hue."""
-    css = client.get("/static/theme.css").get_data(as_text=True)
+    css = client.get("/theme.css").get_data(as_text=True)
     for band in ("band-good", "band-warn", "band-critical", "band-unknown"):
         assert f".{band}::before" in css, band
 
@@ -167,3 +169,12 @@ def test_the_charts_are_rebuilt_when_the_theme_changes(client):
     body = client.get("/report/test_001").get_data(as_text=True)
     assert "themechange" in body
     assert "getPropertyValue" in body      # colours read from the stylesheet
+
+
+def test_the_live_page_and_the_dashboard_serve_one_stylesheet(client, tmp_path):
+    """They are separate Flask apps, which is how they drifted apart before."""
+    from auditor.live.server import LiveSession, create_app
+
+    (tmp_path / "a.py").write_text("x = 1\n")
+    live = create_app(LiveSession(tmp_path)).test_client()
+    assert live.get("/theme.css").get_data() == client.get("/theme.css").get_data()

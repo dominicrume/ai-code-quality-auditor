@@ -17,7 +17,7 @@ import json
 from collections import defaultdict
 from pathlib import Path
 
-from flask import Flask, abort, jsonify, render_template
+from flask import Flask, Response, abort, jsonify, render_template
 
 from auditor.core.calibration import BANDS
 
@@ -270,6 +270,19 @@ def _load_report(run_id: str) -> dict:
 
 
 # ---- HTML routes -----------------------------------------------------------
+
+@app.route("/theme.css")
+def theme_css():
+    """The one stylesheet, shared with the live page.
+
+    Served from auditor.assets rather than from this application's own static
+    directory, so that the two surfaces cannot drift apart again.
+    """
+    from auditor.assets import theme_css as _css
+
+    return Response(_css(), mimetype="text/css",
+                    headers={"Cache-Control": "public, max-age=300"})
+
 
 @app.route("/")
 def index():

@@ -2,10 +2,66 @@
 
 ## 0.6.0 — 14 October 2026
 
-The release that answers the whole question. Until now the tool asked "did
-anything extra appear?" and answered it by searching for words. It now asks
-"was each thing you asked for actually built?", answers it from what the code
-declares, and cites a file and a line for every claim.
+One release, and the only one to install. It closes a vulnerability the
+published 0.5.1 still carries, stops the tool reporting numbers about code it
+never read, and makes it answer the question it exists for: was each thing you
+asked for actually built?
+
+A 0.5.2 was prepared as a security-only patch and **never published**. Rather
+than ship two releases days apart and leave anybody on the smaller one,
+everything it contained is in this release. Whatever version you are on, this
+is the upgrade.
+
+### Fixed — security
+
+- **`auditor live` accepted state-changing requests from other pages.**
+  The server binds to 127.0.0.1, which keeps other machines out but does not
+  keep out a page the user already has open in the same browser: any site can
+  POST to localhost. Only `/api/brief` checked the `Origin` header. The four
+  routes that did not include `/api/remediate`, which rewrites files across the
+  watched tree, and `/api/drift/strip`, which deletes an endpoint from source.
+  The check is now a decorator applied to every POST route, and a test walks
+  the route table so a route added later cannot arrive unguarded.
+- **The scope-drift controls interpolated filenames into `onclick` strings.**
+  Every other value on the live page was escaped; these were not. An
+  apostrophe in a path broke the handler, and a crafted filename could extend
+  it. Values are now escaped and carried in data attributes, handled by one
+  delegated listener.
+- **The published dashboard served two routes it should never have had.**
+  `auditor.dashboard` carried copies of `/api/scan` and
+  `/api/drift/acknowledge` from the live server. On a public host they were
+  reachable with no authentication — one would describe the structure of any
+  path the process could read, the other would write to `.auditor/spec.yaml`.
+  Nothing called either. Both are removed.
+
+### Fixed — readings that claimed more than was read
+
+- **Unreadable code was reported as `OK`.** A directory whose only Python file
+  would not parse printed `Security 0.00 OK`, `Complexity 0.00 OK`. The lines
+  of a file were added to the scanned total before the parse was attempted, so
+  coverage read 100%, the value stayed 0.00 for want of any finding, and 0.00
+  bands as OK. Coverage now counts what was read. Where a metric's languages
+  are present and nothing parsed, the row reads `unread` with the reason
+  instead of a band, the files are named, and the worst band is raised to at
+  least `warn`, so `--fail-on warn` no longer exits 0 on code nobody could
+  read. An unreadable file is an unknown, not a pass.
+- **Ignored and vendored files were measured.** Pointed at this repository,
+  `auditor scan` reported `Duplication 83.58 RISK`. The arithmetic was right
+  and the subject was wrong: it was describing `data/raw`, a frozen set of
+  research captures that git ignores and the project does not ship. `scan`,
+  `watch` and `live` now honour the project's own `.gitignore` and
+  `.auditorignore` and skip vendored directories. `--include-all` restores the
+  old behaviour. The same scan now reads 217 files instead of 2,300.
+- **Code duplication counted prose.** The metric needs no parser, so it had
+  been shingling Markdown too: 41,116 lines of documentation against 12,431 of
+  Python on this repository, which made three-quarters of the figure a
+  statement about a changelog. It now counts code only, and the same scan reads
+  `3.60 OK`. `analyze(..., version=1)` keeps the old behaviour so the published
+  study figures stay reproducible.
+- **A density was printed without its numerator.** Six lines of TypeScript with
+  one hardcoded password scored `250.00 RISK`, which is arithmetically true and
+  tells a reader nothing. Every density and mean now prints what it counted
+  beside it: `250.00 RISK · 1 finding`.
 
 ### Changed — the evidence rule (see docs/ERRATUM_003_token_evidence.md)
 
@@ -57,56 +113,6 @@ declares, and cites a file and a line for every claim.
   invokable is inferred from the project's own delivered features rather than
   assumed.
 
-### Fixed
-
-- **A brief discarded the verb, which is the feature.** `slugify` treated
-  `add`, `create` and `remove` as filler, so "add an item" became the id
-  `item` and "export to csv" became `csv`: the action somebody has to go and
-  build was dropped and the object kept, leaving nothing for a subcommand to
-  match. Verbs that name an operation the software performs are kept; verbs
-  that merely instruct us to produce software ("build a course listing page")
-  are still filler. Prepositions are no longer stripped, because "log in"
-  without its particle is `log`.
-- A feature is no longer credited to a different verb on the same noun:
-  `remove.item` was being satisfied by `def add_item`.
-
-## 0.5.2 — 14 October 2026
-
-A security release, and the release that stops this tool doing the thing it
-exists to catch. If you use `auditor live`, upgrade for the first section. If
-you use `auditor scan`, read the second: four of the readings it printed were
-wrong, and three of those four were wrong in the direction that favoured the
-code being audited.
-
-### Fixed — readings that claimed more than was read
-
-- **Unreadable code was reported as `OK`.** A directory whose only Python file
-  would not parse printed `Security 0.00 OK`, `Complexity 0.00 OK`. The lines
-  of a file were added to the scanned total before the parse was attempted, so
-  coverage read 100%, the value stayed 0.00 for want of any finding, and 0.00
-  bands as OK. Coverage now counts what was read. Where a metric's languages
-  are present and nothing parsed, the row reads `unread` with the reason
-  instead of a band, the files are named, and the worst band is raised to at
-  least `warn`, so `--fail-on warn` no longer exits 0 on code nobody could
-  read. An unreadable file is an unknown, not a pass.
-- **Ignored and vendored files were measured.** Pointed at this repository,
-  `auditor scan` reported `Duplication 83.58 RISK`. The arithmetic was right
-  and the subject was wrong: it was describing `data/raw`, a frozen set of
-  research captures that git ignores and the project does not ship. `scan`,
-  `watch` and `live` now honour the project's own `.gitignore` and
-  `.auditorignore` and skip vendored directories. `--include-all` restores the
-  old behaviour. The same scan now reads 217 files instead of 2,300.
-- **Code duplication counted prose.** The metric needs no parser, so it had
-  been shingling Markdown too: 41,116 lines of documentation against 12,431 of
-  Python on this repository, which made three-quarters of the figure a
-  statement about a changelog. It now counts code only, and the same scan reads
-  `3.60 OK`. `analyze(..., version=1)` keeps the old behaviour so the published
-  study figures stay reproducible.
-- **A density was printed without its numerator.** Six lines of TypeScript with
-  one hardcoded password scored `250.00 RISK`, which is arithmetically true and
-  tells a reader nothing. Every density and mean now prints what it counted
-  beside it: `250.00 RISK · 1 finding`.
-
 ### Added — the reading no other tool offers, now reachable
 
 - **`auditor init`** records what the project was asked to be, in plain
@@ -128,27 +134,46 @@ code being audited.
   value. Either would change figures published in the dissertation, which is a
   decision for an erratum rather than a side effect.
 
-### Fixed — security
+### Interface — one instrument, two themes
 
-- **`auditor live` accepted state-changing requests from other pages.**
-  The server binds to 127.0.0.1, which keeps other machines out but does not
-  keep out a page the user already has open in the same browser: any site can
-  POST to localhost. Only `/api/brief` checked the `Origin` header. The four
-  routes that did not include `/api/remediate`, which rewrites files across the
-  watched tree, and `/api/drift/strip`, which deletes an endpoint from source.
-  The check is now a decorator applied to every POST route, and a test walks
-  the route table so a route added later cannot arrive unguarded.
-- **The scope-drift controls interpolated filenames into `onclick` strings.**
-  Every other value on the live page was escaped; these were not. An
-  apostrophe in a path broke the handler, and a crafted filename could extend
-  it. Values are now escaped and carried in data attributes, handled by one
-  delegated listener.
-- **The published dashboard served two routes it should never have had.**
-  `auditor.dashboard` carried copies of `/api/scan` and
-  `/api/drift/acknowledge` from the live server. On a public host they were
-  reachable with no authentication — one would describe the structure of any
-  path the process could read, the other would write to `.auditor/spec.yaml`.
-  Nothing called either. Both are removed.
+- The dashboard, the live page and the CLI had drifted into three looks for
+  the same verdicts, because the colours were copied inline into each
+  template. There is now one stylesheet, `auditor/assets/theme.css`, served by
+  both web applications from the same file, and a test asserts the two serve
+  identical bytes.
+- **Light and dark, switchable and remembered.** Dark for a projector in a lit
+  room, light for a screenshot that has to sit in an appendix and survive
+  greyscale printing. The choice is resolved before first paint, because doing
+  it in a deferred script flashes the wrong theme, and there is a print
+  stylesheet.
+- **No verdict depends on colour alone.** Every band carries a glyph as well
+  as a hue, so a washed-out projector and a reader who cannot separate red
+  from green both still get the reading.
+- Plotly bakes colours into a chart, so the charts read theirs from the
+  stylesheet and redraw when the theme changes.
+- **The live page now shows the per-feature verdict.** The server was
+  computing the fidelity report and discarding it, so the one surface meant to
+  demonstrate the one reading no other tool produces was showing five metric
+  cards and none of it. It is now the largest element on the page.
+- A rebuild of the report template dropped four things that were there for a
+  reason, one of them a disclosure: `provenance.warning` was rendered inside
+  an `{% if spec_summary %}`, so the case where it mattered most, a thin
+  report with little else on the page, was the case where it vanished. That,
+  the calibrated/raw view switch, the spec-set label and the adoption guidance
+  are restored, and tests now pin the things a redesign may not move.
+
+### Fixed
+
+- **A brief discarded the verb, which is the feature.** `slugify` treated
+  `add`, `create` and `remove` as filler, so "add an item" became the id
+  `item` and "export to csv" became `csv`: the action somebody has to go and
+  build was dropped and the object kept, leaving nothing for a subcommand to
+  match. Verbs that name an operation the software performs are kept; verbs
+  that merely instruct us to produce software ("build a course listing page")
+  are still filler. Prepositions are no longer stripped, because "log in"
+  without its particle is `log`.
+- A feature is no longer credited to a different verb on the same noun:
+  `remove.item` was being satisfied by `def add_item`.
 
 ### Fixed — behaviour
 
@@ -183,4 +208,4 @@ code being audited.
 
 - CI ran `pytest` without installing it and had exited 127 on every run while
   being a required status check. The SonarCloud job had never had a token. Both
-  are fixed; the 174 tests now actually run in CI.
+  are fixed; the tests now actually run in CI.

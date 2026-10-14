@@ -62,6 +62,7 @@ exclude = ["tests*", "data*", "scripts*", "docs*", "specs*"]
 
 [tool.setuptools.package-data]
 "auditor.dashboard" = ["templates/*.html", "static/*"]
+"auditor.assets" = ["*.css"]
 "auditor.live" = ["templates/*.html"]
 
 [tool.pytest.ini_options]
