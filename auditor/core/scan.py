@@ -91,6 +91,10 @@ class ScanResult:
     readable_files: int = 0
     python_loc: int = 0
     spec_name: str | None = None
+    # Where the specification came from, when nobody wrote one: {"from": ...}.
+    # A derived specification is provisional and every surface that reports a
+    # finding against it has to say so.
+    spec_source: dict | None = None
     honoured_ignores: bool = True
     outcomes: list[MetricOutcome] = field(default_factory=list)
 
@@ -223,6 +227,18 @@ def scan_directory(path: Path, spec: dict | None = None,
     which is occasionally what an auditor wants and never a sensible default.
     """
     path = Path(path).resolve()
+
+    # No specification was handed in. Rather than report four of five metrics
+    # and tell the caller to go and author YAML, derive a provisional one from
+    # whatever in the project states intent. Never from the source: see
+    # auditor/live/discover.py. Nothing is written here; writing the file is
+    # the command's decision, not the measurement's.
+    if spec is None:
+        from auditor.live.brief import load_spec
+        from auditor.live.discover import discover
+
+        spec = load_spec(path) or discover(path)
+
     codebase = load_codebase(path, respect_ignores=not include_all)
     files = codebase.get("files", {})
 
@@ -236,6 +252,8 @@ def scan_directory(path: Path, spec: dict | None = None,
             if languages.in_languages(f, languages.PYTHON + languages.TYPESCRIPT)),
         python_loc=sum(len(c.splitlines()) for f, c in files.items() if f.endswith(".py")),
         spec_name=(spec or {}).get("name"),
+        spec_source=({"from": spec["_discovered_from"]}
+                     if (spec or {}).get("_discovered") else None),
         honoured_ignores=not include_all,
     )
 

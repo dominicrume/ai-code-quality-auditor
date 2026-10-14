@@ -23,6 +23,7 @@ from flask import Flask, Response, jsonify, render_template, request
 from auditor.core.scan import ScanResult, scan_directory
 from auditor.core.watch import watch_directory
 from auditor.live.brief import build_spec, load_spec, save_spec
+from auditor.live.discover import discover
 
 
 def _serialise(result: ScanResult, changed: list[str] | None = None) -> dict:
@@ -33,6 +34,7 @@ def _serialise(result: ScanResult, changed: list[str] | None = None) -> dict:
         "loc": result.total_loc,
         "python_files": result.python_files,
         "spec": result.spec_name,
+        "spec_discovered_from": (result.spec_source or {}).get("from"),
         "coverage_note": result.coverage_note,
         "worst_band": result.worst_band,
         "changed": changed or [],
@@ -75,7 +77,21 @@ class LiveSession:
     def __init__(self, project: Path, interval: float = 1.0):
         self.project = Path(project).resolve()
         self.interval = interval
+        # Installing this tool already means handing over the repository.
+        # Asking the developer to retype what the repository is for is asking
+        # twice for something on disk, and it is the step at which most people
+        # stopped: scope drift was unavailable on nearly every audit because a
+        # specification had to be hand-authored first. If none exists, one is
+        # derived from whatever states intent -- never from the source -- and
+        # written where it can be corrected.
         self.spec: dict | None = load_spec(self.project)
+        self.spec_origin: str | None = None
+        if self.spec is None:
+            discovered = discover(self.project)
+            if discovered:
+                save_spec(self.project, discovered)
+                self.spec = discovered
+                self.spec_origin = discovered.get("_discovered_from")
         self._subscribers: list[queue.Queue] = []
         self._lock = threading.Lock()
         self._stop = threading.Event()
@@ -264,6 +280,7 @@ def create_app(session: LiveSession) -> Flask:
             "total_loc": result.total_loc,
             "python_files": result.python_files,
             "spec": result.spec_name,
+        "spec_discovered_from": (result.spec_source or {}).get("from"),
             "coverage_note": result.coverage_note,
             "metrics": {
                 o.name: ({"value": o.value, "unit": o.unit, "band": o.band}
@@ -323,13 +340,22 @@ def create_app(session: LiveSession) -> Flask:
         q = session.subscribe()
 
         def gen():
+            # How long the browser waits before retrying a dropped stream. The
+            # default is three seconds, which is three seconds of a watch that
+            # has stopped watching. Half a second is long enough not to batter
+            # a server that is genuinely restarting.
+            yield "retry: 500\n\n"
             # Paint immediately — never show an empty page.
             yield f"data: {json.dumps({'type':'update','report':_serialise(session.latest),'deltas':[],'notable':False})}\n\n"
             try:
                 while True:
                     try:
-                        yield f"data: {json.dumps(q.get(timeout=20))}\n\n"
+                        yield f"data: {json.dumps(q.get(timeout=5))}\n\n"
                     except queue.Empty:
+                        # Every five seconds rather than twenty: a connection
+                        # that has died silently, which is what a closed laptop
+                        # lid or a dropped VPN produces, is only discovered when
+                        # the next byte fails to arrive.
                         yield ": keepalive\n\n"
             finally:
                 session.unsubscribe(q)

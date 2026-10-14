@@ -134,6 +134,45 @@ is the upgrade.
   value. Either would change figures published in the dissertation, which is a
   decision for an erratum rather than a side effect.
 
+### Added — nothing to set up, and nothing to type
+
+- **The specification is derived on first run.** Installing this tool already
+  means handing over the repository; asking the developer to then retype what
+  that repository is for is asking twice for something already on disk, and it
+  was the step at which most people stopped. `auditor scan` and `auditor live`
+  now read whatever states intent and audit against it immediately, writing
+  the result to `.auditor/spec.yaml` where it can be corrected. In order of
+  authority: a requirements document, the README's feature or usage list, the
+  package description, then recent `feat:` commit subjects.
+- **Intent is never read from the source tree, and that is a rule rather than
+  a preference.** A specification inferred from the code it measures would be
+  satisfied by that code by construction: every feature delivered, nothing
+  ever missing, a clean bill of health that means nothing. A project that says
+  nowhere what it is for gets no specification and no scope reading, because
+  inventing one would manufacture the finding.
+- A derived specification is marked provisional in the file, in the terminal
+  and on the live page, naming the document it came from. One somebody wrote
+  is never overwritten.
+
+### Fixed — a watch that stopped watching
+
+- **Restarting the auditor left the page dead until someone reloaded it.** A
+  browser abandons an `EventSource` after a few failed attempts and sets it to
+  `CLOSED`, and nothing retried after that. Reconnection is now handled by the
+  page itself: it backs off, it caps at five seconds, and it has no terminal
+  state. It also re-checks when the tab becomes visible again and when the
+  machine comes back online, because a socket killed by a closed lid usually
+  dies without an error ever firing.
+- The stream tells the browser to retry in **500ms** rather than the default
+  three seconds, and sends a heartbeat every five seconds instead of twenty,
+  so a connection that died silently is noticed in five seconds rather than
+  twenty.
+- **A momentary drop no longer flashes a warning.** A restart takes well under
+  a second, and announcing a problem for that long teaches a reader to ignore
+  the warning on the one occasion it means something. The page waits 1.5
+  seconds of continuous failure before saying anything, and announces the
+  recovery to a screen reader when it returns.
+
 ### Interface — one instrument, two themes
 
 - The dashboard, the live page and the CLI had drifted into three looks for

@@ -136,13 +136,21 @@ def test_off_spec_route_is_detected_after_a_brief(client, project):
 
 
 def test_stream_paints_immediately(client):
-    """A new browser must never wait for a file change to see something."""
+    """A new browser must never wait for a file change to see something.
+
+    The stream now opens by telling the browser how long to wait before
+    retrying a dropped connection, so the first frame is that directive and
+    the painting frame is the second.
+    """
     c, _ = client
     with c.get("/api/stream", buffered=False) as res:
         assert res.status_code == 200
         first = next(res.response).decode()
-    assert first.startswith("data: ")
-    assert "metrics" in first
+        second = next(res.response).decode()
+    assert first.startswith("retry: ")
+    assert int(first.split(":")[1]) <= 1000, "a slow retry is a watch that is not watching"
+    assert second.startswith("data: ")
+    assert "metrics" in second
 
 
 # ------------------------------------------------------- install resilience
@@ -278,3 +286,42 @@ def test_a_stale_reading_does_not_look_like_a_live_one(client):
     assert "may be out of date" in page
     assert "last reading taken before the auditor stopped" in page
     assert "setConn('watching', 'ok')" in page
+
+
+# -------------------------------------------------------- never stop watching
+
+def test_the_page_reconnects_by_itself_and_never_gives_up(client):
+    """Restarting the auditor used to leave this page dead until a reload.
+
+    The browser abandons an EventSource after a few failures and sets CLOSED,
+    at which point nothing retried. A watch that stops watching is not a
+    watch, so reconnection is handled here, backs off, caps, and has no
+    terminal state.
+    """
+    c, _ = client
+    page = c.get("/").get_data(as_text=True)
+    assert "function open()" in page
+    assert "RETRY_MAX" in page
+    assert "onDown" in page
+    # recovery paths that do not depend on an error ever firing
+    assert "visibilitychange" in page
+    assert "'online'" in page
+
+
+def test_a_momentary_drop_does_not_flash_a_warning(client):
+    """A restart takes under a second.
+
+    Announcing a problem for that long trains a reader to ignore the warning
+    on the one occasion it means something.
+    """
+    c, _ = client
+    page = c.get("/").get_data(as_text=True)
+    assert "GRACE_MS" in page
+    assert "showDegraded" in page
+
+
+def test_the_stream_tells_the_browser_to_retry_quickly(client):
+    c, _ = client
+    with c.get("/api/stream", buffered=False) as res:
+        first = next(res.response).decode()
+    assert first.strip() == "retry: 500"

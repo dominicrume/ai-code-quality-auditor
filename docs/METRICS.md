@@ -106,6 +106,17 @@ Each metric lives in its own analyzer file. This document is the contract.
   every file concatenated together, which a word in a comment satisfied; it is
   retained for reproducibility and documented in
   `docs/ERRATUM_003_token_evidence.md`.
+- **Where the specification comes from (from 0.6.0):** if none is supplied
+  and none has been written, one is derived from the first of these that
+  yields anything: an explicit requirements document, the README's feature or
+  usage list, the package description, recent `feat:` commit subjects
+  (`analyzers`-adjacent code in `auditor/live/discover.py`). It is marked
+  provisional wherever it is reported.
+  **No part of a derived specification is read from the source tree.** A
+  specification inferred from the code it measures is satisfied by that code
+  by construction, so scope drift would be zero and completeness 100% for any
+  project, by arithmetic rather than by merit. Where nothing states intent, no
+  specification is derived and the scope readings stay unavailable.
 - **The other half of the question (from 0.6.0):** `analyzers/fidelity.py`
   reports a verdict per specified feature -- `delivered`, `not_found`, or
   `unreachable` (declared, but with nothing exposing it) -- each citing a file

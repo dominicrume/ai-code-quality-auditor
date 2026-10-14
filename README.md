@@ -100,7 +100,9 @@ returns the post-repair values, which are circular and are not the result; see
 
 ## What it reports that nothing else does
 
-Point it at a folder and say what you asked for. It tells you, feature by
+Point it at a folder. If the project documents what it is for, nothing needs
+to be typed at all: the specification is derived from that and written to
+`.auditor/spec.yaml` for you to correct. It then tells you, feature by
 feature, what arrived, what did not, and where the evidence is:
 
 ```

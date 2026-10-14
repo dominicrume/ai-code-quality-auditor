@@ -120,6 +120,11 @@
   .live.stale .dot{background:var(--warn)}
   .live.lost{color:var(--critical);border-color:var(--critical)}
   .live.lost .dot{background:var(--critical);animation:none}
+  .derived{color:var(--ink-soft);font-size:.82rem;margin:-1rem 0 1.25rem;
+    padding:.5rem .7rem;border-radius:8px;background:var(--sunken);
+    border-left:2px solid var(--accent)}
+  .derived[hidden]{display:none}
+  .derived code{font-family:var(--mono);font-size:.95em}
   .staleness{color:var(--warn);font-size:.82rem;margin:-1rem 0 1.5rem}
   .staleness[hidden]{display:none}
   @media (prefers-reduced-motion:no-preference){
@@ -208,6 +213,7 @@
     </span>
   </header>
   <p class="sub" id="meta">starting…</p>
+  <p class="derived" id="derived" hidden></p>
   <p class="staleness" id="staleness" role="status" hidden></p>
   <p class="sr-only" id="announcer" role="status" aria-live="polite"></p>
   <main>
@@ -275,6 +281,7 @@ const announcer = document.getElementById('announcer');
 const say = msg => { announcer.textContent = msg; };
 const connEl = document.getElementById('conn');
 const staleEl = document.getElementById('staleness');
+const derivedEl = document.getElementById('derived');
 function setConn(text, state){
   connEl.textContent = text;
   const pill = connEl.closest('.live');
@@ -394,6 +401,19 @@ function render(r){
   if (r.coverage_note){ note.hidden = false; note.textContent = r.coverage_note; }
   else note.hidden = true;
   briefBox.hidden = !!r.spec;
+  // Nothing was typed and a specification exists, so say where it came from
+  // and that it is provisional. A derived specification carries less
+  // authority than one somebody wrote, and a reader cannot tell them apart
+  // unless the page says which this is.
+  if (derivedEl) {
+    const from = r.spec_discovered_from;
+    derivedEl.hidden = !from;
+    if (from) {
+      derivedEl.innerHTML = `Watching against what <b>${esc(from)}</b> says this project is for. `
+        + `Nothing was read from your source code. `
+        + `<span class="muted">Provisional — edit <code>.auditor/spec.yaml</code> and this follows.</span>`;
+    }
+  }
 }
 
 function addEvent(ev){
@@ -426,20 +446,84 @@ function addEvent(ev){
   while (feed.children.length > 40) feed.lastChild.remove();
 }
 
-const es = new EventSource('/api/stream');
-es.onmessage = e => {
-  const msg = JSON.parse(e.data);
-  render(msg.report);
-  if (msg.report.changed?.length || msg.deltas?.length) addEvent(msg);
-};
-es.onerror = () => {
-  // CLOSED means the browser has given up; anything else is a retry in
-  // flight. Saying "reconnecting" forever after a stopped server is a lie.
-  const dead = es.readyState === EventSource.CLOSED;
-  setConn(dead ? 'not running' : 'reconnecting', dead ? 'dead' : 'stale');
-  if (dead) say('The auditor stopped. Run auditor live again to resume.');
-};
-es.onopen  = () => setConn('watching', 'ok');
+// ------------------------------------------------------------- the watch
+//
+// A watch that stops watching is not a watch. The browser gives up on an
+// EventSource after a few failed attempts and never tries again, so stopping
+// and restarting the auditor used to leave this page dead until someone
+// reloaded it by hand. Reconnection is therefore ours, it backs off, it caps,
+// and it never stops.
+//
+// The pill is also not allowed to flash. A restart takes well under a second,
+// and announcing a problem for that long trains a reader to ignore the one
+// time it matters, so the warning waits for GRACE_MS of continuous failure
+// before it appears.
+
+const GRACE_MS = 1500;      // silence before admitting to a problem
+const RETRY_MIN = 400;      // first retry, fast enough to be invisible
+const RETRY_MAX = 5000;     // never slower than this, however long it has been
+
+let es = null;
+let retryAt = RETRY_MIN;
+let downSince = 0;
+let graceTimer = null;
+let reopenTimer = null;
+
+function showDegraded() {
+  if (!downSince) return;                      // recovered while we waited
+  setConn('reconnecting', 'stale');
+}
+
+function onDown() {
+  if (!downSince) {
+    downSince = Date.now();
+    clearTimeout(graceTimer);
+    graceTimer = setTimeout(showDegraded, GRACE_MS);
+  }
+  clearTimeout(reopenTimer);
+  reopenTimer = setTimeout(open, retryAt);
+  // Back off so a machine that is asleep is not hammered, but stay well
+  // inside the window where a person would notice the page is behind.
+  retryAt = Math.min(Math.round(retryAt * 1.6), RETRY_MAX);
+}
+
+function open() {
+  if (es) { try { es.close(); } catch (e) {} }
+  es = new EventSource('/api/stream');
+
+  es.onmessage = e => {
+    const msg = JSON.parse(e.data);
+    render(msg.report);
+    if (msg.report.changed?.length || msg.deltas?.length) addEvent(msg);
+  };
+
+  es.onopen = () => {
+    const wasDown = downSince !== 0;
+    downSince = 0;
+    retryAt = RETRY_MIN;
+    clearTimeout(graceTimer);
+    setConn('watching', 'ok');
+    if (wasDown) say('Reconnected. The readings are current again.');
+  };
+
+  // Any error is treated the same way: the browser's own retry is unreliable
+  // and stops for good on CLOSED, so this schedules the next attempt itself.
+  es.onerror = () => { try { es.close(); } catch (e) {} onDown(); };
+}
+
+open();
+
+// Coming back from a closed lid or a background tab, the socket is usually
+// dead without an error ever having fired. Re-check the moment the page is
+// looked at again rather than waiting for the next failed read.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible'
+      && es && es.readyState !== EventSource.OPEN) {
+    retryAt = RETRY_MIN;
+    open();
+  }
+});
+window.addEventListener('online', () => { retryAt = RETRY_MIN; open(); });
 
 const btn = document.getElementById('briefBtn');
 btn.onclick = async () => {

@@ -179,9 +179,24 @@ def scan_cmd(path: Path, spec: Path | None, as_json: bool, fail_on: str,
         spec_data = build_spec(brief, name=path.resolve().name.replace("-", "_") or "scan")
         spec_origin = str(save_spec(path, spec_data))
     else:
-        from auditor.live.brief import load_spec, spec_path_for
+        from auditor.live.brief import load_spec, save_spec, spec_path_for
         spec_data = load_spec(path)
         spec_origin = str(spec_path_for(path)) if spec_data else None
+        if spec_data is None:
+            # Nothing has been written down yet. Rather than report four of
+            # five metrics and tell the user to go and author YAML, derive a
+            # provisional specification from whatever in the project states
+            # intent -- never from the source -- and audit against it now.
+            from auditor.live.discover import discover
+
+            discovered = discover(path)
+            if discovered:
+                try:
+                    save_spec(path, discovered)
+                except OSError:
+                    pass          # a read-only tree is not a reason to fail
+                spec_data = discovered
+                spec_origin = f"{discovered['_discovered_from']} (derived)"
 
     result = scan_directory(path, spec_data, include_all=include_all)
 
@@ -304,6 +319,12 @@ def scan_cmd(path: Path, spec: Path | None, as_json: bool, fail_on: str,
                 'Turn it on:[/dim]\n'
                 '  [cyan]auditor init[/cyan][dim] once, then it stays on, or[/dim]\n'
                 '  [cyan]auditor scan . --brief "a CLI with init, add and list"[/cyan]')
+        elif spec_data and spec_data.get("_discovered"):
+            console.print(
+                f"\n[yellow]Provisional:[/yellow] nothing had been written down, so this was "
+                f"measured against what [bold]{spec_data['_discovered_from']}[/bold] says the "
+                f"project is for.\n[dim]Written to .auditor/spec.yaml. Correct it and the audit "
+                f"follows. No part of it was read from your source code.[/dim]")
         elif spec_origin:
             console.print(f"[dim]measured against {spec_origin}[/dim]")
 
