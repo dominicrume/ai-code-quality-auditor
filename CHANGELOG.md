@@ -220,6 +220,13 @@ is the upgrade.
   without its particle is `log`.
 - A feature is no longer credited to a different verb on the same noun:
   `remove.item` was being satisfied by `def add_item`.
+- **A route is a method and a path, not just a path.** "Submit a claim" and
+  "look up a claim" both matched `POST /claims`, so one line was cited as
+  evidence for two features and the second was credited to code that does
+  something else. The path carries the noun and the method carries the verb,
+  and a feature whose verb implies a method no longer matches a route that
+  uses a different one. A verb the mapping does not recognise still matches
+  any method: the method narrows a match, it is never required to make one.
 
 ### Fixed — behaviour
 

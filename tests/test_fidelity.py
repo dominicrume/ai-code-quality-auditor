@@ -227,3 +227,55 @@ def test_no_specification_means_no_table(tmp_path):
 
     (tmp_path / "a.py").write_text("def f():\n    return 1\n")
     assert scan_directory(tmp_path).fidelity is None
+
+
+# ------------------------------------------- a route is a method and a path
+
+API_SPEC = {
+    "name": "claims", "version": "1.0.0",
+    "features": [
+        {"id": "submit.new.claim", "description": "submit a new claim"},
+        {"id": "look.up.claim", "description": "look up a claim by reference"},
+        {"id": "delete.claim", "description": "delete a claim"},
+    ],
+}
+
+API_CODE = {"files": {"api.py": textwrap.dedent("""
+    from flask import Flask
+    app = Flask(__name__)
+
+    @app.post("/claims")
+    def submit_claim():
+        return {}
+
+    @app.get("/claims/<ref>")
+    def lookup_claim(ref):
+        return {}
+""")}, "manifest": []}
+
+
+def test_two_features_on_one_noun_cite_different_routes():
+    """"submit a claim" and "look up a claim" both matched POST /claims.
+
+    The path is the noun and the method is the verb, so ignoring the method
+    credited the second feature to code that does something else, and cited
+    the same line twice as evidence for both.
+    """
+    verdicts = {v.feature_id: v for v in fidelity.assess(API_SPEC, API_CODE).verdicts}
+    assert verdicts["submit.new.claim"].evidence == "route POST /claims"
+    assert verdicts["look.up.claim"].evidence == "route GET /claims/<ref>"
+    assert verdicts["submit.new.claim"].where != verdicts["look.up.claim"].where
+
+
+def test_a_verb_with_no_matching_method_is_not_delivered():
+    """Nothing deletes a claim, so the feature is missing rather than credited."""
+    verdicts = {v.feature_id: v for v in fidelity.assess(API_SPEC, API_CODE).verdicts}
+    assert verdicts["delete.claim"].status == fidelity.NOT_FOUND
+
+
+def test_a_verb_the_map_does_not_know_still_matches_any_method():
+    """The method narrows a match; it must never be required to make one."""
+    spec = {"name": "t", "version": "1.0.0",
+            "features": [{"id": "reconcile.claim", "description": "reconcile a claim"}]}
+    report = fidelity.assess(spec, API_CODE)
+    assert report.verdicts[0].status == fidelity.DELIVERED

@@ -47,6 +47,7 @@ class Definition:
     kind: str          # command | route | function | class | export
     file: str
     line: int
+    method: str = ""   # routes only: GET, POST, ...
 
     @property
     def where(self) -> str:
@@ -60,7 +61,7 @@ class Definition:
         if self.kind == "command":
             return f'subcommand "{self.name}"'
         if self.kind == "route":
-            return f"route {self.name}"
+            return f"route {self.method} {self.name}".replace("  ", " ")
         return f"{self.kind} {self.name}"
 
 
@@ -78,14 +79,14 @@ _PY_PATTERNS = [
         r"""@\w+\.command\(\s*\)\s*(?:\n\s*@[^\n]+)*\s*\n\s*def\s+([a-zA-Z_]\w*)""")),
     # Typer: @app.command() def name(...)
     ("route", re.compile(
-        r"""@\w+\.(?:get|post|put|delete|patch)\(\s*["']([^"']+)["']""")),
+        r"""@\w+\.(get|post|put|delete|patch)\(\s*["']([^"']+)["']""", re.I)),
     ("function", re.compile(r"""^[ \t]*(?:async[ \t]+)?def[ \t]+([a-zA-Z_]\w*)""", re.M)),
     ("class", re.compile(r"""^[ \t]*class[ \t]+([A-Za-z_]\w*)""", re.M)),
 ]
 
 _JS_PATTERNS = [
     ("route", re.compile(
-        r"""\b(?:app|router|api|server)\.(?:get|post|put|delete|patch)\(\s*["'`]([^"'`]+)""",
+        r"""\b(?:app|router|api|server)\.(get|post|put|delete|patch)\(\s*["'`]([^"'`]+)""",
         re.I)),
     # Commander / yargs style registered commands.
     ("command", re.compile(r"""\.command\(\s*["'`]([a-zA-Z_][\w\-]*)""")),
@@ -125,11 +126,17 @@ def index(codebase: dict) -> list[Definition]:
             continue
         for kind, pattern in patterns:
             for match in pattern.finditer(content):
-                name = match.group(1)
+                # A route pattern captures its method first, then its path.
+                if kind == "route" and match.re.groups == 2:
+                    method, name = match.group(1).upper(), match.group(2)
+                    at = match.start(2)
+                else:
+                    method, name = "", match.group(1)
+                    at = match.start(1)
                 if not name:
                     continue
                 out.append(Definition(name=name, kind=kind, file=path,
-                                      line=_line_of(content, match.start(1))))
+                                      line=_line_of(content, at), method=method))
     return out
 
 
@@ -204,6 +211,27 @@ def feature_tokens(feature_id: str) -> tuple[set[str], set[str]]:
     return head, supporting - head
 
 
+# What a feature's verb implies about the HTTP method that would implement it.
+# Without this, "submit a claim" and "look up a claim" both matched the first
+# route whose path contained "claim", so two features cited one line and the
+# second was credited to code that does something else.
+_VERB_METHOD = {
+    "POST":   {"submit", "create", "add", "register", "send", "post", "open", "raise", "file"},
+    "GET":    {"get", "look", "view", "show", "read", "fetch", "list", "search", "find", "browse"},
+    "PUT":    {"update", "edit", "change", "replace", "set", "modify"},
+    "PATCH":  {"update", "edit", "change", "patch", "modify"},
+    "DELETE": {"delete", "remove", "purge", "cancel", "close", "archive"},
+}
+
+
+def _method_allows(method: str, head: set[str]) -> bool:
+    """True unless the feature's verb clearly implies a different method."""
+    if not method:
+        return True
+    implied = {m for m, verbs in _VERB_METHOD.items() if head & verbs}
+    return not implied or method in implied
+
+
 def matches(definition: Definition, feature_id: str) -> bool:
     """True when this definition declares the thing the feature asks for.
 
@@ -223,6 +251,8 @@ def matches(definition: Definition, feature_id: str) -> bool:
         # REST puts the action in the HTTP method and the noun in the path, so
         # `GET /courses` is how a service implements `course.list` and there is
         # no `list` to find. A path segment matching either set counts.
+        if not _method_allows(definition.method, head):
+            return False
         segments = {s.lower() for s in _SPLIT.split(definition.name) if s}
         return bool(segments & (head | supporting))
 
