@@ -259,3 +259,22 @@ def test_the_verdict_marks_are_not_colour_alone(client):
     assert "fid-mark" in page
     for status in ("fid-delivered", "fid-unreachable", "fid-not_found"):
         assert status in page, status
+
+
+def test_a_stale_reading_does_not_look_like_a_live_one(client):
+    """"Reconnecting" rendered in the accent colour, same as "watching".
+
+    While the stream is down the figures on the page are the last ones
+    received, not the current ones. Showing that in the colour of a healthy
+    connection presents a stale number as a live one, which is the move this
+    instrument exists to catch in other tools.
+    """
+    c, _ = client
+    page = c.get("/").get_data(as_text=True)
+    assert ".live.stale" in page
+    assert ".live.lost" in page
+    # and the page says so in words, not only in a hue
+    assert 'id="staleness"' in page
+    assert "may be out of date" in page
+    assert "last reading taken before the auditor stopped" in page
+    assert "setConn('watching', 'ok')" in page

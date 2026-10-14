@@ -111,8 +111,17 @@
     outline:2px solid var(--accent);outline-offset:2px;border-radius:5px}
   .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;
     overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+  /* Three states, because two were not enough to be honest. "Watching" means
+     the figures below are current. "Reconnecting" means they are the last
+     reading and may already be wrong, and rendering that in the same colour
+     as a healthy connection presents a stale number as a live one -- the
+     exact move this instrument exists to catch. "Not running" is final. */
+  .live.stale{color:var(--warn);border-color:var(--warn)}
+  .live.stale .dot{background:var(--warn)}
   .live.lost{color:var(--critical);border-color:var(--critical)}
   .live.lost .dot{background:var(--critical);animation:none}
+  .staleness{color:var(--warn);font-size:.82rem;margin:-1rem 0 1.5rem}
+  .staleness[hidden]{display:none}
   @media (prefers-reduced-motion:no-preference){
     .card.bump{animation:bump .5s cubic-bezier(.3,1.4,.5,1)}
     @keyframes bump{0%{transform:scale(1)}40%{transform:scale(1.045)}100%{transform:scale(1)}}
@@ -199,6 +208,7 @@
     </span>
   </header>
   <p class="sub" id="meta">starting…</p>
+  <p class="staleness" id="staleness" role="status" hidden></p>
   <p class="sr-only" id="announcer" role="status" aria-live="polite"></p>
   <main>
 
@@ -264,9 +274,22 @@ let prev = {};
 const announcer = document.getElementById('announcer');
 const say = msg => { announcer.textContent = msg; };
 const connEl = document.getElementById('conn');
-function setConn(text, lost){
+const staleEl = document.getElementById('staleness');
+function setConn(text, state){
   connEl.textContent = text;
-  connEl.closest('.live').classList.toggle('lost', !!lost);
+  const pill = connEl.closest('.live');
+  pill.classList.toggle('stale', state === 'stale');
+  pill.classList.toggle('lost',  state === 'dead');
+  // When the stream is not live, every figure on the page is the last one
+  // received rather than the current one, and the page has to say so.
+  if (staleEl){
+    staleEl.hidden = state === 'ok';
+    if (state !== 'ok'){
+      staleEl.textContent = state === 'dead'
+        ? 'Not running. Everything below is the last reading taken before the auditor stopped.'
+        : 'Reconnecting. Everything below is the last reading received and may be out of date.';
+    }
+  }
 }
 
 const fidBox = document.getElementById('fidBox');
@@ -413,10 +436,10 @@ es.onerror = () => {
   // CLOSED means the browser has given up; anything else is a retry in
   // flight. Saying "reconnecting" forever after a stopped server is a lie.
   const dead = es.readyState === EventSource.CLOSED;
-  setConn(dead ? 'not running' : 'reconnecting', dead);
+  setConn(dead ? 'not running' : 'reconnecting', dead ? 'dead' : 'stale');
   if (dead) say('The auditor stopped. Run auditor live again to resume.');
 };
-es.onopen  = () => setConn('watching', false);
+es.onopen  = () => setConn('watching', 'ok');
 
 const btn = document.getElementById('briefBtn');
 btn.onclick = async () => {

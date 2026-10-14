@@ -155,6 +155,13 @@ is the upgrade.
   computing the fidelity report and discarding it, so the one surface meant to
   demonstrate the one reading no other tool produces was showing five metric
   cards and none of it. It is now the largest element on the page.
+- **A dropped connection no longer looks like a healthy one.** The live page
+  had two states where it needed three: "reconnecting" was drawn in the same
+  accent colour as "watching", so a page whose figures were the last ones
+  received looked exactly like a page whose figures were current. It is amber
+  now, "not running" is red, and a line above the readings says in words that
+  they may be out of date. An instrument that presents a stale number as a
+  live one is doing the thing this one exists to catch.
 - A rebuild of the report template dropped four things that were there for a
   reason, one of them a disclosure: `provenance.warning` was rendered inside
   an `{% if spec_summary %}`, so the case where it mattered most, a thin
