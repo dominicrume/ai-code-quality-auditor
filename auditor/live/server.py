@@ -50,8 +50,8 @@ def _serialise(result: ScanResult, changed: list[str] | None = None) -> dict:
             "total": result.fidelity.total,
             "completeness": result.fidelity.completeness,
             "features": [
-                {"id": v.feature_id, "status": v.status, "mark": v.mark,
-                 "where": v.where, "reason": v.reason(),
+                {"id": v.feature_id, "label": v.label, "status": v.status,
+                 "mark": v.mark, "where": v.where, "reason": v.reason(),
                  "description": v.description}
                 for v in result.fidelity.verdicts
             ],

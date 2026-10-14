@@ -104,6 +104,12 @@ is the upgrade.
   ~  scheduler       cli.py:20   not asked for
   ```
 
+- **The report names what you asked for, in your words.** The id is a key
+  written for the matcher: "Notify the assessor when a claim is submitted"
+  slugs to `notify.assessor.when`, which is accurate, unreadable, and the
+  wrong thing to put in front of a client. The sentence is the label on every
+  surface; the id stays in the file, in the JSON and on hover, where a machine
+  or a person matching rows needs it.
 - **`unreachable` is a verdict in its own right.** Code that exists but that
   no user can invoke is neither delivered nor missing, and calling it either
   throws away the most useful thing an audit knows: where the work already is.

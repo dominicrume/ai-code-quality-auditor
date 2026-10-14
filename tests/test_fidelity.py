@@ -279,3 +279,35 @@ def test_a_verb_the_map_does_not_know_still_matches_any_method():
             "features": [{"id": "reconcile.claim", "description": "reconcile a claim"}]}
     report = fidelity.assess(spec, API_CODE)
     assert report.verdicts[0].status == fidelity.DELIVERED
+
+
+# ------------------------------------------------ what a person is shown
+
+def test_a_person_is_shown_the_sentence_not_the_slug():
+    """The id is a key written for the matcher, and it reads badly.
+
+    "Notify the assessor when a claim is submitted" slugs to
+    notify.assessor.when, which is accurate, unreadable, and the wrong thing
+    to put on a wall in front of a client.
+    """
+    v = fidelity.FeatureVerdict(
+        feature_id="notify.assessor.when",
+        description="Notify the assessor when a claim is submitted",
+        status=fidelity.NOT_FOUND)
+    assert v.label == "Notify the assessor when a claim is submitted"
+    assert v.name == "notify.assessor.when"       # the key is still the key
+
+
+def test_a_feature_with_no_sentence_falls_back_to_its_id():
+    v = fidelity.FeatureVerdict(feature_id="cli.add", description="",
+                                status=fidelity.DELIVERED)
+    assert v.label == "cli.add"
+
+
+def test_a_long_label_is_cut_on_a_word():
+    v = fidelity.FeatureVerdict(
+        feature_id="x.y", description="Attach supporting documents to a claim record",
+        status=fidelity.NOT_FOUND)
+    short = v.short(20)
+    assert len(short) <= 21 and short.endswith("…")
+    assert not short[:-1].endswith(" ")

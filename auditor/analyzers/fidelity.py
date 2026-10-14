@@ -72,6 +72,27 @@ class FeatureVerdict:
         """
         return self.feature_id
 
+    @property
+    def label(self) -> str:
+        """What to show a person.
+
+        The id is a key: stable, matchable, and written for the matcher. It is
+        made by slugging the first few meaningful words, so "Notify the
+        assessor when a claim is submitted" becomes `notify.assessor.when`,
+        which is accurate, unreadable, and the wrong thing to project onto a
+        wall. The sentence somebody actually wrote is the label; the id stays
+        in the file and in the JSON, where a machine reads it.
+        """
+        return self.description or self.feature_id
+
+    def short(self, width: int = 46) -> str:
+        """The label, cut to fit a column without cutting mid-word."""
+        text = self.label
+        if len(text) <= width:
+            return text
+        cut = text[:width].rsplit(" ", 1)[0]
+        return (cut or text[:width]).rstrip(" ,;:") + "…"
+
     def reason(self) -> str:
         if self.status == DELIVERED:
             return self.evidence or "found"

@@ -178,13 +178,15 @@
   .fid-row:hover { background: var(--sunken); }
   .fid-mark { font-weight: 700; text-align: center; line-height: 1.3; }
   .fid-id { font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: .82rem; }
+  .fid-label { font-weight: 500; }
   .fid-why { color: var(--muted); font-size: .76rem; }
   .fid-where { font-family: ui-monospace, 'SF Mono', Menlo, monospace;
                font-size: .74rem; color: var(--muted); white-space: nowrap; }
   .fid-delivered .fid-mark { color: var(--good); }
   .fid-unreachable .fid-mark { color: var(--warn); }
-  .fid-unreachable .fid-id { color: var(--warn); }
-  .fid-not_found .fid-mark, .fid-not_found .fid-id { color: var(--risk); }
+  .fid-unreachable .fid-id, .fid-unreachable .fid-label { color: var(--warn); }
+  .fid-not_found .fid-mark, .fid-not_found .fid-id,
+  .fid-not_found .fid-label { color: var(--risk); }
   .fid-extra .fid-mark, .fid-extra .fid-id { color: var(--accent); }
   .fid-callout { margin-top: .9rem; padding: .6rem .75rem; border-radius: 8px;
                  font-size: .8rem; line-height: 1.45; }
@@ -316,10 +318,14 @@ function renderFidelity(r){
     + `<div class="fid-meter"><i style="width:${pct}%"></i></div>`
     + `<div class="fid-list">`;
 
+  // The sentence somebody wrote, not the slug the matcher uses. The id is
+  // accurate and unreadable -- "Notify the assessor when a claim is
+  // submitted" becomes notify.assessor.when -- and it is the wrong thing to
+  // put on a wall. It stays as the hover title and in the JSON.
   for (const v of f.features){
-    h += `<div class="fid-row fid-${v.status}" title="${esc(v.description || v.id)}">`
+    h += `<div class="fid-row fid-${v.status}" title="${esc(v.id)}">`
       +  `<span class="fid-mark" aria-hidden="true">${esc(v.mark)}</span>`
-      +  `<span><span class="fid-id">${esc(v.id)}</span>`
+      +  `<span><span class="fid-label">${esc(v.label || v.id)}</span>`
       +  `<span class="fid-why"> · ${esc(v.reason)}</span></span>`
       +  `<span class="fid-where">${v.where ? esc(v.where) : ''}</span>`
       +  `</div>`;
@@ -334,8 +340,9 @@ function renderFidelity(r){
   }
   h += `</div>`;
 
-  const missing = f.features.filter(v => v.status === 'not_found').map(v => v.id);
-  const unreach = f.features.filter(v => v.status === 'unreachable').map(v => v.id);
+  const label = v => v.label || v.id;
+  const missing = f.features.filter(v => v.status === 'not_found').map(label);
+  const unreach = f.features.filter(v => v.status === 'unreachable').map(label);
   if (missing.length){
     h += `<div class="fid-callout miss"><b>Missing:</b> ${missing.map(esc).join(', ')}`
       +  ` — asked for, and nothing in the code declares it.</div>`;

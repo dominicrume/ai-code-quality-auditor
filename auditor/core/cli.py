@@ -224,8 +224,9 @@ def scan_cmd(path: Path, spec: Path | None, as_json: bool, fail_on: str,
             "missing": [v.feature_id for v in result.fidelity.missing],
             "unreachable": [v.feature_id for v in result.fidelity.unreachable],
             "completeness_pct": result.fidelity.completeness,
-            "features": [{"id": v.feature_id, "status": v.status,
-                          "where": v.where, "evidence": v.evidence}
+            "features": [{"id": v.feature_id, "label": v.label,
+                          "status": v.status, "where": v.where,
+                          "evidence": v.evidence}
                          for v in result.fidelity.verdicts],
             "extras": [{"name": e.name, "kind": e.kind, "where": e.where}
                        for e in result.fidelity.extras],
@@ -370,31 +371,37 @@ def _render_fidelity(console, result):
 
     console.print(f"[bold]Specification fidelity[/bold]  [dim]{report.headline}[/dim]\n")
 
+    from rich.markup import escape
+
     table = Table(show_edge=False, show_header=False, pad_edge=False, box=None)
     table.add_column("", width=1)
     table.add_column("")
     table.add_column("", style="dim")
     table.add_column("", style="dim")
+    # What a person asked for, in their words, not the slug the matcher uses.
     for v in report.verdicts:
         style = _FIDELITY_STYLE[v.status]
         table.add_row(f"[{style}]{v.mark}[/{style}]",
-                      f"[{style}]{v.name}[/{style}]",
-                      v.where or "", v.reason())
+                      f"[{style}]{escape(v.short())}[/{style}]",
+                      v.where or "", escape(v.reason()))
     for e in report.extras:
-        table.add_row("[magenta]~[/magenta]", f"[magenta]{e.name}[/magenta]",
+        table.add_row("[magenta]~[/magenta]", f"[magenta]{escape(e.name)}[/magenta]",
                       e.where, "not asked for")
     console.print(table)
 
     # The two findings worth a sentence, because a mark in a table is easy to
     # read past and both of these are things somebody has to go and do.
     if report.missing:
-        console.print(f"\n[red]Missing:[/red] "
-                      f"{', '.join(v.name for v in report.missing)} "
-                      f"[dim]— asked for, and nothing in the code declares it.[/dim]")
+        console.print("\n[red]Missing[/red] [dim]— asked for, and nothing in the "
+                      "code declares it:[/dim]")
+        for v in report.missing:
+            console.print(f"  [red]·[/red] {escape(v.label)} [dim]({escape(v.feature_id)})[/dim]")
     if report.unreachable:
-        console.print(f"[yellow]Built but unreachable:[/yellow] "
-                      f"{', '.join(v.name for v in report.unreachable)} "
-                      f"[dim]— the code exists, nothing exposes it.[/dim]")
+        console.print("\n[yellow]Built but unreachable[/yellow] [dim]— the code exists, "
+                      "nothing exposes it:[/dim]")
+        for v in report.unreachable:
+            console.print(f"  [yellow]·[/yellow] {escape(v.label)} "
+                          f"[dim]— {escape(v.evidence or '')} at {v.where}[/dim]")
     console.print()
 
 
