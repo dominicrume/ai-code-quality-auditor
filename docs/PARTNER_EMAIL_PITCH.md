@@ -17,7 +17,7 @@ https://auditor-dashboard-rume.fly.dev/report/main_001_plus_human
 
 In our session I'll walk the story and a live demo in about seven minutes, then take questions. My ask afterwards is one pilot: one engagement team, one specification written to a client's governance rules, four tools evaluated — results in six weeks.
 
-This is not another AI benchmark. It is a practical assurance platform for trusted AI-assisted engineering that helps organizations decide whether an AI coding tool is safe, governable, and worthy of adoption.
+This is not another AI benchmark. It is a practical assurance platform for engineering done alongside these tools, one that helps organizations decide whether an AI coding tool is safe, governable, and worthy of adoption.
 
 Best regards,
 Dominic Rume

@@ -15,7 +15,7 @@
 
 ## 1. Research question
 
-Do five AI-assisted coding workflows differ measurably across five
+Do five agentic coding workflows differ measurably across five
 empirical quality metrics when implementing identical specifications?
 
 ### Hypotheses (two-sided)

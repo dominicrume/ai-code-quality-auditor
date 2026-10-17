@@ -65,7 +65,7 @@ Primary: engineering leaders, AI adoption/governance teams, risk stakeholders, a
 ### 8. Roadmap priorities
 Short term: presentation-ready demo (live + screen-recorded backup), live multi-session re-capture of the two IDE-bound vendors (closing the replay limitation), hallucination inter-rater validation (Cohen's kappa), independent blinded human reference sessions.
 Medium term: severity-weighted security companion metric, reusable enterprise evaluation templates, guided workflows, richer executive reporting.
-Long term: the broader AI assurance platform for software delivery — the trust layer for AI-assisted engineering.
+Long term: the broader AI assurance platform for software delivery — the trust layer for software built alongside these tools.
 
 ### Key message
-"This is not another AI benchmark. It is a practical assurance platform for trusted AI-assisted engineering that helps organizations decide whether an AI coding tool is safe, governable, and worthy of adoption."
+"This is not another AI benchmark. It is a practical assurance platform for engineering done alongside these tools, one that helps organizations decide whether an AI coding tool is safe, governable, and worthy of adoption."

@@ -1,4 +1,4 @@
-# AI Code Quality Auditor — the Referee Tool
+# AI Code Quality Auditor
 
 [![CI](https://github.com/dominicrume/ai-code-quality-auditor/actions/workflows/ci.yml/badge.svg)](https://github.com/dominicrume/ai-code-quality-auditor/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/ai-code-quality-auditor.svg)](https://pypi.org/project/ai-code-quality-auditor/)
@@ -6,16 +6,38 @@
 [![Downloads](https://static.pepy.tech/badge/ai-code-quality-auditor)](https://pepy.tech/projects/ai-code-quality-auditor)
 [![Live dashboard](https://img.shields.io/badge/live-dashboard-purple)](https://auditor-dashboard-rume.fly.dev/report/main_001_plus_human)
 
-> An empirical Safety Harness for agentic AI coding systems.
-> Quantifies where AI-assisted development fails at governance, security,
-> and ethical alignment — *before* the code reaches production.
+**Did the agent build what you asked for?**
 
-> **Reading this because of the dissertation?** *Measuring the Unmeasured* was submitted on
-> 22 September 2026 and its appendix links point at `main`, which has moved on since: the
-> instrument was released as 0.6.0, dashboard routes were closed, CI was repaired and the
-> self-audit was re-run. The repository exactly as the dissertation describes it is tagged
-> [`submission-2026-09-22`](https://github.com/dominicrume/ai-code-quality-auditor/tree/submission-2026-09-22).
-> Swap `main` for that tag in any appendix URL to see what the examiner was given.
+A linter tells you whether code is well written. None of them knows what you
+asked for, so none of them can tell you the agent quietly skipped a third of
+it. This does:
+
+```
+$ auditor scan .
+
+Specification fidelity  2 of 4 delivered
+
+✓  Submit a new claim with a policy number    api.py:4   route POST /claims
+✓  Look up a claim by reference               api.py:8   route GET /claims/<ref>
+✗  Attach supporting documents to a claim                not found
+!  Notify the assessor when a claim is        api.py:12  function notify_assessor
+   submitted                                             exists, nothing exposes it
+~  /admin/purge                               api.py:15  not asked for
+
+Missing — asked for, and nothing in the code declares it:
+  · Attach supporting documents to a claim
+```
+
+Nothing was typed to get that. The specification is read from whatever already
+states intent — a requirements document, the README, the package description,
+recent `feat:` commits — written to `.auditor/spec.yaml`, and yours to correct.
+**Never from your source code**, because a specification inferred from the code
+it measures is satisfied by that code by construction. A project that documents
+nothing gets no scope reading rather than a flattering one.
+
+Alongside it, four conventional readings: security density, cyclomatic
+complexity, duplication, and rework from a captured session. Code the analysers
+could not parse is reported as `unread`, never as `OK`.
 
 **🟢 Try it in 30 seconds:**
 ```bash
@@ -97,6 +119,13 @@ inter-rater agreement figures reported in the dissertation, computed against the
 instrument as it stood when the raters labelled. Running it without the flag
 returns the post-repair values, which are circular and are not the result; see
 `docs/KAPPA_RESULTS_001.md`.
+
+> **Reading this because of the dissertation?** *Measuring the Unmeasured* was submitted on
+> 22 September 2026 and its appendix links point at `main`, which has moved on since: the
+> instrument was released as 0.6.0, dashboard routes were closed, CI was repaired and the
+> self-audit was re-run. The repository exactly as the dissertation describes it is tagged
+> [`submission-2026-09-22`](https://github.com/dominicrume/ai-code-quality-auditor/tree/submission-2026-09-22).
+> Swap `main` for that tag in any appendix URL to see what the examiner was given.
 
 ## What it reports that nothing else does
 

@@ -10,7 +10,7 @@ Quantifies five empirical metrics on AI-generated code, across five
 experimental conditions, against one fixed YAML specification.
 
 ## The five conditions (do NOT conflate)
-- `human_control`  — baseline, no AI assistance
+- `human_control`  — baseline, written without generative tools
 - `claude_code`    — Anthropic Claude Code
 - `cursor_agent`   — Cursor agent mode
 - `antigravity`    — Google Gemini Antigravity

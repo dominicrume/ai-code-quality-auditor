@@ -1,13 +1,17 @@
 [project]
 name = "ai-code-quality-auditor"
 version = "0.6.0"
-description = "Empirical Safety Harness for agentic AI coding systems. Scores AI-generated code on 5 metrics across 5 vendor conditions against one fixed spec."
+description = "Checks whether an AI coding agent built what you asked for: per feature, what was delivered, what is missing, what exists but nothing can reach, with a file and line for every claim."
 readme = "README.md"
 license = { file = "LICENSE" }
 authors = [{ name = "O'Rume Dominic Uririe", email = "admin@veritaport.co.uk" }]
 requires-python = ">=3.11"
-keywords = ["ai", "code-quality", "llm", "agents", "evaluation",
-            "claude-code", "cursor", "sonarcloud", "dissertation"]
+# "sonarcloud" was here until 0.6.0 and had been wrong since the metric moved
+# to a local Bandit scan: a keyword is a promise about what the package does.
+keywords = ["ai", "code-quality", "llm", "agents", "evaluation", "audit",
+            "scope-drift", "specification", "code-review", "static-analysis",
+            "governance", "ai-agents", "claude-code", "cursor", "copilot",
+            "security", "cli"]
 classifiers = [
   "Development Status :: 4 - Beta",
   "Intended Audience :: Developers",
@@ -18,7 +22,11 @@ classifiers = [
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
   "Topic :: Software Development :: Quality Assurance",
+  "Topic :: Software Development :: Testing",
   "Topic :: Scientific/Engineering :: Artificial Intelligence",
+  "Topic :: Security",
+  "Environment :: Console",
+  "Typing :: Typed",
 ]
 dependencies = [
   "pydantic>=2.0",
@@ -48,6 +56,10 @@ Homepage      = "https://github.com/dominicrume/ai-code-quality-auditor"
 Repository    = "https://github.com/dominicrume/ai-code-quality-auditor"
 Issues        = "https://github.com/dominicrume/ai-code-quality-auditor/issues"
 Documentation = "https://github.com/dominicrume/ai-code-quality-auditor/tree/main/docs"
+Changelog     = "https://github.com/dominicrume/ai-code-quality-auditor/blob/main/CHANGELOG.md"
+Security      = "https://github.com/dominicrume/ai-code-quality-auditor/blob/main/SECURITY.md"
+"Privacy"     = "https://github.com/dominicrume/ai-code-quality-auditor/blob/main/docs/PRIVACY.md"
+"Live demo"   = "https://auditor-dashboard-rume.fly.dev/report/main_001_plus_human"
 
 [project.scripts]
 auditor = "auditor.core.cli:main"

@@ -22,8 +22,8 @@ are in `data/labels/`.
 
 ## AI use and authorship
 - AI tools generate code as the **subject of the experiment**.
-- AI assistance in building the instrument and preparing the manuscript is
-  declared, with its bounds, in the dissertation's Declaration.
+- The use of generative tools in building the instrument and preparing the
+  manuscript is declared, with its bounds, in the dissertation's Declaration.
 - All AI prompts and raw outputs are logged in `data/raw/` for audit.
 
 ## Cloud / data leakage
@@ -55,7 +55,7 @@ refuses to write. Partial publication of results — e.g. "Vendor X loses
 on metric Y" without the comparable rows for the other four conditions —
 is excluded by construction.
 
-## Disclosure of AI assistance in building the instrument
+## Disclosure: how generative tools were used to build the instrument
 Parts of the Auditor itself were drafted with agentic coding assistants.
 This is disclosed in the dissertation's Declaration. The Auditor is the
 measuring instrument, not one of the measured artefacts — at experiment

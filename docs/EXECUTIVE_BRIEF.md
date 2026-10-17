@@ -48,11 +48,11 @@ Every claim below is backed by a completed, pre-registered study — the analysi
 - In our market scan we found no tool that measures **hallucination as scope drift against a fixed specification** with a human reference for comparison.
 
 ### 6. Why this fits Alix Partners
-This lands on ground AlixPartners has already mapped: your 2026 predictions report prescribes trust infrastructure (10–15% of budgets, rising to 20–30% by 2027) to escape the AI Productivity Paradox — and this platform is that infrastructure made concrete for AI-assisted engineering. As a repeatable, spec-driven evaluation it packages naturally as a partner-led advisory offering: a consultant runs it against a client's own governance rules and returns evidence, not opinion. And a question rather than a claim: you build AI solutions for clients — is there an evidence gate you'd want on that output?
+This lands on ground AlixPartners has already mapped: your 2026 predictions report prescribes trust infrastructure (10–15% of budgets, rising to 20–30% by 2027) to escape the AI Productivity Paradox — and this platform is that infrastructure made concrete for engineering done alongside these tools. As a repeatable, spec-driven evaluation it packages naturally as a partner-led advisory offering: a consultant runs it against a client's own governance rules and returns evidence, not opinion. And a question rather than a claim: you build AI solutions for clients — is there an evidence gate you'd want on that output?
 
 ### The ask
 One pilot: one engagement team, one specification written to a client's governance rules, four tools evaluated — results in six weeks. IP and productization are conversations that should follow a successful pilot, not precede it.
 
 ### Final message
-"This is not another AI benchmark. It is a practical assurance platform for trusted AI-assisted engineering that helps organizations decide whether an AI coding tool is safe, governable, and worthy of adoption."
+"This is not another AI benchmark. It is a practical assurance platform for engineering done alongside these tools, one that helps organizations decide whether an AI coding tool is safe, governable, and worthy of adoption."
 *(Hallway version: benchmarks measure whether AI can code; this measures whether you can trust it.)*

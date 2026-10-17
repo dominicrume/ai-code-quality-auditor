@@ -59,7 +59,7 @@ Live: https://auditor-dashboard-rume.fly.dev/report/main_001_plus_human
 - Post-adoption analytics measure impact after the risk is taken
 - In our market scan we found no tool that measures scope drift against a fixed specification with a human reference
 **The ask: one pilot.** One engagement team, one client spec, four tools evaluated — results in six weeks.
-**Close (verbatim):** *"This is not another AI benchmark. It is a practical assurance platform for trusted AI-assisted engineering that helps organizations decide whether an AI coding tool is safe, governable, and worthy of adoption."*
+**Close (verbatim):** *"This is not another AI benchmark. It is a practical assurance platform for engineering done alongside these tools, one that helps organizations decide whether an AI coding tool is safe, governable, and worthy of adoption."*
 Hallway version: benchmarks measure whether AI can code; this measures whether you can trust it.
 
 ---
