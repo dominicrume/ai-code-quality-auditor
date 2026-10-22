@@ -110,6 +110,14 @@ def _line_of(content: str, offset: int) -> int:
     return content.count("\n", 0, offset) + 1
 
 
+# A dunder is the language's own hook, never a feature somebody asked for.
+# `__init__` was being credited as the `init` subcommand of a CLI
+# specification, which is how a data pipeline scored two of six on a brief it
+# had not implemented at all.
+def _is_language_hook(name: str) -> bool:
+    return name.startswith("__") and name.endswith("__")
+
+
 def index(codebase: dict) -> list[Definition]:
     """Every definition in the codebase, with the file and line of each.
 
@@ -133,7 +141,7 @@ def index(codebase: dict) -> list[Definition]:
                 else:
                     method, name = "", match.group(1)
                     at = match.start(1)
-                if not name:
+                if not name or _is_language_hook(name):
                     continue
                 out.append(Definition(name=name, kind=kind, file=path,
                                       line=_line_of(content, at), method=method))

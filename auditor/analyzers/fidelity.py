@@ -161,6 +161,14 @@ def assess(spec: dict, codebase: dict) -> FidelityReport:
         for d in index
     )
 
+    # Does this codebase expose anything at all a user could invoke? When a
+    # specification asks for a command-line tool and the project contains no
+    # subcommand and no route anywhere, nothing internal can be user-reachable,
+    # however many other internal functions call it. Without this, a scheduled
+    # data pipeline scored two of six on a six-subcommand CLI brief, because
+    # `_init_db` and `validate_row` are called from inside the pipeline.
+    has_surface = any(d.is_surface for d in index)
+
     report = FidelityReport()
     claimed: set[tuple[str, str]] = set()      # definitions a feature accounted for
 
@@ -183,7 +191,8 @@ def assess(spec: dict, codebase: dict) -> FidelityReport:
             # by a route is wired up and working, and telling a team otherwise
             # costs more than missing a finding would: the verdict needs
             # evidence of absence, not absence of evidence.
-            invoked = any(defs.is_invoked(d.name, codebase) for d in internal)
+            invoked = has_surface and any(defs.is_invoked(d.name, codebase)
+                                          for d in internal)
             status = DELIVERED if invoked else UNREACHABLE
         else:
             best = None

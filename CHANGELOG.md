@@ -110,6 +110,16 @@ is the upgrade.
   wrong thing to put in front of a client. The sentence is the label on every
   surface; the id stays in the file, in the JSON and on hover, where a machine
   or a person matching rows needs it.
+- **A language hook is never a feature.** `__init__` was credited as the
+  `init` subcommand of a CLI specification.
+- **Nothing internal is user-reachable in a codebase with no surface.** When a
+  specification asks for a command-line tool and the project declares no
+  subcommand and no route anywhere, an internal function cannot be invoked by
+  a user however many other internal functions call it. Run against the
+  study's own `antigravity x internal_tool_cli` capture (docs/FINDING_001),
+  the report said two of six delivered on a brief that was not implemented at
+  all, because `_init_db` and `validate_row` are called from inside the
+  pipeline. It now reads nought of six, which is what the finding records.
 - **`unreachable` requires evidence of absence, not absence of evidence.** The
   verdict first rested on a definition not itself being a command or a route,
   which describes most working code: a helper invoked by a route on the line

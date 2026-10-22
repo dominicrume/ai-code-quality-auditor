@@ -386,3 +386,74 @@ def test_an_exported_name_counts_as_reachable():
         "files": {"i.ts": "export { formatDate };\n"}})
     assert defs.is_invoked("format_date", {
         "files": {"__init__.py": '__all__ = ["format_date"]\n'}})
+
+
+# -------------------------------------- the study's own finding, reproduced
+
+PIPELINE_NO_CLI = {"files": {"pipeline.py": textwrap.dedent("""
+    import sqlite3, schedule
+
+    def _init_db(path):
+        return sqlite3.connect(path)
+
+    def run_pipeline(cfg):
+        conn = _init_db(cfg["db"])
+        for row in extract():
+            if validate_row(row):
+                load(conn, row)
+
+    def extract():
+        return []
+
+    def validate_row(row):
+        return True
+
+    def load(conn, row):
+        pass
+""")}, "manifest": []}
+
+CLI_SPEC_SIX = {
+    "name": "internal_tool_cli", "version": "1.0.0",
+    "features": [
+        {"id": "cli.init", "description": "tool init creates a project"},
+        {"id": "cli.add", "description": "tool add appends a key"},
+        {"id": "cli.list", "description": "tool list prints every pair"},
+        {"id": "cli.export", "description": "tool export writes the config"},
+        {"id": "cli.validate", "description": "tool validate checks the config"},
+        {"id": "cli.help", "description": "tool --help prints usage"},
+    ],
+}
+
+
+def test_a_pipeline_delivers_none_of_a_cli_specification():
+    """docs/FINDING_001: an agent given a six-subcommand CLI brief shipped a
+    scheduled pipeline with no subcommand of any kind, and scored 0.00
+    hallucinations -- the same as the agents that built the CLI correctly.
+
+    Two internal names still match lexically, `_init_db` against `cli.init`
+    and `validate_row` against `cli.validate`. Neither is reachable by a user:
+    the codebase declares no subcommand and no route anywhere, so nothing
+    inside it can be invoked however many other internal functions call it.
+    Counting those as delivered reported two of six for a brief that was not
+    implemented at all.
+    """
+    report = fidelity.assess(CLI_SPEC_SIX, PIPELINE_NO_CLI)
+    assert report.headline == "0 of 6 delivered"
+    assert report.completeness == 0.0
+    assert {v.feature_id for v in report.unreachable} == {"cli.init", "cli.validate"}
+
+
+def test_a_language_hook_is_never_a_feature():
+    """`__init__` was being credited as the `init` subcommand."""
+    code = {"files": {"a.py": "class T:\n    def __init__(self):\n        pass\n"},
+            "manifest": []}
+    assert not [d for d in defs.index(code) if d.name == "__init__"]
+    report = fidelity.assess(
+        {"name": "t", "version": "1.0.0",
+         "features": [{"id": "cli.init", "description": "tool init"}]}, code)
+    assert report.verdicts[0].status == fidelity.NOT_FOUND
+
+
+def test_a_helper_a_real_route_calls_is_still_delivered():
+    """The surface rule must not undo the reachability fix."""
+    assert _notify(WIRED).status == fidelity.DELIVERED
