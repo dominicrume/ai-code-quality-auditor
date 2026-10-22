@@ -33,6 +33,19 @@ prioritised to keep all five conditions represented in the headline CSV.
 comparisons involving them are excluded for this run. Full 6/6 coverage
 planned for run_003 once the human_control sessions also land.
 
+**Closing note, added 2026-10-22.** This entry was never closed and, read on
+its own, it contradicts the dataset. Both cells were captured on 1 June 2026;
+`data/reports/main_001.provenance.json` timestamps the complete 4 x 3 x 10
+matrix, and `main_001.csv` carries ten rows in each of them. The
+`replit_agent x internal_tool_cli` cell is the source of the study's headline
+qualitative finding (section 4.3.1), so the sentence above -- "those two cells
+report N=0" and "pairwise comparisons involving them are excluded" -- describes
+a state of the study that lasted one day and was superseded before any analysis
+was run. The entry should have carried this note on 1 June. It is added here,
+dated, rather than edited into the original, because a deviations log that is
+quietly corrected is worth nothing. This is a documentation failure, not a data
+one: every published figure re-derives from the frozen CSV.
+
 ## Analytical note 001 — 2026-06-01
 
 **Observation:** Replit Agent shipped a data-pipeline CLI when given the

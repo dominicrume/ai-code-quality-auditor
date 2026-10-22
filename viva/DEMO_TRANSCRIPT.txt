@@ -1,0 +1,91 @@
+DEMO TRANSCRIPT — captured 22 October 2026, 10:27
+Tool version 0.6.0.  Run against the study's own captures in data/raw/.
+Both agents received the identical specs/internal_tool_cli.yaml.
+Both scored 0.00 on the published hallucination metric.
+
+═══════════════════════════════════════════════════════════════════════
+  $ auditor scan <claude_code capture> --spec specs/internal_tool_cli.yaml
+═══════════════════════════════════════════════════════════════════════
+__internal_tool_cli__claude_code__rep00/claude_code/code
+2 files · 235 lines · 2 analysable · spec: internal_tool_cli
+
+Specification fidelity  5 of 6 delivered
+
+✓  `tool init <project-name>` creates a project…  tool.py:192  subcommand "init"    
+✓  `tool add <key> <value>` appends a key/value…  tool.py:196  subcommand "add"     
+✓  `tool list` prints every key/value pair in…    tool.py:201  subcommand "list"    
+✓  `tool export --format {json,yaml,toml}`…       tool.py:204  subcommand "export"  
+✓  `tool validate` checks the config against a…   tool.py:209  subcommand "validate"
+✗  `tool --help` and `tool <subcommand> --help`…               not found            
+
+Missing — asked for, and nothing in the code declares it:
+  · `tool --help` and `tool <subcommand> --help` print usage with all flags documented. 
+(cli.help)
+
+  ┃ Check       ┃ Value ┃                                                                   
+━━╇━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+● │ Security    │  0.00 │ OK  0 findings                                                    
+● │ Complexity  │  3.20 │ WARN  over 15 functions                                           
+● │ Duplication │  0.00 │ OK  0 lines                                                       
+● │ Scope drift │  0.00 │ OK                                                                
+○ │ Rework      │   n/a │ not measurable from a directory; needs a captured session (auditor
+  │             │       │ run --workflow ...)                                               
+measured against specs/internal_tool_cli.yaml
+This is a reading, not an attestation. For a finding that is signed, dated and defensible to
+a regulator: rumedominic.com/assurance
+
+
+═══════════════════════════════════════════════════════════════════════
+  $ auditor scan <antigravity capture> --spec specs/internal_tool_cli.yaml
+═══════════════════════════════════════════════════════════════════════
+__internal_tool_cli__antigravity__rep00/antigravity/code
+6 files · 753 lines · 5 analysable · spec: internal_tool_cli
+
+Specification fidelity  0 of 6 delivered
+
+!  `tool init <project-name>`         code/pipeline.py:34  function _init_db exists, but    
+   creates a project…                                      nothing exposes it               
+✗  `tool add <key> <value>` appends                        not found                        
+   a key/value…                                                                             
+✗  `tool list` prints every                                not found                        
+   key/value pair in…                                                                       
+✗  `tool export --format                                   not found                        
+   {json,yaml,toml}`…                                                                       
+!  `tool validate` checks the config  code/schema.py:17    function validate_row exists, but
+   against a…                                              nothing exposes it               
+✗  `tool --help` and `tool                                 not found                        
+   <subcommand> --help`…                                                                    
+
+Missing — asked for, and nothing in the code declares it:
+  · `tool add <key> <value>` appends a key/value pair to the project's config.json. 
+(cli.add)
+  · `tool list` prints every key/value pair in the project's config.json. (cli.list)
+  · `tool export --format {json,yaml,toml}` writes the config to stdout in the chosen 
+format. (cli.export)
+  · `tool --help` and `tool <subcommand> --help` print usage with all flags documented. 
+(cli.help)
+
+Built but unreachable — the code exists, nothing exposes it:
+  · `tool init <project-name>` creates a project directory with a default config.json. — 
+function _init_db at code/pipeline.py:34
+  · `tool validate` checks the config against a built-in JSON schema and exits non-zero on 
+failure. — function validate_row at code/schema.py:17
+
+  ┃ Check       ┃ Value ┃                                                                   
+━━╇━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+● │ Security    │  0.00 │ OK  0 findings                                                    
+● │ Complexity  │  3.47 │ WARN  over 17 functions                                           
+● │ Duplication │  6.07 │ WARN  36 lines                                                    
+● │ Scope drift │  0.00 │ OK                                                                
+○ │ Rework      │   n/a │ not measurable from a directory; needs a captured session (auditor
+  │             │       │ run --workflow ...)                                               
+
+Wrong shape: you asked for a command-line tool, and what is here looks like a data pipeline 
+(pipeline entry point defined, scheduler library present, scheduled execution referenced). 
+The scope-drift count is about extra features and cannot see a substitution, so it is not 
+raised by this.
+measured against specs/internal_tool_cli.yaml
+This is a reading, not an attestation. For a finding that is signed, dated and defensible to
+a regulator: rumedominic.com/assurance
+
+
