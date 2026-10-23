@@ -119,3 +119,53 @@ up rather than quietly patched, and the argument of §5.4 applies unchanged.
 An instrument built to audit whether generated code stays inside its brief
 earns the right to make that audit only by being demonstrably honest about
 the readings it cannot support.
+
+---
+
+## Addendum, same day: the first fix was too narrow to be a concept
+
+The fix above is a boolean, `discovery_failed`, set when a guessed brief
+matched nothing at all. Reviewed an hour later, it does not hold up as
+engineering.
+
+It catches one failure mode. A guessed brief matching **one feature in
+twelve** is no more trustworthy than one matching none, and went through that
+gate reported exactly as a supplied brief would be: an unqualified verdict
+resting on a guess. The concept the tool was missing -- *how confident am I
+that this is the brief?* -- was still missing. It had been given a name in one
+special case and nowhere else.
+
+`auditor/core/evidence.py` makes it a first-class property of every fidelity
+reading, computed where the reading is computed, consulted by every surface
+that renders one:
+
+| grade | when | what a surface may do |
+|---|---|---|
+| `MEASURED` | a human supplied the brief | report it plainly |
+| `PROVISIONAL` | derived, and the code corroborated some of it | report it, **labelled, every time** |
+| `WITHHELD` | derived, and it corroborated nothing | report no verdict; give the reason |
+
+Two properties are worth stating because they are load-bearing:
+
+**A derived brief is never a measurement, however much of it matches.** The
+thing in doubt is the brief, not the degree of fit. Ninety per cent matched is
+still ninety per cent of a guess, and `PROVISIONAL` carries a disclosure the
+surface cannot drop.
+
+**There is no threshold to tune.** The only bright line is corroboration
+versus none, and that is not a tuned parameter: a brief that matches nothing
+has supplied the single piece of evidence bearing on its own validity.
+
+`discovery_failed` survives as a read-through for callers written against the
+first fix. The authority is the grade.
+
+### Tests
+
+`tests/test_scan.py`
+
+- `test_a_supplied_brief_is_a_measurement`
+- `test_a_guessed_brief_is_never_a_measurement` -- all six features matched, still disclosed
+- `test_a_guessed_brief_matching_one_in_twelve_is_still_disclosed` -- **the case the boolean missed**
+- `test_a_guessed_brief_corroborating_nothing_is_withheld`
+
+265 passing.

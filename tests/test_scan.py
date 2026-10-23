@@ -282,3 +282,62 @@ def test_a_supplied_brief_still_reports_zero_delivered(tmp_path):
     assert not result.discovery_failed, "a supplied brief is evidence, not a guess"
     assert result.fidelity is not None
     assert not result.fidelity.delivered, "zero delivered is a finding here"
+
+
+# --- evidence grading: the generalisation of the fix above ------------------
+#
+# The first fix for FINDING_002 was a boolean set when a guessed brief matched
+# nothing. That is one failure mode, not a concept: a guessed brief matching
+# one feature in twelve is no more trustworthy and went straight through it.
+#
+# auditor/core/evidence.py grades every fidelity reading by what it rests on,
+# and the surfaces consult the grade before rendering. These pin the three
+# grades at their boundaries.
+
+
+class _Report:
+    def __init__(self, total, delivered):
+        self.total = total
+        self.delivered = delivered
+
+
+def test_a_supplied_brief_is_a_measurement():
+    from auditor.core.evidence import grade, MEASURED
+    e = grade({"name": "cli"}, _Report(6, []))
+    assert e.grade == MEASURED
+    assert e.reportable and not e.needs_disclosure
+    assert e.note is None, "a brief a human wrote needs no disclaimer"
+
+
+def test_a_guessed_brief_is_never_a_measurement():
+    """Even when every feature matches. The brief is what is in doubt."""
+    from auditor.core.evidence import grade, PROVISIONAL
+    e = grade({"_discovered": True, "_discovered_from": "the README"},
+              _Report(6, [1, 2, 3, 4, 5, 6]))
+    assert e.grade == PROVISIONAL
+    assert e.reportable, "it corroborated; it may be shown"
+    assert e.needs_disclosure, "but never without saying what it rests on"
+    assert "Provisional" in e.note
+
+
+def test_a_guessed_brief_matching_one_in_twelve_is_still_disclosed():
+    """The case the boolean missed.
+
+    discovery_failed was False here, so the old gate reported this exactly as
+    it would a supplied brief: an unqualified verdict resting on a guess.
+    """
+    from auditor.core.evidence import grade, PROVISIONAL
+    e = grade({"_discovered": True, "_discovered_from": "recent feat: commits"},
+              _Report(12, [1]))
+    assert e.grade == PROVISIONAL
+    assert e.needs_disclosure
+    assert "recent feat: commits" in e.note
+
+
+def test_a_guessed_brief_corroborating_nothing_is_withheld():
+    from auditor.core.evidence import grade, WITHHELD
+    e = grade({"_discovered": True, "_discovered_from": "recent feat: commits"},
+              _Report(12, []))
+    assert e.grade == WITHHELD
+    assert not e.reportable
+    assert "matched nothing" in e.note

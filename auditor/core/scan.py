@@ -95,8 +95,9 @@ class ScanResult:
     # A derived specification is provisional and every surface that reports a
     # finding against it has to say so.
     spec_source: dict | None = None
-    # Set when a guessed specification matched nothing: see discovery_note.
-    discovery_failed: bool = False
+    # What the fidelity reading rests on: auditor/core/evidence.Evidence.
+    # Every surface that renders a verdict consults this first.
+    evidence: object | None = None
     honoured_ignores: bool = True
     outcomes: list[MetricOutcome] = field(default_factory=list)
 
@@ -143,23 +144,21 @@ class ScanResult:
         and it is withheld when the specification behind it was guessed and
         the guess did not hold up (see ``discovery_failed``).
         """
-        if self.discovery_failed:
+        if self.evidence is not None and not self.evidence.reportable:
             return None
         return self._raw_fidelity
 
     @property
+    def discovery_failed(self) -> bool:
+        """Whether the reading was withheld because its brief was guessed."""
+        return self.evidence is not None and not self.evidence.reportable
+
+    @property
     def discovery_note(self) -> str | None:
-        """What to say instead of a verdict when the guess did not hold up."""
-        if not self.discovery_failed:
+        """The disclosure a surface must print, when one is owed."""
+        if self.evidence is None or self.evidence.grade == "measured":
             return None
-        origin = (self.spec_source or {}).get("from", "the project")
-        return (
-            f"Could not establish what this project was asked to build. The "
-            f"provisional brief read from {origin} matched nothing in the code, "
-            f"which points at the brief rather than at the code. Scope drift is "
-            f"not reported. Supply a specification with --spec, or write one "
-            f"into .auditor/spec.yaml, and it will be."
-        )
+        return self.evidence.note
 
     @property
     def shape_note(self) -> str | None:
@@ -330,10 +329,12 @@ def scan_directory(path: Path, spec: dict | None = None,
     # So the fidelity verdict and the scope-drift count are both withdrawn,
     # together, because both rest on the same brief. The condition is narrow:
     # discovered specification, and nothing matched at all.
+    from auditor.core.evidence import grade
+
     report = result._raw_fidelity
-    if result.spec_source and report is not None and report.total > 0 and not report.delivered:
-        result.discovery_failed = True
-        origin = result.spec_source.get("from", "the project")
+    result.evidence = grade(spec, report)
+    if not result.evidence.reportable and spec:
+        origin = (result.spec_source or {}).get("from", "the project")
         result.outcomes = [
             MetricOutcome(
                 name=o.name, label=o.label,
