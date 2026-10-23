@@ -1,5 +1,39 @@
 # Changelog
 
+## 0.6.1 — 24 October 2026
+
+A user pointed 0.6.0 at a folder of working documents and it answered
+"0 of 12 delivered" against twelve things nobody had asked for. It had fallen
+through to its weakest source of intent, the subjects of recent `feat:`
+commits, harvested twelve errands from a documents repository, and scored the
+folder against them.
+
+Every component behaved correctly. The system still stated as measurement
+something it did not know.
+
+**What changed.** Every fidelity reading now carries what it rests on, graded
+where the reading is computed and consulted by every surface before anything
+renders:
+
+- `MEASURED` — a human supplied the brief. Reported plainly.
+- `PROVISIONAL` — derived, and the code corroborated some of it. Reported,
+  labelled, every time.
+- `WITHHELD` — derived, and it corroborated nothing. No verdict; the reason
+  and the remedy instead.
+
+A derived brief is never a measurement however much of it matches, because the
+thing in doubt is the brief rather than the degree of fit. There is no
+threshold to tune: the only line is corroboration versus none, and a brief
+matching nothing has supplied the one piece of evidence bearing on its own
+validity.
+
+**What did not change.** A specification you supply reports exactly as before,
+including zero delivered — that reading is a finding, and a test pins it.
+
+Written up in full as `docs/FINDING_002_guessed_brief.md`. It is the fourth
+defect recorded against this instrument rather than quietly patched, and the
+first found by somebody outside the project.
+
 ## 0.6.0 — 14 October 2026
 
 One release, and the only one to install. It closes a vulnerability the

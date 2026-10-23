@@ -1,6 +1,6 @@
 [project]
 name = "ai-code-quality-auditor"
-version = "0.6.0"
+version = "0.6.1"
 description = "Checks whether an AI coding agent built what you asked for: per feature, what was delivered, what is missing, what exists but nothing can reach, with a file and line for every claim."
 readme = "README.md"
 license = { file = "LICENSE" }
