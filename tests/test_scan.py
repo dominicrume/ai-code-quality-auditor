@@ -208,3 +208,77 @@ def test_scan_keeps_scope_drift_details_out(tmp_path):
     for outcome in scan_directory(tmp_path).outcomes:
         if outcome.name != "security_density":
             assert outcome.details is None
+
+
+# --- a guessed brief that matched nothing (field report, 23 Oct 2026) -------
+#
+# A user pointed the live view at a documents repository. Its commit subjects
+# were prefixed `feat:` and described errands -- contracts, CVs, interview
+# answers -- so discovery harvested twelve of them and called them features.
+# Nothing in the folder implemented any of them, because none of them were
+# software, and the tool answered "0 of 12 delivered" over twelve red crosses.
+#
+# That states as measurement something the instrument does not know. A brief
+# the caller supplies is evidence; a brief the tool guesses is not, and zero
+# delivered against a guess impugns the guess.
+
+
+def _docs_repo(tmp_path):
+    """A repository whose commits describe errands rather than software."""
+    import subprocess
+    root = tmp_path / "docs"
+    root.mkdir()
+    (root / "notes.md").write_text("# Notes\nContract status lives here.\n")
+    (root / "helper.py").write_text("def tidy(text):\n    return text.strip()\n")
+    run = lambda *a: subprocess.run(a, cwd=root, capture_output=True, check=True)
+    run("git", "init", "-q", ".")
+    run("git", "config", "user.email", "t@t")
+    run("git", "config", "user.name", "t")
+    run("git", "add", "-A")
+    for subject in (
+        "feat: finalise the contract and Ouaknine notes to paste-ready",
+        "feat: the 'why this role' screening answer for the NHS service desk",
+        "feat: add real, attributed testimonials to the NHS service-desk CV",
+    ):
+        run("git", "commit", "-q", "--allow-empty", "-m", subject)
+    return root
+
+
+def test_guessed_brief_that_matches_nothing_is_withdrawn(tmp_path):
+    result = scan_directory(_docs_repo(tmp_path))
+    assert result.discovery_failed
+    assert result.fidelity is None, "a guess that matched nothing is not a verdict"
+    assert "intent is unknown" in (result.discovery_note or "").lower() \
+        or "could not establish" in (result.discovery_note or "").lower()
+
+
+def test_scope_drift_is_withdrawn_with_the_brief_it_rested_on(tmp_path):
+    result = scan_directory(_docs_repo(tmp_path))
+    drift = next(o for o in result.outcomes if o.name == "hallucinations")
+    assert drift.value is None, "scope drift cannot outlive the brief behind it"
+    assert "matched nothing" in (drift.skipped_reason or "")
+
+
+def test_a_supplied_brief_still_reports_zero_delivered(tmp_path):
+    """The headline finding must survive the fix that silences guesses.
+
+    run_001 contains an agent that, given a CLI specification, shipped a data
+    pipeline and delivered none of the six declared subcommands. That zero is
+    the dissertation's central result. It is reported because the caller
+    supplied the specification.
+    """
+    root = tmp_path / "wrong"
+    root.mkdir()
+    (root / "pipeline.py").write_text(
+        "def _init_db():\n    return 1\n\n\ndef run_pipeline():\n    return _init_db()\n")
+    spec = {
+        "name": "cli",
+        "features": [
+            {"id": "cli.init", "description": "tool init creates a project"},
+            {"id": "cli.add", "description": "tool add appends a key"},
+        ],
+    }
+    result = scan_directory(root, spec=spec)
+    assert not result.discovery_failed, "a supplied brief is evidence, not a guess"
+    assert result.fidelity is not None
+    assert not result.fidelity.delivered, "zero delivered is a finding here"

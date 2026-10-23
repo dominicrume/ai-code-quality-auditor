@@ -307,7 +307,17 @@ const fidBox = document.getElementById('fidBox');
 // the panel still reads on a projector that has crushed the reds.
 function renderFidelity(r){
   const f = r.fidelity;
-  if (!f || !f.total){ fidBox.hidden = true; return; }
+  if (!f || !f.total){
+    // A guessed brief that matched nothing is withheld rather than reported.
+    // Say so here: an empty panel would otherwise read as "no drift found".
+    if (r.discovery_note){
+      fidBox.hidden = false;
+      fidBox.innerHTML = `<div class="fid-top"><h2 id="fid-title">Specification fidelity</h2></div>`
+        + `<div class="fid-callout shape"><b>Intent unknown:</b> ${esc(r.discovery_note)}</div>`;
+      return;
+    }
+    fidBox.hidden = true; return;
+  }
   fidBox.hidden = false;
 
   const pct = f.completeness === null || f.completeness === undefined ? 0 : f.completeness;

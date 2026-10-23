@@ -1,0 +1,47 @@
+===============================================================
+  THE DEMO — copy one line at a time. Nothing else.
+===============================================================
+
+STEP 0 — get into the folder
+
+cd ~/Downloads/NEW-enterprise-ai-code-quality-auditor
+
+
+STEP 1 — the agent that did the job
+
+./.venv/bin/auditor scan data/raw/main_001__internal_tool_cli__claude_code__rep00/claude_code/code --spec specs/internal_tool_cli.yaml --no-history
+
+
+   >>> expect:  Specification fidelity  5 of 6 delivered
+
+
+STEP 2 — the agent that did not
+
+./.venv/bin/auditor scan data/raw/main_001__internal_tool_cli__antigravity__rep00/antigravity/code --spec specs/internal_tool_cli.yaml --no-history
+
+
+   >>> expect:  Specification fidelity  0 of 6 delivered
+
+
+===============================================================
+  WHY IT BROKE BEFORE
+===============================================================
+
+You typed:    auditor ...
+Your Mac ran: ~/Library/Python/3.13/bin/auditor   <- old, wrong chip
+You need:     ./.venv/bin/auditor                 <- this project's own
+
+The leading  ./.venv/bin/  is the whole fix. Do not drop it.
+
+If anyone asks what the error was:
+"An old copy of the tool on my laptop was built for Intel; this is an
+ Apple-silicon machine. The project ships its own environment and that
+ is what the published package installs into. Nothing to do with the
+ instrument."
+
+===============================================================
+  IF IT STILL MISBEHAVES
+===============================================================
+
+Open viva/auditor_demo.mp4 and say:
+"Same run, recorded this morning." Then keep talking.

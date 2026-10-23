@@ -60,6 +60,11 @@ def _serialise(result: ScanResult, changed: list[str] | None = None) -> dict:
                 for e in result.fidelity.extras
             ],
         } if result.fidelity and result.fidelity.total else None),
+        # Why the panel above is empty, when the reason is that a guessed
+        # brief did not survive contact with the code. Without this the page
+        # simply shows nothing, and silence reads as "no drift" rather than
+        # "intent unknown".
+        "discovery_note": result.discovery_note,
         "metrics": [
             {
                 "name": o.name, "label": o.label, "value": o.value,

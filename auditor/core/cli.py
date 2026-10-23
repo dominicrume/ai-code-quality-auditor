@@ -313,8 +313,14 @@ def scan_cmd(path: Path, spec: Path | None, as_json: bool, fail_on: str,
         # Scope drift is the one reading no other tool offers, and it was
         # unreachable without hand-written YAML, so most users never saw it.
         # Say how to turn it on at the moment they are looking at it off.
-        if any(o.name == "hallucinations" and not o.applicable and not o.unparsed
-               for o in result.outcomes):
+        if result.discovery_failed:
+            # Something did state intent; it just did not survive contact with
+            # the code. Saying "nothing says what you asked for" here would be
+            # false, and would send the user to `auditor init` when what they
+            # need is to know the guess was discarded and why.
+            console.print(f"\n[yellow]Intent unknown:[/yellow] {result.discovery_note}")
+        elif any(o.name == "hallucinations" and not o.applicable and not o.unparsed
+                 for o in result.outcomes):
             console.print(
                 '\n[dim]Scope drift is off because nothing says what you asked for. '
                 'Turn it on:[/dim]\n'

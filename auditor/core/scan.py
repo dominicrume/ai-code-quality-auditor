@@ -95,6 +95,8 @@ class ScanResult:
     # A derived specification is provisional and every surface that reports a
     # finding against it has to say so.
     spec_source: dict | None = None
+    # Set when a guessed specification matched nothing: see discovery_note.
+    discovery_failed: bool = False
     honoured_ignores: bool = True
     outcomes: list[MetricOutcome] = field(default_factory=list)
 
@@ -124,17 +126,40 @@ class ScanResult:
         return max(bands, key=lambda b: order[b]) if bands else "good"
 
     @property
-    def fidelity(self):
-        """The per-feature verdict, when a specification was supplied.
-
-        ``FidelityReport`` or None. This is the reading no tool without a
-        specification can produce, so it is the one the report leads with.
-        """
+    def _raw_fidelity(self):
+        """The fidelity report as the analyser produced it, trusted or not."""
         for o in self.outcomes:
             report = (o.diagnostics or {}).get("fidelity")
             if report is not None:
                 return report
         return None
+
+    @property
+    def fidelity(self):
+        """The per-feature verdict, when intent is known.
+
+        ``FidelityReport`` or None. This is the reading no tool without a
+        specification can produce, so it is the one the report leads with --
+        and it is withheld when the specification behind it was guessed and
+        the guess did not hold up (see ``discovery_failed``).
+        """
+        if self.discovery_failed:
+            return None
+        return self._raw_fidelity
+
+    @property
+    def discovery_note(self) -> str | None:
+        """What to say instead of a verdict when the guess did not hold up."""
+        if not self.discovery_failed:
+            return None
+        origin = (self.spec_source or {}).get("from", "the project")
+        return (
+            f"Could not establish what this project was asked to build. The "
+            f"provisional brief read from {origin} matched nothing in the code, "
+            f"which points at the brief rather than at the code. Scope drift is "
+            f"not reported. Supply a specification with --spec, or write one "
+            f"into .auditor/spec.yaml, and it will be."
+        )
 
     @property
     def shape_note(self) -> str | None:
@@ -291,6 +316,32 @@ def scan_directory(path: Path, spec: dict | None = None,
             # stay out of the scan: the live page would offer to strip them.
             details=score.details if name == "security_density" else None,
         ))
+
+    # A guessed specification that matched nothing has falsified itself.
+    #
+    # A brief the caller handed in is evidence, so zero delivered against it is
+    # a finding and run_001 contains one. A brief this tool guessed is not
+    # evidence, and zero delivered against it says far more about the guess
+    # than about the code: it is the signature of reading intent off the wrong
+    # thing. A documents repository whose commit subjects describe errands
+    # rather than software produced exactly this, and the tool answered "0 of
+    # 12 delivered", which states as measurement something it does not know.
+    #
+    # So the fidelity verdict and the scope-drift count are both withdrawn,
+    # together, because both rest on the same brief. The condition is narrow:
+    # discovered specification, and nothing matched at all.
+    report = result._raw_fidelity
+    if result.spec_source and report is not None and report.total > 0 and not report.delivered:
+        result.discovery_failed = True
+        origin = result.spec_source.get("from", "the project")
+        result.outcomes = [
+            MetricOutcome(
+                name=o.name, label=o.label,
+                skipped_reason=f"the provisional brief read from {origin} "
+                               f"matched nothing; intent is unknown",
+            ) if o.name == "hallucinations" else o
+            for o in result.outcomes
+        ]
 
     # correction_freq counts backspaces per thousand keystrokes, so it needs an
     # interaction log captured while the code was being written. A directory has
