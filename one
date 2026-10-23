@@ -1,0 +1,2 @@
+#!/bin/sh
+exec ./.venv/bin/auditor scan demo/claude-code --spec demo/brief.yaml "$@"
