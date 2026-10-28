@@ -27,6 +27,17 @@ threshold to tune: the only line is corroboration versus none, and a brief
 matching nothing has supplied the one piece of evidence bearing on its own
 validity.
 
+**The second fix, and the one that changes a published number.** The
+definition index was crediting language hooks as features. A Python package
+defines `__init__` because the language requires it, and 0.6.0 read that as the
+`init` subcommand of a specification asking for a command-line interface. A
+data pipeline that implements none of a CLI brief therefore scored two of six
+on it. Dunders are now excluded from the index, and the same capture reads
+nought of six, which is what it is.
+
+Anyone who ran 0.6.0 against a specification naming `init`, `main`, `call` or
+`enter` should re-run it. The reading was too generous, never too harsh.
+
 **What did not change.** A specification you supply reports exactly as before,
 including zero delivered — that reading is a finding, and a test pins it.
 
