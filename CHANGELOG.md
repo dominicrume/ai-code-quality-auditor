@@ -1,5 +1,26 @@
 # Changelog
 
+## Unreleased
+
+**The KYA constitution checker, and the gate it needed.** The five elements the
+standard names are now measured: powers bounded, separation of duty, an action
+record, an amendment path, a named owner. Each declares what a static read can
+honestly establish, so an artefact element is MEASURED and its absence is a real
+failure, while a behavioural element is capped at PROVISIONAL when a marker is
+found and WITHHELD when none is. A ceiling enforced in a gateway is invisible to
+a file scan, so silence is never reported as absence, and any withheld element
+makes the whole verdict INCOMPLETE rather than PASS.
+
+Found and fixed the same day: the checker scored subjects that are not agents,
+returning PASS on this repository, which has no agent in it. Recorded as
+FINDING_003 and closed by matching identifiers from the parsed syntax tree
+instead of raw source text, which also stopped the checker finding its own
+marker vocabulary. A subject that does not both call a model and have a path to
+act now returns NOT_APPLICABLE with no score at all.
+
+Written up in `docs/FINDING_003_constitution_has_no_subject_gate.md`, including
+the two defects inside the fix itself, both caught by self-scan before shipping.
+
 ## 0.6.1 — 24 October 2026
 
 A user pointed 0.6.0 at a folder of working documents and it answered

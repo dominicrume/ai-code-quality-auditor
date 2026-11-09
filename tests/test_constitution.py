@@ -4,6 +4,7 @@ from pathlib import Path
 
 from auditor.core.evidence import MEASURED, PROVISIONAL, WITHHELD
 from auditor.governance import constitution as con
+from auditor.governance import subject as subj
 
 
 STANDARD = Path(__file__).parent.parent / "specs" / "kya_constitution_v1.yaml"
@@ -12,8 +13,9 @@ STANDARD = Path(__file__).parent.parent / "specs" / "kya_constitution_v1.yaml"
 GOVERNED = {
     "agent/policy.yaml": "version: 3\nmax_spend: 500\nowner: platform-team\n",
     "agent/run.py": (
+        "import anthropic\n"
         "MAX_SPEND = 500\n"
-        "def act(action):\n"
+        "def act(action, tool_calls):\n"
         "    if action.cost > MAX_SPEND:\n"
         "        return require_approval(action)\n"
         "    audit_log.write(action)\n"
@@ -25,10 +27,17 @@ GOVERNED = {
 
 UNGOVERNED = {
     "agent/run.py": (
-        "def act(action):\n"
+        "import anthropic\n"
+        "def act(action, tool_calls):\n"
         "    return do_it(action)\n"
     ),
 }
+
+# Not an agent: calls a model, but nothing by which its answer acts.
+CHATBOT_ONLY = {"a.py": "import anthropic\ndef reply(q):\n    return answer(q)\n"}
+
+# Not an agent: acts, but nothing calls a model.
+PLAIN_SOFTWARE = {"a.py": "import requests\ndef post(x):\n    return requests.post(x)\n"}
 
 
 # --- the honesty constraint -------------------------------------------------
@@ -136,14 +145,16 @@ def test_score_is_over_what_could_be_read_not_over_five():
     assert verdict.measured == 2
 
 
-def test_score_is_none_when_nothing_could_be_read():
+def test_an_unreadable_subject_is_not_applicable_rather_than_incomplete():
+    """Nothing parsed means the question could not even be asked."""
     verdict = con.evaluate({"files": {}}, {
         "standard": "kya", "version": 1,
         "elements": [{"id": "powers_bounded", "basis": "behaviour",
                       "description": "x"}],
     })
     assert verdict.score is None
-    assert verdict.verdict == "INCOMPLETE"
+    assert verdict.verdict == "NOT_APPLICABLE"
+    assert verdict.subject_kind == subj.UNREADABLE
 
 
 def test_unknown_element_is_skipped_not_crash():
@@ -178,3 +189,86 @@ def test_a_versioned_policy_is_found_by_stem_not_exact_filename():
         {"files": {"specs/governance_guardrails.yaml": "version: 2\nrules: []\n"}})
     assert passed is True and grade == MEASURED
     assert "governance_guardrails" in ev
+
+
+# --- the subject gate (FINDING_003) ----------------------------------------
+
+def test_a_repository_with_no_agent_is_not_applicable_not_a_pass():
+    """The defect that prompted the gate: this instrument scored PASS on
+    itself, having no agent, no ceiling and no runtime."""
+    verdict = con.evaluate_from_spec({"files": PLAIN_SOFTWARE}, STANDARD)
+    assert verdict.verdict == "NOT_APPLICABLE"
+    assert verdict.score is None
+    assert verdict.results == []
+    assert "does not apply" in verdict.note
+
+
+def test_a_model_call_without_an_action_path_is_not_an_agent():
+    s = subj.classify({"files": CHATBOT_ONLY})
+    assert s.kind == subj.NOT_AN_AGENT
+    assert s.model_evidence and not s.action_evidence
+    assert "only answers" in s.note
+
+
+def test_an_action_path_without_a_model_is_not_an_agent():
+    s = subj.classify({"files": PLAIN_SOFTWARE})
+    assert s.kind == subj.NOT_AN_AGENT
+    assert s.action_evidence and not s.model_evidence
+    assert "ordinary software" in s.note
+
+
+def test_a_model_call_plus_an_action_path_is_an_agent():
+    s = subj.classify({"files": GOVERNED})
+    assert s.kind == subj.AGENT and s.is_agent and s.applicable
+
+
+def test_no_python_is_unreadable_not_absent():
+    """A loop written in TypeScript is invisible, and that is said out loud."""
+    s = subj.classify({"files": {"index.ts": "const agent = new Anthropic()"}})
+    assert s.kind == subj.UNREADABLE
+    assert "not a finding that no agent is present" in s.note
+
+
+def test_a_marker_in_a_string_literal_does_not_count():
+    """FINDING_003's first cause. The checker used to find its own vocabulary."""
+    describes = {"doc.py": 'MARKERS = ("require_approval", "spend_cap")\n'}
+    per_file, _ = subj.identifiers({"files": describes})
+    assert subj.used(per_file, ("require_approval", "spend_cap")) == []
+
+
+def test_a_marker_that_is_called_does_count():
+    uses = {"run.py": "def go(a):\n    return require_approval(a)\n"}
+    per_file, _ = subj.identifiers({"files": uses})
+    assert subj.used(per_file, ("require_approval",))
+
+
+def test_this_very_module_is_no_longer_credited_with_an_approval_gate():
+    """Scanning the checker itself must not satisfy separation_of_duty."""
+    src = Path("auditor/governance/constitution.py").read_text()
+    per_file, _ = subj.identifiers({"files": {"constitution.py": src}})
+    assert subj.used(per_file, ("require_approval", "four_eyes")) == []
+
+
+def test_unparsed_files_are_excluded_never_counted_as_empty():
+    s = subj.classify({"files": {"broken.py": "def (:\n", **GOVERNED}})
+    assert "broken.py" in s.unparsed
+    assert s.coverage < 1.0
+
+
+def test_holding_a_providers_key_is_not_calling_a_provider():
+    """The gate's own second defect: `anthropic_api_key` in a config file
+    classified this instrument as an agent."""
+    config = {"config.py": "class S:\n    anthropic_api_key: str = ''\n"}
+    s = subj.classify({"files": config})
+    assert s.model_evidence == []
+    assert s.kind == subj.NOT_AN_AGENT
+
+
+def test_this_instrument_is_not_an_agent_and_gets_no_kya_score():
+    """FINDING_003, pinned. This repository returned PASS on all five
+    elements on 9 November 2026. It must now return no score at all."""
+    files = {str(p): p.read_text(errors="ignore")
+             for p in Path("auditor").rglob("*.py")}
+    v = con.evaluate_from_spec({"files": files}, STANDARD)
+    assert v.verdict == "NOT_APPLICABLE"
+    assert v.score is None and v.results == []

@@ -68,3 +68,6 @@ docs/You buy an AI tool*.docx
 # Source video and stills for talks. 106MB of personal footage, no part of the
 # package, and git is the wrong store for binaries this size.
 media/
+
+# Internal method and doctrine. Local only.
+.claude/skills/

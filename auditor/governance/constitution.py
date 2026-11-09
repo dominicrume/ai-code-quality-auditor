@@ -43,6 +43,7 @@ from pydantic import BaseModel
 
 from auditor.core.evidence import MEASURED, PROVISIONAL, WITHHELD
 from auditor.core.logger import get_logger
+from auditor.governance import subject as subj
 
 log = get_logger("constitution")
 
@@ -68,6 +69,9 @@ class ElementResult(BaseModel):
 class ConstitutionVerdict(BaseModel):
     standard: str
     version: int
+    subject_kind: str = subj.AGENT
+    subject_note: str = ""
+    coverage: float = 1.0
     verdict: str                 # PASS | FAIL | INCOMPLETE
     score: float | None          # over the elements that could be read; None if none could
     measured: int
@@ -78,6 +82,8 @@ class ConstitutionVerdict(BaseModel):
     @property
     def note(self) -> str | None:
         """The sentence a surface is obliged to print alongside the verdict."""
+        if self.verdict == "NOT_APPLICABLE":
+            return self.subject_note
         if self.withheld:
             unseen = ", ".join(r.id for r in self.results if not r.reportable)
             return (
@@ -144,16 +150,15 @@ def _files(codebase: dict) -> dict[str, str]:
 
 
 def _hits(codebase: dict, markers: tuple[str, ...]) -> list[str]:
-    found = []
-    for path, content in _files(codebase).items():
-        lowered = content.lower()
-        for marker in markers:
-            needle = marker if marker.isupper() else marker.lower()
-            probe = content if marker.isupper() else lowered
-            if needle in probe:
-                found.append(f"{path}: {marker}")
-                break
-    return found
+    """Where a marker names something used, never where text merely mentions it.
+
+    Before FINDING_003 this matched raw source text, so the checker found its
+    own marker vocabulary -- `require_approval` lives in this module as a string
+    in a tuple -- and credited this project with an approval gate it does not
+    have. Identifiers come from the AST, where a string constant is not a name.
+    """
+    per_file, _ = subj.identifiers(codebase)
+    return subj.used(per_file, tuple(m.lower() for m in markers))
 
 
 def _behavioural(hits: list[str], absent: str) -> tuple[bool | None, str, str]:
@@ -251,6 +256,20 @@ def evaluate(codebase: dict, standard: dict) -> ConstitutionVerdict:
     declares is satisfied and established; anything else is FAIL or INCOMPLETE,
     and a caller cannot tune that away.
     """
+    subject = subj.classify(codebase)
+    if not subject.applicable:
+        # FINDING_003. A standard about autonomy has nothing to say about a
+        # subject that is not an agent, and the honest answer is not a score.
+        return ConstitutionVerdict(
+            standard=standard.get("standard", "kya"),
+            version=int(standard.get("version", 1)),
+            subject_kind=subject.kind,
+            subject_note=subject.note,
+            coverage=subject.coverage,
+            verdict="NOT_APPLICABLE",
+            score=None, measured=0, provisional=0, withheld=0, results=[],
+        )
+
     results: list[ElementResult] = []
     for element in standard.get("elements", []):
         eid = element["id"]
@@ -283,6 +302,9 @@ def evaluate(codebase: dict, standard: dict) -> ConstitutionVerdict:
     return ConstitutionVerdict(
         standard=standard.get("standard", "kya"),
         version=int(standard.get("version", 1)),
+        subject_kind=subject.kind,
+        subject_note=subject.note,
+        coverage=subject.coverage,
         verdict=verdict,
         score=score,
         measured=sum(1 for r in results if r.grade == MEASURED),

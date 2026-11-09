@@ -1,7 +1,6 @@
 # FINDING_003 — the constitution checker scores repositories that contain no agent
 
-**Status:** open. The module ships with the defect recorded and the verdict
-unsafe to quote.
+**Status:** fixed, 9 November 2026, in the same day it was recorded.
 **Found:** 9 November 2026, by self-scan, before any external use.
 **Module:** `auditor/governance/constitution.py`, `specs/kya_constitution_v1.yaml`
 
@@ -65,3 +64,49 @@ The five elements, their checkers and the grading are sound and tested
 (20 tests). What is not sound is the aggregate verdict on an arbitrary
 repository. No published page should quote a KYA score produced by this module
 until the subject gate exists.
+
+
+---
+
+## Fix, 9 November 2026
+
+Both causes fell to one change: **match identifiers, not text.**
+
+`auditor/governance/subject.py` parses Python and reports only names that are
+used, so a marker inside a string literal is a mention rather than a use. The
+checker can no longer see its own vocabulary, because `require_approval` lives
+in this codebase as a string in a tuple. `separation_of_duty` on this
+repository went from a false pass to correctly withheld.
+
+A subject gate now runs before any element is read. An agent, for a standard
+about autonomy, is two things at once: something that calls a model, and some
+path by which the result acts. A model call with no action path is a chatbot; an
+action path with no model is ordinary software. Neither is failed. Both are
+`NOT_APPLICABLE`, with no score, no element results, and a sentence saying why.
+
+This repository now returns `NOT_APPLICABLE`, pinned by
+`test_this_instrument_is_not_an_agent_and_gets_no_kya_score`.
+
+### Two defects inside the fix, both found by self-scan before shipping
+
+The marker lists were twice too loose, and each time the gate over-admitted,
+which is the worse direction: an over-admitting gate hands a verdict to a
+subject the standard does not cover.
+
+1. The first model list held `chat`, `prompt`, `llm` and `messages`. Those are
+   ordinary vocabulary in software that has never called a model, and the
+   instrument was classified as an agent.
+2. The second matched provider names against any identifier, so
+   `anthropic_api_key` in a config dataclass was enough. **Holding a
+   provider's key is not calling a provider.** Provider names are now matched
+   against imports only, by exact part rather than substring.
+
+Both are pinned by tests. The general lesson, which is the same one
+FINDING_002 taught: when a fix is a special case of the real problem it is not
+a fix, and a marker list is nearly always a special case.
+
+### What is still not established
+
+The gate reads Python. A subject whose loop is in TypeScript is reported
+`UNREADABLE`, never as having no agent, and `coverage` states how much was
+parsed. Silence remains not evidence of absence.
