@@ -76,6 +76,7 @@ exclude = ["tests*", "data*", "scripts*", "docs*", "specs*"]
 "auditor.dashboard" = ["templates/*.html", "static/*"]
 "auditor.assets" = ["*.css"]
 "auditor.live" = ["templates/*.html"]
+"auditor.standards" = ["*.yaml"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

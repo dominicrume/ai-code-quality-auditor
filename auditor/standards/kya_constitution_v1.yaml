@@ -1,0 +1,44 @@
+# KYA constitution, version 1.
+#
+# The five elements an agent needs before it is answerable. These are NOT the
+# security guardrails in governance_guardrails.yaml; those ask whether the code
+# is hygienic, these ask whether the agent is governed. A codebase can pass
+# every security check and satisfy none of these.
+#
+# `basis` declares what a static read of a codebase can honestly establish
+# about each element, and the checker is not permitted to exceed it:
+#
+#   artefact   the artefact IS the compliance. Present or absent is the
+#              finding, and absence is a measured failure.
+#   behaviour  a scan sees a marker, never the behaviour. A marker found is
+#              provisional; no marker found is withheld, not failed, because
+#              the ceiling may be enforced somewhere this scan cannot read.
+
+standard: kya
+version: 1
+
+elements:
+  - id: powers_bounded
+    basis: behaviour
+    description: >
+      What the agent may decide alone is bounded by an explicit ceiling on
+      spend, rate or scope.
+  - id: separation_of_duty
+    basis: behaviour
+    description: >
+      Actions above the ceiling go to a human first, and the code names which
+      action requires it.
+  - id: action_record
+    basis: behaviour
+    description: >
+      Actions and refusals are both written to a record that can be read back
+      later.
+  - id: amendment_path
+    basis: artefact
+    description: >
+      The rules themselves are versioned, so a change to them is visible as a
+      change rather than a silent edit.
+  - id: named_accountability
+    basis: artefact
+    description: >
+      A named owner is recorded, so each gap has somebody answerable for it.

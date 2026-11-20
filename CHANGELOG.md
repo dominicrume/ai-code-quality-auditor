@@ -2,6 +2,29 @@
 
 ## Unreleased
 
+**The check runs inside your own agent.** `auditor mcp` serves the KYA
+conformance check over MCP, so the assessment happens in whatever a team already
+runs rather than in a tool they have to adopt:
+
+    claude mcp add kya -- auditor mcp
+
+Three tools appear: `kya_assess`, `kya_classify_subject` and `kya_standard`. The
+server speaks JSON-RPC over stdio and adds no runtime dependency, because an
+instrument whose first principle is that the same input gives the same number
+should not take on a protocol library to expose a surface.
+
+`skills/kya-conformance/` is the companion skill, telling an agent when to run
+the check, how to read the three evidence grades, and that a withheld element is
+not a failure. Unlike the verdict, the gaps it reports each carry a named owner.
+
+Found while building it: `specs/` is excluded from the wheel by design, since the
+spec box is externalised data rather than code, which meant `kya_assess` would
+have failed for everybody who installed the package rather than cloning it. The
+standard now also ships as package data under `auditor/standards/`, and a test
+fails if that copy ever drifts from the authoring spec in `specs/`. Verified by
+installing a built wheel into a clean environment and running the server against
+it with no repository in reach.
+
 **The KYA constitution checker, and the gate it needed.** The five elements the
 standard names are now measured: powers bounded, separation of duty, an action
 record, an amendment path, a named owner. Each declares what a static read can

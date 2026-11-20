@@ -776,3 +776,29 @@ def share_cmd(to: str | None, since: str | None, yes: bool, as_json: bool):
         console.print(f"\n[red]Not sent:[/red] {exc}\n")
         raise SystemExit(1) from exc
     console.print(f"\n[green]Sent[/green] {payload['scans']} scan(s) to {to} ({status}).\n")
+
+
+@main.command("mcp")
+def mcp_cmd():
+    """Serve the KYA conformance check to your own agent over MCP.
+
+    \b
+      auditor mcp             speak MCP on stdin/stdout
+
+    Your agent starts this, not you. Register it once and the check is a tool
+    inside whatever you already run:
+
+    \b
+      claude mcp add kya -- auditor mcp
+
+    For Cursor or another client, add to its MCP config:
+
+    \b
+      {"mcpServers": {"kya": {"command": "auditor", "args": ["mcp"]}}}
+
+    Three tools appear: kya_assess, kya_classify_subject, kya_standard. The
+    assessment returns NOT_APPLICABLE with no score when the subject is not an
+    agent, which is the point of it.
+    """
+    from auditor.mcp.server import serve
+    serve()
