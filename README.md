@@ -104,6 +104,25 @@ auditor forget --all                          # delete that history, and the ran
 auditor share                                 # see what an opt-in share would contain
 ```
 
+Or put the agent governance check inside the agent you already use, so the
+assessment happens where the work happens:
+
+```bash
+claude mcp add kya -- auditor mcp     # Claude Code
+```
+
+```json
+{"mcpServers": {"kya": {"command": "auditor", "args": ["mcp"]}}}
+```
+
+Three tools appear in your own tool: `kya_assess` scores an agent against the
+five KYA conformance elements with an evidence grade on each,
+`kya_classify_subject` decides whether the thing in front of it is an agent at
+all, and `kya_standard` states what the standard measures and what it refuses to
+conclude. Point it at something that is not an agent and it returns
+`NOT_APPLICABLE` with no score, which is the behaviour the check exists for.
+`skills/kya-conformance/` is the companion skill for an agent that will run it.
+
 Reproduce the study instead:
 
 ```bash

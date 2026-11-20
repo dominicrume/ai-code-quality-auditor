@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.6.2 — 20 November 2026
 
 **The check runs inside your own agent.** `auditor mcp` serves the KYA
 conformance check over MCP, so the assessment happens in whatever a team already

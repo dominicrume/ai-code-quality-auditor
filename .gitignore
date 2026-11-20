@@ -71,3 +71,4 @@ media/
 
 # Internal method and doctrine. Local only.
 .claude/skills/
+dist-*/
