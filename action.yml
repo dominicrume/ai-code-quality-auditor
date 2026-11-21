@@ -45,16 +45,16 @@ inputs:
   version:
     description: >
       Version specifier for ai-code-quality-auditor, appended to the package
-      name. Pin exactly (e.g. "==0.5.1") for a reproducible build.
+      name. Pin exactly (e.g. "==0.6.1") for a reproducible build.
 
-      The floor stays at 0.5.1 until 0.6.0 is on PyPI. Raising it to a version
-      the index does not carry breaks every consumer, because the action
-      installs from PyPI and not from this repository. Once 0.6.0 is
-      published, raise this to ">=0.6.0": 0.6.0 is the release where
-      `auditor scan` stopped reporting OK for code it could not read, which
-      is the behaviour a CI gate depends on.
+      The floor is ">=0.6.1" because 0.5.1 is published and serves two
+      dashboard routes without authentication, and because 0.6.0 is where
+      `auditor scan` stopped reporting OK for code it could not read, which is
+      the behaviour a CI gate depends on. A floor the index does not carry
+      breaks every consumer, since this action installs from PyPI and not from
+      this repository, so raise it only after the release is live.
     required: false
-    default: ">=0.5.1"
+    default: ">=0.6.1"
   python-version:
     description: Python interpreter version.
     required: false

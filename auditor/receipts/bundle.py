@@ -35,6 +35,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from pathlib import Path
 from typing import Any
 
@@ -43,11 +44,32 @@ RECEIPT_VERSION = 1
 UNSEALED = "unsealed"
 SEALED = "sealed"
 
+# A chain pointer is a digest this module produced, or nothing at all.
+DIGEST_PATTERN = re.compile(r"^sha256:[0-9a-f]{64}$")
+
 
 def canonical(payload: Any) -> bytes:
-    """One byte string per value, so a digest is reproducible anywhere."""
+    """One byte string per value, so a digest is reproducible anywhere.
+
+    `surrogatepass` because a path or an evidence string can carry a lone
+    surrogate (a file name that is not valid UTF-8, read back through
+    `surrogateescape`), and a receipt that cannot be computed for a file on
+    disk is worse than one whose digest covers an odd byte. Every payload that
+    is valid UTF-8 encodes to exactly the same bytes as before.
+    """
     return json.dumps(payload, sort_keys=True, separators=(",", ":"),
-                      ensure_ascii=False).encode("utf-8")
+                      ensure_ascii=False).encode("utf-8", "surrogatepass")
+
+
+def safe_text(value: str) -> str:
+    """A path or label made printable without losing which bytes it was.
+
+    Lone surrogates survive a digest but not a JSON file anyone can read, so
+    they are escaped here instead: `\\xff` rather than an unencodable char.
+    Reversible, so two different paths cannot be flattened into one.
+    """
+    return value.encode("utf-8", "surrogateescape").decode("utf-8",
+                                                           "backslashreplace")
 
 
 def digest(payload: Any) -> str:
@@ -58,26 +80,35 @@ def _file_digests(codebase: dict) -> list[list[str]]:
     out = []
     for path, content in sorted((codebase.get("files") or {}).items()):
         h = hashlib.sha256(content.encode("utf-8", "surrogateescape")).hexdigest()
-        out.append([path, h])
+        out.append([safe_text(path), h])
     return out
 
 
 def subject_record(codebase: dict) -> dict:
     """What was read, provably, without carrying any of it."""
     files = _file_digests(codebase)
-    return {
+    record = {
         "file_count": len(files),
         "tree_digest": digest(files),
         "files": files,
     }
+    # Present on disk and not read: binary, badly encoded, or gone mid-walk.
+    # Named rather than omitted, so the receipt cannot imply it saw everything.
+    unreadable = codebase.get("unreadable") or []
+    if unreadable:
+        record["unreadable"] = [safe_text(p) for p in sorted(unreadable)]
+    return record
 
 
 def _instrument_version() -> str:
-    try:
-        from importlib.metadata import version
-        return version("ai-code-quality-auditor")
-    except Exception:
-        return "0"
+    """The version of the code that produced the finding.
+
+    Read from the package, not from installed distribution metadata: metadata
+    goes stale in an editable install, and a receipt stamped with a version that
+    did not produce it is a receipt that lies about its own provenance.
+    """
+    from auditor._version import __version__
+    return __version__
 
 
 def open_defects() -> list[dict]:
@@ -93,7 +124,23 @@ def open_defects() -> list[dict]:
     if not f.exists():
         return []
     data = yaml.safe_load(f.read_text()) or {}
-    return data.get("open", []) or []
+    # Coerced to text. YAML reads a bare 2026-11-21 as a date object, which is
+    # not JSON serialisable, and one unquoted value in this file made every
+    # receipt unproducible. A receipt must be buildable whatever the shipped
+    # disclosure happens to contain.
+    return [{str(k): _as_text(v) for k, v in entry.items()}
+            for entry in (data.get("open") or [])
+            if isinstance(entry, dict)]
+
+
+def _as_text(value):
+    if isinstance(value, (str, int, float, bool)) or value is None:
+        return value
+    if isinstance(value, (list, tuple)):
+        return [_as_text(v) for v in value]
+    if isinstance(value, dict):
+        return {str(k): _as_text(v) for k, v in value.items()}
+    return str(value)
 
 
 def build(codebase: dict, standard: dict, verdict, *,
@@ -105,6 +152,12 @@ def build(codebase: dict, standard: dict, verdict, *,
     without anybody hosting a database.
     """
     from auditor.governance import subject as subj
+    # A chain pointer that is not a digest is not a pointer: it would stand in
+    # the record looking like provenance while naming nothing checkable.
+    if previous is not None and not DIGEST_PATTERN.match(previous):
+        raise ValueError(
+            f"chain.previous is not a finding digest: {previous!r}; expected "
+            "'sha256:' followed by 64 lowercase hex characters")
     classification = subj.classify(codebase)
 
     elements = [{
@@ -128,7 +181,7 @@ def build(codebase: dict, standard: dict, verdict, *,
         "subject": subject_record(codebase),
         "classification": verdict.subject_kind,
         "coverage": round(verdict.coverage, 6),
-        "unparsed": sorted(classification.unparsed),
+        "unparsed": sorted(safe_text(u) for u in classification.unparsed),
         "verdict": verdict.verdict,
         "score_over_readable": verdict.score,
         "grades": {"measured": verdict.measured,
@@ -149,8 +202,37 @@ def write(finding: dict, out: str | Path) -> Path:
     """A receipt is a file. That is the point: it outlives whatever made it."""
     p = Path(out).expanduser()
     p.write_text(json.dumps(finding, indent=2, ensure_ascii=False) + "\n",
-                 encoding="utf-8")
+                 encoding="utf-8", errors="surrogatepass")
     return p
+
+
+def chain_breaks(findings: list[dict]) -> list[str]:
+    """Where an ordered run of receipts stops being a chain.
+
+    Nothing else checks this: each receipt names its predecessor and no code
+    ever walked the pointers, so a missing or re-pointed link in a record a
+    customer hands over would have passed unexamined. Returns one plain
+    sentence per problem, empty when the chain is unbroken.
+    """
+    problems: list[str] = []
+    for i, f in enumerate(findings):
+        got = (f.get("chain") or {}).get("previous")
+        if not intact(f):
+            problems.append(f"receipt {i} does not match its own digest")
+        if i == 0:
+            if got is not None and not DIGEST_PATTERN.match(got):
+                problems.append(f"receipt 0 names a malformed predecessor: {got!r}")
+            continue
+        want = findings[i - 1].get("finding_digest")
+        if got != want:
+            problems.append(
+                f"receipt {i} names {got!r} as its predecessor, but receipt "
+                f"{i - 1} is {want!r}")
+    return problems
+
+
+def chain_intact(findings: list[dict]) -> bool:
+    return not chain_breaks(findings)
 
 
 def recompute(finding: dict) -> str:

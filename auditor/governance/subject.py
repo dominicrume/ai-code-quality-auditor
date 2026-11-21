@@ -84,6 +84,11 @@ class Subject:
     model_evidence: list[str] = field(default_factory=list)
     action_evidence: list[str] = field(default_factory=list)
     unparsed: list[str] = field(default_factory=list)
+    # Evidence lists are capped for readability. The counts travel with them,
+    # because a truncation the reader cannot see is a false statement about how
+    # much was found.
+    model_evidence_omitted: int = 0
+    action_evidence_omitted: int = 0
 
     @property
     def is_agent(self) -> bool:
@@ -221,6 +226,9 @@ def classify(codebase: dict) -> Subject:
     action = used(per_file, _ACTION_MARKERS)
 
     kind = AGENT if (model and action) else NOT_AN_AGENT
+    shown = 4
     return Subject(kind=kind, grade=MEASURED, coverage=coverage,
-                   model_evidence=model[:4], action_evidence=action[:4],
+                   model_evidence=model[:shown], action_evidence=action[:shown],
+                   model_evidence_omitted=max(0, len(model) - shown),
+                   action_evidence_omitted=max(0, len(action) - shown),
                    unparsed=unparsed)

@@ -1,0 +1,14 @@
+// Put this at .mcp.json in your project root, so everyone on the team gets it.
+// Or run one command and skip the file:  claude mcp add kya -- auditor mcp
+// Confirmed against https://code.claude.com/docs/en/mcp
+// Claude Code reads an entry with no "type" as a stdio server, so "type" is omitted here.
+// If `auditor` is not on your PATH, use the absolute path instead:
+//     "command": "/path/to/your/.venv/bin/auditor"
+{
+  "mcpServers": {
+    "kya": {
+      "command": "auditor",
+      "args": ["mcp"]
+    }
+  }
+}

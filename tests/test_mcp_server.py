@@ -1,10 +1,12 @@
 """The MCP surface: protocol, the three tools, and the gate holding across it."""
+
 import io
 import json
+import subprocess
+import sys
 from pathlib import Path
 
 from auditor.mcp import server as mcp
-
 
 AGENT = {
     "agent.py": (
@@ -62,9 +64,54 @@ def test_ping_is_answered():
     assert mcp.handle({"jsonrpc": "2.0", "id": 2, "method": "ping"})["result"] == {}
 
 
+def test_initialize_answers_an_unknown_protocol_version_with_our_own():
+    res = mcp.handle({"jsonrpc": "2.0", "id": 1, "method": "initialize",
+                      "params": {"protocolVersion": "1999-01-01"}})
+    assert res["result"]["protocolVersion"] == mcp.PROTOCOL_VERSION
+
+
 def test_unknown_method_is_a_protocol_error():
-    res = mcp.handle({"jsonrpc": "2.0", "id": 3, "method": "resources/list"})
+    res = mcp.handle({"jsonrpc": "2.0", "id": 3, "method": "wat/list"})
     assert res["error"]["code"] == -32601
+
+
+def test_resources_and_prompts_list_are_empty_not_an_error():
+    """Clients call all three lists at startup. -32601 shows the user an error
+    about a server that is working."""
+    for method, key in (("resources/list", "resources"),
+                        ("resources/templates/list", "resourceTemplates"),
+                        ("prompts/list", "prompts")):
+        res = mcp.handle({"jsonrpc": "2.0", "id": 3, "method": method})
+        assert "error" not in res
+        assert res["result"][key] == []
+
+
+def test_a_batch_array_is_refused_without_killing_the_loop():
+    """A batch used to reach .get on a list and take the whole session down."""
+    stdout = io.StringIO()
+    mcp.serve(stdin=io.StringIO('[{"jsonrpc":"2.0","id":1,"method":"ping"}]\n'
+                                '{"jsonrpc":"2.0","id":2,"method":"ping"}\n'),
+              stdout=stdout)
+    lines = [json.loads(l) for l in stdout.getvalue().splitlines() if l.strip()]
+    assert lines[0]["error"]["code"] == -32600
+    assert "atch" in lines[0]["error"]["message"]
+    assert lines[1]["id"] == 2          # the loop survived
+
+
+def test_a_request_without_params_is_answered():
+    assert mcp.handle(
+        {"jsonrpc": "2.0", "id": 5, "method": "tools/list"})["result"]["tools"]
+
+
+def test_null_arguments_are_treated_as_none_given():
+    res = mcp.handle({"jsonrpc": "2.0", "id": 5, "method": "tools/call",
+                      "params": {"name": "kya_standard", "arguments": None}})
+    assert res["result"]["isError"] is False
+
+
+def test_a_tool_call_before_initialize_still_works():
+    """Some clients probe before the handshake; refusing is worse than serving."""
+    assert _call("kya_standard", {})["result"]["isError"] is False
 
 
 def test_tools_list_advertises_three_tools_without_leaking_handlers():
@@ -160,6 +207,108 @@ def test_malformed_json_is_a_parse_error_and_the_loop_survives():
     lines = [json.loads(l) for l in stdout.getvalue().splitlines() if l.strip()]
     assert lines[0]["error"]["code"] == -32700
     assert lines[1]["id"] == 7
+
+
+# --- robustness --------------------------------------------------------------
+
+def test_a_file_instead_of_a_directory_says_so(tmp_path):
+    f = tmp_path / "agent.py"
+    f.write_text(AGENT["agent.py"])
+    res = _call("kya_assess", {"path": str(f)})
+    assert res["result"]["isError"] is True
+    assert "is a file" in res["result"]["content"][0]["text"]
+
+
+def test_a_directory_with_nothing_readable_concludes_nothing(tmp_path):
+    (tmp_path / "picture.png").write_bytes(b"\x89PNG\r\n")
+    res = _call("kya_classify_subject", {"path": str(tmp_path)})
+    assert res["result"]["isError"] is True
+    text = res["result"]["content"][0]["text"]
+    assert "no readable source files" in text
+    assert "nothing is concluded" in text
+
+
+def test_the_path_is_echoed_as_given_not_resolved(tmp_path):
+    """Echoing the resolved path would hand back the home or working directory
+    for an argument of ~/x or '.'."""
+    root = _write(tmp_path, AGENT)
+    given = str(root) + "/."
+    d = json.loads(_call("kya_assess", {"path": given})["result"]["content"][0]["text"])
+    assert d["path"] == given
+
+
+def test_a_long_unparsed_list_is_truncated_out_loud(tmp_path):
+    for i in range(mcp.MAX_LISTED + 7):
+        (tmp_path / f"broken{i}.py").write_text("def nope(:\n")
+    _write(tmp_path, AGENT)
+    d = json.loads(_call("kya_classify_subject",
+                         {"path": str(tmp_path)})["result"]["content"][0]["text"])
+    assert len(d["unparsed"]) == mcp.MAX_LISTED
+    assert d["unparsed_omitted"] == 7          # never silently
+
+
+# --- stdout purity -----------------------------------------------------------
+
+def test_stdout_stays_pure_json_while_a_tool_logs(tmp_path):
+    """The showstopper, pinned in the configuration that failed: a real process
+    over a real pipe, as a client drives it.
+
+    auditor.core.logger builds a StreamHandler(sys.stdout) at import time, so an
+    unparseable .py file -- routine in a real repository -- wrote a log line
+    into the middle of the protocol and the client dropped the connection.
+
+    Driven in-process this proves nothing, because pytest has already replaced
+    stdout. It has to be a subprocess."""
+    root = _write(tmp_path, AGENT)
+    (root / "oops.py").write_text("def broken(:\n")
+
+    requests = "".join(json.dumps(m) + "\n" for m in (
+        {"jsonrpc": "2.0", "id": 1, "method": "initialize",
+         "params": {"protocolVersion": "2024-11-05", "capabilities": {},
+                    "clientInfo": {"name": "pipe", "version": "1"}}},
+        {"jsonrpc": "2.0", "method": "notifications/initialized"},
+        {"jsonrpc": "2.0", "id": 2, "method": "tools/call",
+         "params": {"name": "kya_classify_subject",
+                    "arguments": {"path": str(root)}}},
+    ))
+    repo = Path(__file__).parent.parent
+    proc = subprocess.run(
+        [sys.executable, "-c",
+         "from auditor.mcp.server import serve; serve()"],
+        input=requests, capture_output=True, text=True, cwd=repo,
+        timeout=120, check=False,
+    )
+
+    assert proc.returncode == 0
+    # Every line on stdout parses as JSON-RPC, and nothing else is there.
+    messages = [json.loads(l) for l in proc.stdout.splitlines() if l.strip()]
+    assert [m["id"] for m in messages] == [1, 2]
+    assert "could not parse" not in proc.stdout
+    assert "could not parse" in proc.stderr      # it went to the right channel
+
+    d = json.loads(messages[1]["result"]["content"][0]["text"])
+    assert d["unparsed"] == ["oops.py"]
+
+
+def test_the_quarantine_restores_stdout_afterwards(capfd):
+    before = sys.stdout
+    with mcp.quarantine_stdout():
+        print("engine noise")
+    assert sys.stdout is before
+    print("protocol")
+    out = capfd.readouterr()
+    assert "engine noise" not in out.out
+    assert "engine noise" in out.err
+    assert "protocol" in out.out
+
+
+def test_a_broken_pipe_is_a_clean_exit():
+    class Gone(io.StringIO):
+        def write(self, _):
+            raise BrokenPipeError(32, "broken pipe")
+
+    mcp.serve(stdin=io.StringIO('{"jsonrpc":"2.0","id":1,"method":"ping"}\n'),
+              stdout=Gone())      # returns rather than raising
 
 
 # --- packaging --------------------------------------------------------------

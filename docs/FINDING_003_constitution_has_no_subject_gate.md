@@ -1,6 +1,9 @@
 # FINDING_003 — the constitution checker scores repositories that contain no agent
 
-**Status:** fixed, 9 November 2026, in the same day it was recorded.
+**Status:** the subject gate shipped 9 November 2026. The second half of the
+stated fix, excluding the instrument from its own scan, shipped for
+`auditor/governance/` only and is still open for the fidelity analysers. See
+FINDING_004, recorded 21 November 2026.
 **Found:** 9 November 2026, by self-scan, before any external use.
 **Module:** `auditor/governance/constitution.py`, `specs/kya_constitution_v1.yaml`
 

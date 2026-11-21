@@ -1,6 +1,6 @@
 [project]
 name = "ai-code-quality-auditor"
-version = "0.6.2"
+dynamic = ["version"]
 description = "Checks whether an AI coding agent built what you asked for: per feature, what was delivered, what is missing, what exists but nothing can reach, with a file and line for every claim."
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -42,7 +42,8 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8.0", "pytest-asyncio>=0.23", "ruff>=0.5", "build>=1.2", "twine>=5.0"]
+dev = ["pytest>=8.0", "pytest-asyncio>=0.23", "ruff>=0.5", "build>=1.2",
+       "twine>=5.0", "setuptools>=68", "flask>=3.0", "cryptography>=43.0"]
 notebook = ["pandas>=2.0", "scipy>=1.10", "matplotlib>=3.7", "jupyter>=1.0",
             "statsmodels>=0.14", "scikit-posthocs>=0.9", "scikit-learn>=1.4"]
 dashboard = ["flask>=3.0"]
@@ -70,16 +71,32 @@ auditor = "auditor.core.cli:main"
 requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
+[tool.setuptools.dynamic]
+version = { attr = "auditor._version.__version__" }
+
 [tool.setuptools.packages.find]
 include = ["auditor*"]
-exclude = ["tests*", "data*", "scripts*", "docs*", "specs*"]
+# `include` is already an allowlist, so nothing outside `auditor*` can be
+# discovered. `exclude` is kept as a second statement of intent: it is the line
+# someone reads when they widen `include`, and `service*` is named here because
+# service/ is a separately deployed app that depends on this package — picking
+# it up would make the distribution depend on itself.
+exclude = ["tests*", "data*", "scripts*", "docs*", "specs*",
+           "service*", "install*", "build*", "dist*"]
 
 [tool.setuptools.package-data]
+# The "Typing :: Typed" classifier is a promise a type checker reads literally:
+# without this marker, a downstream mypy run ignores every annotation in the
+# package while the classifier says they are there.
+"auditor" = ["py.typed"]
 "auditor.dashboard" = ["templates/*.html", "static/*"]
 "auditor.assets" = ["*.css"]
 "auditor.live" = ["templates/*.html"]
 "auditor.standards" = ["*.yaml"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+# service/tests covers the sealing service, which is the paid path. It lives
+# outside tests/ because the service deploys separately, and it was invisible
+# to CI until it was named here.
+testpaths = ["tests", "service/tests"]
 addopts = "-ra"

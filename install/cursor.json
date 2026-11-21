@@ -1,0 +1,14 @@
+// Put this at .cursor/mcp.json in your project, or ~/.cursor/mcp.json for every project.
+// Confirmed against https://cursor.com/docs/context/mcp
+// That page's field table lists "type": "stdio" as required, but its own example omits it.
+// This file omits it, matching the example. Add it if Cursor complains.
+// If `auditor` is not on your PATH, use the absolute path instead:
+//     "command": "/path/to/your/.venv/bin/auditor"
+{
+  "mcpServers": {
+    "kya": {
+      "command": "auditor",
+      "args": ["mcp"]
+    }
+  }
+}

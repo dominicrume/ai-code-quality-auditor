@@ -200,16 +200,28 @@ def load_codebase(work_dir: Path, respect_ignores: bool = False) -> dict:
     see ``iter_source_files`` for why that is not the default.
     """
     work_dir = Path(work_dir)
+    if work_dir.exists() and not work_dir.is_dir():
+        # "not found" about a path that plainly exists sends the caller looking
+        # for the wrong problem.
+        raise NotADirectoryError(
+            f"{work_dir} is a file. This reads a whole codebase; pass the "
+            f"directory that contains it.")
     if not work_dir.is_dir():
         raise FileNotFoundError(f"work_dir not found: {work_dir}")
 
     files: dict[str, str] = {}
+    unreadable: list[str] = []
     for rel, path in iter_source_files(work_dir, respect_ignores=respect_ignores):
         try:
             files[rel] = path.read_text(encoding="utf-8")
         except (UnicodeDecodeError, OSError):
-            continue  # binary or vanished mid-walk — skip, never crash a scan
+            # Binary, badly encoded, or vanished mid-walk. Never crash a scan,
+            # but do not drop it silently either: a receipt that omits a file
+            # entirely can say truthfully "these are the bytes I read" while
+            # implying falsely "this is what was there".
+            unreadable.append(rel)
 
     manifest_path = work_dir / "manifest.json"
     manifest = json.loads(manifest_path.read_text()) if manifest_path.exists() else []
-    return {"files": files, "manifest": manifest}
+    return {"files": files, "manifest": manifest,
+            "unreadable": sorted(unreadable)}

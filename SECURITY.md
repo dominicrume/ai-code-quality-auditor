@@ -3,10 +3,14 @@
 ## Supported versions
 
 | Version | Supported |
-|---------|-----------|
-| 0.3.x   | ✅ current |
-| 0.2.x   | ⚠️ upgrade — the README shipped a dead dashboard link and the keystroke recorder could lose captured data |
-| 0.1.x   | ❌ no |
+| ------- | --------- |
+| 0.6.x   | ✅ current |
+| 0.5.1   | ❌ **do not use.** The published 0.5.1 serves `/api/scan` and `/api/drift/acknowledge` without authentication. Upgrade. |
+| ≤ 0.5.0 | ❌ no |
+
+There was never a published 0.3.x. An earlier version of this table named one as
+current, which was wrong in both directions: it invented a release and it was
+silent about the only published version with a known unclosed vulnerability.
 
 Install or upgrade with:
 

@@ -12,7 +12,17 @@
 # Convention: add an entry the moment a defect is recorded, remove it when the
 # record's status line says it is fixed.
 
-open: []
+open:
+  - id: FINDING_004
+    summary: >
+      The scope-drift analyser matches detector strings in source text, so it
+      reports its own vocabulary, and a file whose role is to describe a
+      pattern can be read back as a feature nobody asked for.
+    affects: >
+      Scope-drift counts may overstate drift on a codebase containing
+      route-like or command-like strings in non-route positions. Read the
+      evidence lines rather than quoting the count.
+    recorded: "2026-11-21"
 
 # Shape of an entry, for whoever adds the next one:
 #
@@ -20,4 +30,4 @@ open: []
 #   - id: FINDING_004
 #     summary: one line, the behaviour and not the fix
 #     affects: what a reader of a receipt should discount
-#     recorded: 2026-11-21
+#     recorded: "2026-11-21"

@@ -1,0 +1,78 @@
+# What travels in the sdist, and nothing else.
+#
+# The wheel is governed by [tool.setuptools.package-data] in pyproject.toml and
+# is deliberately narrow: importable code plus the data the code reads at run
+# time. This file governs the source distribution, which has a different job —
+# it has to be enough to rebuild and re-verify the package from scratch.
+#
+# The sdist already carries tests/ (setuptools adds it from the egg-info
+# SOURCES). Those tests assert that auditor/standards/kya_constitution_v1.yaml
+# is byte-identical to specs/kya_constitution_v1.yaml, so without specs/ the
+# shipped suite cannot run and a downstream packager who tries gets a failure
+# that says nothing about their build. specs/ therefore belongs in the sdist.
+# It still stays out of the wheel: a wheel only carries declared package data,
+# and specs/ is not a package.
+
+include LICENSE
+include README.md
+include CHANGELOG.md
+include SECURITY.md
+include ENGINEERING_PRINCIPLES.md
+include pyproject.toml
+
+# The spec box: externalised data, needed by the shipped tests.
+recursive-include specs *.yaml
+
+# MCP client configuration templates, and the Claude Code plugin manifest.
+#
+# These are source of truth for how a user wires the server into their own
+# agent, so they belong in a source distribution. They stay out of the wheel
+# for free: include_package_data only promotes files that sit inside a package
+# directory, and neither of these is under `auditor/`. That is deliberate — a
+# wheel unpacks into site-packages, where a top-level `install/` would be both
+# wrong and a collision waiting to happen.
+#
+# A pip-install user therefore does not get these on disk, so documentation
+# must point at the repository URL rather than at a local `install/` path.
+recursive-include install *.json *.toml
+include .claude-plugin/plugin.json
+
+# Package data is NOT listed here on purpose. setuptools turns on
+# include_package_data for a pyproject build, so anything matched inside
+# `auditor/` by this file is also added to the wheel — a broad
+# `recursive-include auditor *.yaml` swept up a local `auditor/.auditor/`
+# scan-state file and shipped it. [tool.setuptools.package-data] names the data
+# files precisely and already carries them into both the wheel and the sdist.
+
+# A scan writes its state next to the code it scanned. That is never package
+# data, wherever it lands.
+prune auditor/.auditor
+global-exclude .auditor/*
+
+# `service/` is a separately deployed Flask application that depends on this
+# package by name and pins its own requirements. Shipping it inside the
+# distribution would make the artefact depend on itself, and would offer an
+# sdist user a second app they cannot install from where it sits. Excluded from
+# both artefacts, including its own test directory, which otherwise gets swept
+# up with the top-level tests/.
+prune service
+
+# Never, whatever a local working tree happens to contain.
+prune build
+prune dist
+prune dist-0.6.2
+prune data
+prune docs
+prune evidence
+prune notebooks
+prune scripts
+prune media
+prune mobile
+prune viva
+prune demo
+prune live
+prune samples
+prune .github
+prune .auditor
+global-exclude *.py[cod] __pycache__ .DS_Store *.so
+global-exclude .env .env.*

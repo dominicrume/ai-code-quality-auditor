@@ -1,0 +1,4 @@
+# The sealing service. Pinned, because a signing service should be reproducible.
+ai-code-quality-auditor[seal]==0.6.2
+flask==3.1.3
+gunicorn==23.0.0

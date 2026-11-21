@@ -28,8 +28,14 @@ from __future__ import annotations
 
 import json
 import os
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
+
+try:
+    import fcntl
+except ModuleNotFoundError:  # pragma: no cover - not POSIX
+    fcntl = None
 
 # Outcome types. Only the first is billable.
 SEALED_ASSESSMENT = "sealed_assessment"
@@ -38,7 +44,23 @@ UNSEALED_READING = "unsealed_reading"
 
 BILLABLE = {SEALED_ASSESSMENT}
 
-FREE_QUOTA = int(os.environ.get("AUDITOR_FREE_QUOTA", "25"))
+DEFAULT_FREE_QUOTA = 25
+
+
+def free_quota() -> int:
+    """How many billable outcomes are free, read when it is needed.
+
+    Read at call time, not at import: baked in at import, a deployment that
+    changed the quota kept charging on the old one until the process was
+    restarted, and nothing said so. A ledger can also be given its own quota,
+    which is how a caller pins one without reaching into this module.
+    """
+    raw = os.environ.get("AUDITOR_FREE_QUOTA")
+    try:
+        return max(0, int(raw)) if raw is not None else DEFAULT_FREE_QUOTA
+    except ValueError:
+        # An unreadable quota must not silently become unlimited free use.
+        return DEFAULT_FREE_QUOTA
 
 
 def outcome_type(finding: dict) -> str:
@@ -71,10 +93,45 @@ class Ledger:
     """Append-only, idempotent on (org_id, finding_digest).
 
     A file here; a table in the hosted service. The interface is the contract.
+
+    Limits of the file implementation, stated rather than assumed away:
+
+    - Charging is decided and written under an exclusive `flock` on the ledger
+      file, because read-count-then-append is a race: two seals of different
+      work by the same organisation both read the same stale count and both
+      land inside the free quota, and interleaved writes can tear a line in
+      half. The lock closes both.
+    - `flock` is advisory and POSIX-only. On a filesystem that does not honour
+      it (many network mounts) or on a platform without `fcntl`, concurrent
+      writers can still race. The hosted service uses a database transaction
+      for the same reason; this file is for one machine.
+    - Reads outside `record` (`statement`, the counts) are unlocked and may see
+      the ledger mid-append. They are reports, not billing decisions.
     """
 
-    def __init__(self, path: str | Path):
+    def __init__(self, path: str | Path, free_quota_: int | None = None):
         self.path = Path(path).expanduser()
+        # An explicit quota, so a caller can pin one without patching module state.
+        self._free_quota = free_quota_
+
+    @property
+    def free_quota(self) -> int:
+        return free_quota() if self._free_quota is None else self._free_quota
+
+    @contextmanager
+    def _exclusive(self):
+        """The ledger file, held open and locked for the whole decision."""
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        with self.path.open("a", encoding="utf-8") as fh:
+            if fcntl is not None:
+                fcntl.flock(fh.fileno(), fcntl.LOCK_EX)
+            try:
+                yield fh
+            finally:
+                fh.flush()
+                os.fsync(fh.fileno())
+                if fcntl is not None:
+                    fcntl.flock(fh.fileno(), fcntl.LOCK_UN)
 
     def _rows(self) -> list[dict]:
         if not self.path.exists():
@@ -115,25 +172,28 @@ class Ledger:
         """
         row = entry(finding, org_id)
         digest = row["finding_digest"]
-        if digest and self.seen(org_id, digest, billable_only=row["billable"]):
-            row["charged"] = False
-            row["reason"] = "already recorded for this organisation"
-            return row
-        if not row["billable"]:
-            row["charged"] = False
-            row["reason"] = (
-                "not a billable outcome: a refusal to score and an unsealed "
-                "reading are both free")
-        else:
-            used = self.billable_count(org_id)
-            if used < FREE_QUOTA:
+        quota = self.free_quota
+        # One lock covers reading the ledger, deciding the charge and appending:
+        # two concurrent seals must not both read the same free-quota count.
+        with self._exclusive() as fh:
+            if digest and self.seen(org_id, digest, billable_only=row["billable"]):
                 row["charged"] = False
-                row["reason"] = f"within the free quota ({used + 1} of {FREE_QUOTA})"
+                row["reason"] = "already recorded for this organisation"
+                return row
+            if not row["billable"]:
+                row["charged"] = False
+                row["reason"] = (
+                    "not a billable outcome: a refusal to score and an unsealed "
+                    "reading are both free")
             else:
-                row["charged"] = True
-                row["reason"] = "billable outcome beyond the free quota"
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        with self.path.open("a", encoding="utf-8") as fh:
+                used = self.billable_count(org_id)
+                if used < quota:
+                    row["charged"] = False
+                    row["reason"] = f"within the free quota ({used + 1} of {quota})"
+                else:
+                    row["charged"] = True
+                    row["reason"] = "billable outcome beyond the free quota"
+            # One write of one whole line, so a reader never sees half a row.
             fh.write(json.dumps(row, sort_keys=True) + "\n")
         return row
 
@@ -152,6 +212,6 @@ class Ledger:
             "outcomes": len(rows),
             "billable_outcomes": self.billable_count(org_id),
             "charged": self.charged_count(org_id),
-            "free_quota": FREE_QUOTA,
+            "free_quota": self.free_quota,
             "digests": [r["finding_digest"] for r in rows],
         }

@@ -1,0 +1,30 @@
+# fly deploy. Set secrets first, never put them in this file:
+#
+#   fly secrets set AUDITOR_SEAL_PRIVATE_KEY=... AUDITOR_SEAL_PUBLIC_KEY=... \
+#                   AUDITOR_API_KEYS=org_x:<sha256> AUDITOR_FREE_QUOTA=25
+#
+app = "kya-seal"
+primary_region = "lhr"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  AUDITOR_LEDGER_PATH = "/data/outcomes.jsonl"
+  AUDITOR_BILLING_ENABLED = "false"
+
+[[mounts]]
+  source = "kya_ledger"
+  destination = "/data"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "suspend"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [[http_service.checks]]
+    path = "/healthz"
+    interval = "30s"
+    timeout = "5s"

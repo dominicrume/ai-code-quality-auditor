@@ -1,0 +1,14 @@
+// Put this at .gemini/settings.json in your project, or ~/.gemini/settings.json for every
+// project. If the file exists, merge the "mcpServers" key into it rather than replacing it.
+// Confirmed against
+// https://github.com/google-gemini/gemini-cli/blob/main/docs/tools/mcp-server.md
+// If `auditor` is not on your PATH, use the absolute path instead:
+//     "command": "/path/to/your/.venv/bin/auditor"
+{
+  "mcpServers": {
+    "kya": {
+      "command": "auditor",
+      "args": ["mcp"]
+    }
+  }
+}

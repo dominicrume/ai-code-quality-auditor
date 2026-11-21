@@ -1,0 +1,19 @@
+// Put this at .mcp.json in your workspace root, or ~/.copilot/mcp-config.json for every
+// workspace. This is the current Copilot format.
+// Confirmed against https://code.visualstudio.com/docs/agents/reference/mcp-configuration
+// The older .vscode/mcp.json file uses a top-level "servers" key instead of "mcpServers".
+// That same page marks it deprecated and says to use the file above for new setups.
+// If you still need it, the shape is:
+//     { "servers": { "kya": { "type": "stdio", "command": "auditor", "args": ["mcp"] } } }
+//
+// If `auditor` is not on your PATH, use the absolute path instead:
+//     "command": "/path/to/your/.venv/bin/auditor"
+{
+  "mcpServers": {
+    "kya": {
+      "type": "stdio",
+      "command": "auditor",
+      "args": ["mcp"]
+    }
+  }
+}

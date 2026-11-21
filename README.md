@@ -105,7 +105,13 @@ auditor share                                 # see what an opt-in share would c
 ```
 
 Or put the agent governance check inside the agent you already use, so the
-assessment happens where the work happens:
+assessment happens where the work happens.
+
+> **Needs 0.6.2 or later, which is not on PyPI yet.** The latest published
+> release is 0.6.1 and it has no `mcp` command, so the two commands below fail
+> on it with `No such command 'mcp'`. Until 0.6.2 is published, install from
+> source: `pip install git+https://github.com/dominicrume/ai-code-quality-auditor`.
+
 
 ```bash
 claude mcp add kya -- auditor mcp     # Claude Code
@@ -123,15 +129,34 @@ conclude. Point it at something that is not an agent and it returns
 `NOT_APPLICABLE` with no score, which is the behaviour the check exists for.
 `skills/kya-conformance/` is the companion skill for an agent that will run it.
 
+A finding you can hand to somebody who was not there:
+
+```bash
+auditor receipt .                     # the finding, as a file, free and unlimited
+auditor verify receipt.json           # check it offline, anywhere, years later
+auditor verify receipt.json --require-seal   # fail a CI gate on an unsealed one
+```
+
+A receipt records what was read as content hashes and never the source, so it
+proves which exact bytes were assessed without carrying a line of them. It is
+unsealed: complete, self-consistent, and carrying nobody's name. Sealing needs
+`pip install 'ai-code-quality-auditor[seal]'`, and a signed, dated finding comes
+from the assurance engagement rather than from your own machine, because nobody
+attests their own work.
+
 Reproduce the study instead:
 
 ```bash
 pip install -e ".[all]"
 auditor experiment --reps 10 --run-label main_001     # full pre-registered design
 auditor run --spec specs/agent_education_system.yaml \
-            --workflow human_control --run-id main_001   # one condition, as JSON
+            --workflow human_control --run-id <your-run-id>   # one condition, as JSON
 python scripts/compute_kappa.py --pre-erratum002      # the κ figures of record
 ```
+
+`auditor run` needs captures on disk under `data/raw/<run-id>/`, and
+`data/raw` is gitignored, so a fresh clone has none: run `auditor
+experiment` first, or point `--captures-root` at your own.
 
 `compute_kappa.py --pre-erratum002` returns **0.870 / 0.852 / 0.727** — the
 inter-rater agreement figures reported in the dissertation, computed against the

@@ -1,7 +1,7 @@
 [
   {
     "name": "\u03ba(Rater 1, Rater 2) \u2014 inter-annotator agreement",
-    "kappa": 0.8696,
+    "kappa": 0.869565,
     "interpretation": "almost perfect",
     "n": 18,
     "raw_agreement": 0.9444,
@@ -19,7 +19,7 @@
   },
   {
     "name": "\u03ba(Rater 1, Heuristic) \u2014 human vs auditor",
-    "kappa": 0.8525,
+    "kappa": 0.852459,
     "interpretation": "almost perfect",
     "n": 18,
     "raw_agreement": 0.9444,
@@ -37,7 +37,7 @@
   },
   {
     "name": "\u03ba(Rater 2, Heuristic) \u2014 human vs auditor",
-    "kappa": 0.7273,
+    "kappa": 0.727273,
     "interpretation": "substantial / good",
     "n": 18,
     "raw_agreement": 0.8889,

@@ -1,0 +1,16 @@
+// Put this at ~/Library/Application Support/Claude/claude_desktop_config.json on macOS,
+// %APPDATA%\Claude\claude_desktop_config.json on Windows,
+// ~/.config/Claude/claude_desktop_config.json on Linux.
+// If the file exists, merge the "mcpServers" key into it rather than replacing it.
+// Confirmed against https://modelcontextprotocol.io/quickstart/user
+// Claude Desktop does not inherit your shell PATH. If the server fails to start, use the
+// absolute path instead:
+//     "command": "/path/to/your/.venv/bin/auditor"
+{
+  "mcpServers": {
+    "kya": {
+      "command": "auditor",
+      "args": ["mcp"]
+    }
+  }
+}

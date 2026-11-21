@@ -159,7 +159,11 @@ def report_kappa(name: str, y1: pd.Series, y2: pd.Series,
 
     return {
         "name": name,
-        "kappa": round(k, 4),
+        # Six places, not four: the summary formats this value to three,
+        # and rounding to four first double-rounded 0.8525 up to 0.853
+        # while the detail line printed 0.852 from the raw figure. The
+        # script contradicted itself on the figure of record.
+        "kappa": round(k, 6),
         "interpretation": band,
         "n": int(len(y1)),
         "raw_agreement": round(float(agreement), 4),

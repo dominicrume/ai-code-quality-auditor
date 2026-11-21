@@ -1,0 +1,15 @@
+// Put this at .devin/mcp_config.json in your project, or ~/.config/devin/mcp_config.json
+// for every project. On Windows: %APPDATA%\devin\mcp_config.json
+// Confirmed against https://docs.devin.ai/cli/extensibility/mcp/configuration.md
+// Windsurf's own docs now redirect to Devin Local, which shares this format. The older
+// ~/.codeium/windsurf/mcp_config.json path is NOT confirmed by any page we could read.
+// If `auditor` is not on your PATH, use the absolute path instead:
+//     "command": "/path/to/your/.venv/bin/auditor"
+{
+  "mcpServers": {
+    "kya": {
+      "command": "auditor",
+      "args": ["mcp"]
+    }
+  }
+}

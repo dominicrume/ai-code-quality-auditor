@@ -107,9 +107,20 @@ def key_id(public_key_b64: str) -> str:
 
 
 def seal(finding: dict, private_key_b64: str, public_key_b64: str,
-         *, at: datetime | None = None) -> dict:
-    """Return the finding with a seal attached. Refuses a tampered finding."""
+         *, at: datetime | None = None, resealing: bool = False) -> dict:
+    """Return the finding with a seal attached. Refuses a tampered finding.
+
+    Sealing an already sealed finding needs `resealing=True`, because the seal
+    block is a single slot: a second seal silently discards the first signer's
+    name, which is exactly the move someone would make to pass their own key
+    off as the one a reader trusts.
+    """
     serialization, Ed25519PrivateKey, _, _ = _primitives()
+    if finding.get("seal") and not resealing:
+        raise ValueError(
+            "this finding is already sealed by "
+            f"{finding['seal'].get('key_id')}; pass resealing=True to replace "
+            "that signature")
     if not bundle.intact(finding):
         raise ValueError(
             "finding_digest does not match the finding; refusing to seal "
@@ -167,6 +178,14 @@ def verify(finding: dict, public_key_b64: str | None = None) -> dict:
     report["key_id"] = seal_block.get("key_id")
     report["sealed_at"] = seal_block.get("sealed_at")
 
+    missing = [f for f in ("algorithm", "key_id", "sealed_at", "signature")
+               if not seal_block.get(f)]
+    if missing:
+        report["signature_valid"] = False
+        report["reasons"].append(
+            f"the seal block is incomplete: missing {', '.join(missing)}")
+        return report
+
     key = public_key_b64 or seal_block.get("public_key")
     if not key:
         report["signature_valid"] = False
@@ -185,7 +204,31 @@ def verify(finding: dict, public_key_b64: str | None = None) -> dict:
             f"unsupported algorithm: {seal_block.get('algorithm')!r}")
         return report
 
-    _, _, Ed25519PublicKey, InvalidSignature = _primitives()
+    # key_id is what a reader recognises; the public key is what the signature
+    # is checked against. An attacker who signs with their own key and copies
+    # the trusted key's key_id gets a valid signature under a familiar name,
+    # so the two must be proved to be the same key.
+    try:
+        derived = key_id(key)
+    except Exception as exc:
+        report["signature_valid"] = False
+        report["reasons"].append(f"the public key is not readable: {exc}")
+        return report
+    if seal_block.get("key_id") != derived:
+        report["signature_valid"] = False
+        report["reasons"].append(
+            f"the seal names key {seal_block.get('key_id')} but its public key "
+            f"is {derived}: the key_id does not identify the key that signed it")
+        return report
+
+    try:
+        _, _, Ed25519PublicKey, InvalidSignature = _primitives()
+    except SealingUnavailable as exc:
+        # "cannot check" is not "does not verify". None keeps the exit code
+        # honest, because only an explicit False means the seal failed.
+        report["signature_valid"] = None
+        report["reasons"].append(str(exc))
+        return report
     try:
         Ed25519PublicKey.from_public_bytes(_unb64(key)).verify(
             _unb64(seal_block["signature"]),

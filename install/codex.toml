@@ -1,0 +1,12 @@
+# Append this to ~/.codex/config.toml
+# NOT FULLY CONFIRMED. The Codex docs moved to learn.chatgpt.com and the MCP section of
+# https://learn.chatgpt.com/docs/extend/mcp?surface=cli could not be read verbatim.
+# The [mcp_servers.<name>] table header and the command/args keys come from a summary of
+# that page, not from quoted text. Check the live page before relying on this file.
+
+[mcp_servers.kya]
+command = "auditor"
+args = ["mcp"]
+
+# If `auditor` is not on your PATH, use the absolute path instead:
+#     command = "/path/to/your/.venv/bin/auditor"

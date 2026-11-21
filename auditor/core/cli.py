@@ -838,7 +838,10 @@ def receipt_cmd(path: Path, out: Path | None, standard: Path | None, previous: s
     codebase = load_codebase(str(path))
     std = con.load_standard(standard or _standard_path(None))
     verdict = con.evaluate(codebase, std)
-    finding = bundle.build(codebase, std, verdict, previous=previous)
+    try:
+        finding = bundle.build(codebase, std, verdict, previous=previous)
+    except ValueError as exc:
+        raise click.BadParameter(str(exc), param_hint="--previous") from exc
     target = bundle.write(finding, out or Path("receipt.json"))
 
     console.print(f"\n[bold]{finding['verdict']}[/bold]  "
@@ -856,7 +859,9 @@ def receipt_cmd(path: Path, out: Path | None, standard: Path | None, previous: s
 @click.argument("receipt", type=click.Path(exists=True, dir_okay=False, path_type=Path))
 @click.option("--public-key", default=None,
               help="Base64 public key you trust. Without it, the one in the receipt is used.")
-def verify_cmd(receipt: Path, public_key: str | None):
+@click.option("--require-seal", is_flag=True,
+              help="Fail if the receipt carries no seal. For a CI gate.")
+def verify_cmd(receipt: Path, public_key: str | None, require_seal: bool):
     """Check a receipt: its content, and its seal if it has one.
 
     \b
@@ -876,6 +881,10 @@ def verify_cmd(receipt: Path, public_key: str | None):
     report = seal_mod.verify(finding, public_key)
 
     ok = report["content_intact"] and report["signature_valid"] is not False
+    if require_seal and report["state"] != "sealed":
+        ok = False
+        report["reasons"].append(
+            "--require-seal was given and this receipt carries no seal")
     colour = "green" if ok else "red"
     console.print(f"\n[{colour}]{report['state'].upper()}[/{colour}]  "
                   f"content_intact={report['content_intact']}  "
@@ -883,7 +892,11 @@ def verify_cmd(receipt: Path, public_key: str | None):
     if report["key_id"]:
         console.print(f"[dim]key {report['key_id']}  sealed {report['sealed_at']}[/dim]")
     for reason in report["reasons"]:
-        console.print(f"  {reason}")
+        # markup off: a reason may carry brackets, and Rich read the `[seal]`
+        # in "pip install 'ai-code-quality-auditor[seal]'" as a style tag, so
+        # the one message telling a user what to type showed them the wrong
+        # command and left them stuck.
+        console.print(f"  {reason}", markup=False)
     console.print(f"\n[dim]{finding.get('verdict')} · "
                   f"{finding.get('finding_digest')}[/dim]\n")
     if not ok:
