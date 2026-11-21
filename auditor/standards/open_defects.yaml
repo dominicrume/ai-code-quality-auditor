@@ -1,0 +1,23 @@
+# Defects known open in this instrument, machine-readable, shipped in the wheel.
+#
+# Every receipt embeds this list at the moment it is built. A verdict whose
+# known weakness is invisible to whoever relies on it is not an attestation,
+# whatever it is signed with, so the disclosure travels with the artefact rather
+# than living in a document the reader has to go and find.
+#
+# docs/FINDING_*.md and docs/ERRATUM_*.md remain the record of account. They are
+# excluded from the wheel, which is why this file exists. A test fails if any
+# record there is marked open and is missing here.
+#
+# Convention: add an entry the moment a defect is recorded, remove it when the
+# record's status line says it is fixed.
+
+open: []
+
+# Shape of an entry, for whoever adds the next one:
+#
+# open:
+#   - id: FINDING_004
+#     summary: one line, the behaviour and not the fix
+#     affects: what a reader of a receipt should discount
+#     recorded: 2026-11-21

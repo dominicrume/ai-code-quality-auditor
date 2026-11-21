@@ -1,5 +1,49 @@
 # Changelog
 
+## Unreleased
+
+**Per-use billing, fixed where it cannot be bypassed.** The check is MIT and
+public, so there is nothing to meter in the computation, and a counter placed in
+a client the customer controls is a limit written in a prompt: a suggestion they
+can talk themselves out of. The billable unit is therefore an artefact rather
+than a call.
+
+`auditor receipt` writes a finding to a file, free and unlimited. It records
+what was read as content hashes, never the source, so it proves which exact
+bytes were assessed without carrying a line of them, and a security review
+asking whether proprietary code reaches a third party gets a structural no. It
+keeps the evidence grade on every element, the coverage, the files it could not
+parse, the subject classification, and the defects known open in this instrument
+when it was written. A verdict whose known weakness is invisible to whoever
+relies on it is not an attestation, whatever it is signed with.
+
+The digest covers the finding and not the moment, so the same code assessed
+against the same standard by the same version yields the same digest forever.
+Idempotent billing falls out of content addressing: a hundred runs in CI are one
+outcome, there is no retry key to agree on and no deduplication window to tune.
+
+What a customer cannot do, by construction rather than by permission, is produce
+a finding signed by a key they do not hold. An unsealed receipt is complete,
+self-consistent and useful internally; it simply carries nobody's name, which is
+exactly what a counterparty came for. `auditor verify` checks a sealed receipt
+offline against a public key, years later, with the signer gone, and exits
+non-zero on a receipt that has been altered so CI can gate on it. Sealing and
+verifying need `pip install 'ai-code-quality-auditor[seal]'`; reading and writing
+an unsealed receipt need nothing.
+
+A refusal is recorded and never billed. Charging for the sentence "the standard
+does not apply to this" would be charging for the one answer the instrument
+exists to give honestly.
+
+Two bypasses found by attacking it before shipping, both now pinned by tests.
+The signature covers the finding digest, so a receipt whose verdict was edited
+after sealing still reported `signature_valid` true, and a reader checking that
+one field would have been fooled; altered content now reports no valid
+signature at all. And idempotency keyed on the digest alone let a customer
+record a free unsealed reading and then seal the identical finding, which was
+waved through as already recorded and never charged; a billable outcome is now
+blocked only by an earlier billable outcome.
+
 ## 0.6.2 — 20 November 2026
 
 **The check runs inside your own agent.** `auditor mcp` serves the KYA

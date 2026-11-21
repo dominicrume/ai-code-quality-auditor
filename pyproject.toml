@@ -47,9 +47,11 @@ notebook = ["pandas>=2.0", "scipy>=1.10", "matplotlib>=3.7", "jupyter>=1.0",
             "statsmodels>=0.14", "scikit-posthocs>=0.9", "scikit-learn>=1.4"]
 dashboard = ["flask>=3.0"]
 recorder = ["pynput>=1.7"]
+seal = ["cryptography>=43.0"]
 all = ["pytest>=8.0", "pandas>=2.0", "scipy>=1.10", "matplotlib>=3.7",
        "jupyter>=1.0", "statsmodels>=0.14", "scikit-posthocs>=0.9",
-       "scikit-learn>=1.4", "flask>=3.0", "pynput>=1.7"]
+       "scikit-learn>=1.4", "flask>=3.0", "pynput>=1.7",
+       "cryptography>=43.0"]
 
 [project.urls]
 Homepage      = "https://github.com/dominicrume/ai-code-quality-auditor"

@@ -802,3 +802,89 @@ def mcp_cmd():
     """
     from auditor.mcp.server import serve
     serve()
+
+
+@main.command("receipt")
+@click.argument("path", type=click.Path(exists=True, file_okay=False, path_type=Path),
+                default=".")
+@click.option("--out", type=click.Path(path_type=Path), default=None,
+              help="Where to write the receipt. Default: ./receipt.json")
+@click.option("--standard", type=click.Path(exists=True, path_type=Path), default=None,
+              help="Standard to assess against. Default: KYA v1.")
+@click.option("--previous", default=None,
+              help="Finding digest of the last receipt for this subject, to chain them.")
+def receipt_cmd(path: Path, out: Path | None, standard: Path | None, previous: str | None):
+    """Write an unsealed receipt for a folder. Free, local, unlimited.
+
+    \b
+      auditor receipt .                 the finding, as a file
+      auditor verify receipt.json       check it, offline, anywhere
+
+    The receipt records what was read as content hashes, never the source, so it
+    proves which bytes were assessed without carrying any of them. It keeps the
+    evidence grade on every element, the coverage, and the defects known open in
+    this instrument when it was written.
+
+    It is unsealed: complete and self-consistent, but carrying nobody's name.
+    For a finding that is signed and dated, see rumedominic.com/assurance.
+    """
+    from auditor.adapters._shared import load_codebase
+    from auditor.governance import constitution as con
+    from auditor.mcp.server import _standard_path
+    from auditor.receipts import bundle
+    from rich.console import Console
+
+    console = Console()
+    codebase = load_codebase(str(path))
+    std = con.load_standard(standard or _standard_path(None))
+    verdict = con.evaluate(codebase, std)
+    finding = bundle.build(codebase, std, verdict, previous=previous)
+    target = bundle.write(finding, out or Path("receipt.json"))
+
+    console.print(f"\n[bold]{finding['verdict']}[/bold]  "
+                  f"{finding['standard']['name']} v{finding['standard']['version']}  "
+                  f"[dim]{finding['classification']}[/dim]")
+    if finding["disclosure"]:
+        console.print(f"[dim]{finding['disclosure']}[/dim]")
+    console.print(f"\nfinding  {finding['finding_digest']}")
+    console.print(f"subject  {finding['subject']['tree_digest']} "
+                  f"({finding['subject']['file_count']} files)")
+    console.print(f"written  {target}  [dim]unsealed[/dim]\n")
+
+
+@main.command("verify")
+@click.argument("receipt", type=click.Path(exists=True, dir_okay=False, path_type=Path))
+@click.option("--public-key", default=None,
+              help="Base64 public key you trust. Without it, the one in the receipt is used.")
+def verify_cmd(receipt: Path, public_key: str | None):
+    """Check a receipt: its content, and its seal if it has one.
+
+    \b
+      auditor verify receipt.json
+      auditor verify receipt.json --public-key <base64>
+
+    Supplying the key you trust is the stronger check: without it, a receipt is
+    only verified against the key it carries, which proves it has not been
+    altered but not who sealed it.
+    """
+    import json as _j
+    from auditor.receipts import seal as seal_mod
+    from rich.console import Console
+
+    console = Console()
+    finding = _j.loads(receipt.read_text(encoding="utf-8"))
+    report = seal_mod.verify(finding, public_key)
+
+    ok = report["content_intact"] and report["signature_valid"] is not False
+    colour = "green" if ok else "red"
+    console.print(f"\n[{colour}]{report['state'].upper()}[/{colour}]  "
+                  f"content_intact={report['content_intact']}  "
+                  f"signature_valid={report['signature_valid']}")
+    if report["key_id"]:
+        console.print(f"[dim]key {report['key_id']}  sealed {report['sealed_at']}[/dim]")
+    for reason in report["reasons"]:
+        console.print(f"  {reason}")
+    console.print(f"\n[dim]{finding.get('verdict')} · "
+                  f"{finding.get('finding_digest')}[/dim]\n")
+    if not ok:
+        raise SystemExit(1)
