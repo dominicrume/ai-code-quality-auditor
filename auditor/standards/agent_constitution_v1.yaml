@@ -1,0 +1,141 @@
+# The Agent Constitution Standard, version 1.
+#
+# This is specs/kya_constitution_v1.yaml renamed and extended. The five
+# elements are unchanged and the readings it produces are unchanged. What is
+# new is the standard's identity and the declaration of how each element may be
+# established, which is what lets a second method contribute evidence without
+# either method being able to overstate itself.
+#
+# Why the name moved. "KYA" is in use by DIF's KYA-OS, an identity and
+# authorisation framework, which is a different thing at a different layer.
+# Three names were being asked to do one job: a market category, a normative
+# standard and two product names. See docs/NAMING.md. "Know Your Agent" remains
+# the plain-English category; `agent-constitution` is what a receipt, a media
+# type and a committee submission say.
+
+standard: agent-constitution
+version: 1
+
+title: The Agent Constitution Standard
+category: Know Your Agent
+
+# The old identity still verifies. A receipt produced against `kya/1` was a
+# true statement when it was made, and renaming a standard must not silently
+# invalidate a record somebody is holding.
+supersedes:
+  standard: kya
+  version: 1
+
+# --------------------------------------------------------------- the methods
+#
+# Two ways to establish an element, and neither can do the other's job.
+#
+# A static read sees what is written. It cannot see what ran, so for anything
+# about behaviour it finds a marker at best, and a marker is a mention.
+#
+# Behavioural evidence is a record of what the agent did and was refused, which
+# is the thing itself rather than a sign of it. It establishes nothing about
+# code that never ran.
+
+methods:
+  - id: static_conformance
+    reads: the artefact as written
+    produced_by: an engine that indexes what the codebase declares
+    cannot: observe a single execution
+
+  - id: behavioural_evidence
+    reads: the record of what the agent attempted, did and was refused
+    produced_by: an enforcement point that writes a refusal as it refuses
+    cannot: say anything about a path that was never exercised
+
+# -------------------------------------------------------------- the elements
+#
+# `basis` is retained unchanged from kya/1, because the static checker reads it
+# and the published readings depend on it:
+#
+#   artefact   the artefact IS the compliance. Present or absent is the
+#              finding, and absence is a measured failure.
+#   behaviour  a scan sees a marker, never the behaviour. A marker found is
+#              provisional; no marker found is withheld, not failed, because
+#              the ceiling may be enforced somewhere this scan cannot read.
+#
+# `established_by` is new. It names the best grade each method may reach on
+# each element, and it is a ceiling rather than a result. It exists so that the
+# three elements a static read can never finish are finishable by something
+# else, and so that neither method can be read as having done the other's work.
+
+elements:
+  - id: powers_bounded
+    basis: behaviour
+    description: >
+      What the agent may decide alone is bounded by an explicit ceiling on
+      spend, rate or scope.
+    established_by:
+      static_conformance: provisional
+      behavioural_evidence: measured
+    note: >
+      A ceiling in a config file is a claim about a ceiling. A refusal recorded
+      at that ceiling, decided by the thing that enforces it, is the ceiling.
+
+  - id: separation_of_duty
+    basis: behaviour
+    description: >
+      Actions above the ceiling go to a human first, and the code names which
+      action requires it.
+    established_by:
+      static_conformance: provisional
+      behavioural_evidence: measured
+    note: >
+      Measured only where the record shows an attempt held for a decision and
+      the decision taken by somebody other than the agent.
+
+  - id: action_record
+    basis: behaviour
+    description: >
+      Actions and refusals are both written to a record that can be read back
+      later.
+    established_by:
+      static_conformance: provisional
+      behavioural_evidence: measured
+    note: >
+      This is the element a static read can never finish, and it is the one a
+      refusal chain answers directly. A chain whose links verify is a record
+      that can be read back and that nobody could reorder after the fact.
+      Completeness is a separate question and is not established by either
+      method: an agent that never attempts anything leaves nothing.
+
+  - id: amendment_path
+    basis: artefact
+    description: >
+      The rules themselves are versioned, so a change to them is visible as a
+      change rather than a silent edit.
+    established_by:
+      static_conformance: measured
+      behavioural_evidence: provisional
+    note: >
+      The artefact is the compliance here, so the static read is the stronger
+      method and the record can only corroborate it.
+
+  - id: named_accountability
+    basis: artefact
+    description: >
+      A named owner is recorded, so each gap has somebody answerable for it.
+    established_by:
+      static_conformance: measured
+      behavioural_evidence: provisional
+
+# ------------------------------------------------------ what this never does
+#
+# Stated in the standard rather than only in prose, because a reader who has
+# only this file is entitled to the limits.
+
+refuses_to_conclude:
+  - A subject that does not call a model and has no path to act is NOT_APPLICABLE
+    and receives no score. A standard about autonomy has nothing to say about
+    something that cannot act.
+  - INCOMPLETE never rounds up to PASS. There is no threshold argument and a
+    caller cannot tune one.
+  - No grade is read from a document. A producer cannot assert that its own
+    evidence is measured; the grade is derived by whoever verifies.
+  - Nothing here identifies or authorises an agent. Identity is a different
+    layer and this standard points at it rather than competing with it.

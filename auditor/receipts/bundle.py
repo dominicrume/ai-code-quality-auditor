@@ -235,15 +235,35 @@ def chain_intact(findings: list[dict]) -> bool:
     return not chain_breaks(findings)
 
 
+def digest_field(receipt: dict) -> str:
+    """Which field names this receipt's own content.
+
+    Version one wrote `finding_digest`. The merged envelope writes
+    `content_digest`, because it carries a refusal as readily as a finding and
+    calling that a finding would be a lie about what it is. One seal module has
+    to serve both, so the field name is asked for rather than assumed.
+    """
+    return "content_digest" if "content_digest" in receipt else "finding_digest"
+
+
 def recompute(finding: dict) -> str:
-    """The digest the finding should carry, for checking that it still does."""
+    """The digest the receipt should carry, for checking that it still does.
+
+    Dispatches on the envelope version because canonical form changed: version
+    two is ASCII by escaping, so that a Python producer and a JavaScript
+    verifier agree. A version one receipt must keep verifying exactly as it did
+    the day it was issued, so its path is untouched.
+    """
+    if finding.get("envelope_version") == 2:
+        from auditor.receipts import envelope as E
+        return E.content_digest(finding)
     body = {k: v for k, v in finding.items()
             if k not in ("finding_digest", "seal")}
     return digest(body)
 
 
 def intact(finding: dict) -> bool:
-    return finding.get("finding_digest") == recompute(finding)
+    return finding.get(digest_field(finding)) == recompute(finding)
 
 
 def state(finding: dict) -> str:

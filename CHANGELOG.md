@@ -1,5 +1,101 @@
 # Changelog
 
+## 0.6.5 — 23 November 2026
+
+**One name, and one receipt envelope instead of two.** Additive. Nothing that
+0.6.4 produced changes, and no reading moves.
+
+### The naming
+
+An assessor looking this work up found two hash-chained receipt formats, one
+signed and one not, both called KYA, by one author, plus an unrelated DIF
+KYA-OS already using the acronym. That is not a product family. It reads as
+someone who has not decided, and a standards body does not call it breadth.
+
+The error was one name doing three jobs. `docs/NAMING.md` is the decision:
+
+- **Know Your Agent** stays the market category. It never appears in a
+  specification, a schema, a field value or a media type.
+- **The Agent Constitution Standard**, id `agent-constitution`, is the
+  normative name: the spec, a receipt's `standard` field, the media type, and
+  any committee submission.
+- Package names are unchanged. A tool is not a standard.
+
+This is how the market being borrowed from already works. Nobody writes a
+specification called KYC.
+
+`specs/agent_constitution_v1.yaml` is the new normative spec. The five elements
+and their `basis` are byte-for-byte the same decisions as `kya/1`, pinned by a
+test, so the same codebase gets the same verdict and the same grades under
+either identity. It declares `supersedes: {kya, 1}`, because a receipt produced
+against `kya/1` was true when it was made and a rename must not invalidate a
+record somebody is holding.
+
+It adds `established_by`: the best grade each of the two methods may reach on
+each element. That is the structural change. Three of the five elements can
+never be finished by reading code, which is why they come back `provisional` or
+`withheld` every time, and `established_by` is what lets a second method finish
+them without either method being able to overstate itself.
+
+### The envelope
+
+`auditor/receipts/envelope.py`, specified in `docs/RECEIPT_ENVELOPE.md`. One
+format, two payload types, `conformance` and `refusal`, with the chain, the
+digest and the seal defined once. Media type
+`application/agent-constitution-receipt+json`.
+
+Two of its three properties are taken from the format being merged in rather
+than from this one:
+
+- **Assurance is derived, and there is no field for it.** A verifier returns
+  `self_attested`, `sealed` or `anchored`, computed from what the reader
+  brought. The strongest form of "the verifier derives it" is having nowhere to
+  write it, so an envelope carrying `assurance`, `verified` or `trusted` is
+  rejected. A signature nobody checked is a string, so a sealed receipt read
+  without a key is `self_attested`.
+- **Canonical form is ASCII by escaping, not by prohibition.** Python's JSON
+  writer escapes non-ASCII and JavaScript's does not, so the same receipt seals
+  differently in two languages. The other format fixed that by forbidding
+  non-ASCII in a sealed body, at the stated cost that a refusal reason in a
+  non-Latin script cannot be sealed as written. Escaping gives identical bytes
+  in every language and keeps the text, which closes a limitation that format
+  declares about itself. Amounts are strings, and the type test is enforced:
+  `str(1.10)` is `"1.1"` and matches a decimal pattern perfectly, so a pattern
+  alone let a float into a sealed payload.
+- **The digest covers the content and not the moment**, as before, so the
+  billable unit stays idempotent. A refusal's own time is material and sits
+  inside the payload where it is covered.
+
+`chain_breaks` now checks the counter as well as the pointers. Pointers cannot
+see a truncation, because the remaining chain is valid; the counter makes a
+removed tail visible to a reader who knows the count.
+
+`seal` and `verify` serve both envelopes. The field naming a receipt's content
+is asked for rather than assumed, because version one wrote `finding_digest`
+and the merged envelope writes `content_digest` — it carries a refusal as
+readily as a finding, and calling that a finding would be a lie about what it
+is. The key inside the signed statement stays spelled `finding_digest`: it is
+part of the signed blob, and renaming it for tidiness would invalidate every
+signature already issued.
+
+### What has deliberately not flipped
+
+`auditor receipt` still emits `receipt_version: 1`, and the default standard is
+still `kya/1`. Both are pinned by tests that say why.
+
+Changing canonical form or the standard's name changes every content digest,
+and the digest is the billable unit. Flipping either unilaterally would charge
+a customer a second time for one unchanged codebase, the day after a release.
+It would also produce a merged format only one of the two producers can write,
+which is a rename and not a merge.
+
+Both defaults move in one release, when the refusal producer emits this
+envelope too. Until then `verify` reads both and the version-two path is
+exercised by its own tests. A merge announced before both sides can write it
+would be the kind of claim this method exists to refuse.
+
+472 tests.
+
 ## 0.6.4 — 23 November 2026
 
 **FINDING_004 is closed, and the instrument now reports no open defects.**

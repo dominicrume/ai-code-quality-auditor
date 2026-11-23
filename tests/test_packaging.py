@@ -28,6 +28,7 @@ REPO = Path(__file__).resolve().parent.parent
 #: here, and to [tool.setuptools.package-data], is how data stops shipping.
 PACKAGE_DATA = [
     "standards/kya_constitution_v1.yaml",
+    "standards/agent_constitution_v1.yaml",
     "standards/open_defects.yaml",
     "assets/theme.css",
     "dashboard/templates/index.html",
@@ -214,3 +215,48 @@ def test_typing_classifier_is_backed_by_a_py_typed_marker() -> None:
         "ships no py.typed marker; add auditor/py.typed and declare it in "
         "[tool.setuptools.package-data] under \"auditor\""
     )
+
+
+# --- both shipped standards, and the renaming that must not change a reading
+
+def test_every_shipped_standard_is_byte_identical_to_its_authoring_copy() -> None:
+    """A wheel that ships a spec which has drifted from `specs/` ships a
+    different standard from the one the repository documents."""
+    from auditor import standards
+    for name in standards.SHIPPED:
+        authoring = REPO / "specs" / name
+        assert authoring.is_file(), f"no authoring copy for {name}"
+        assert standards.path(name).read_bytes() == authoring.read_bytes(), (
+            f"auditor/standards/{name} has drifted from specs/{name}; "
+            f"copy the authoring file over it")
+
+
+def test_the_renamed_standard_declares_the_identity_it_supersedes() -> None:
+    """A receipt produced against kya/1 was true when it was made. The new
+    standard has to say so itself, not only in a document."""
+    import yaml
+    from auditor import standards
+    d = yaml.safe_load(standards.path(standards.NORMATIVE).read_text())
+    assert d["standard"] == "agent-constitution"
+    assert d["supersedes"] == {"standard": "kya", "version": 1}
+
+
+def test_renaming_the_standard_changes_no_reading() -> None:
+    """The whole safety property of the rename. Same five elements, same
+    `basis`, so the same codebase gets the same verdict and the same grades
+    under either identity."""
+    import yaml
+    from auditor import standards
+    old, new = (yaml.safe_load(standards.path(n).read_text())
+                for n in (standards.DEFAULT, standards.NORMATIVE))
+    assert [e["id"] for e in old["elements"]] == [e["id"] for e in new["elements"]]
+    assert [e["basis"] for e in old["elements"]] == [e["basis"] for e in new["elements"]]
+
+
+def test_the_default_standard_is_still_the_frozen_one() -> None:
+    """Pinned deliberately. Flipping this renames the standard inside every new
+    receipt, changing every content digest, and the digest is the billable unit.
+    It moves in the same release as the version-two envelope. If this test is
+    failing because somebody changed the default, change the envelope too."""
+    from auditor import standards
+    assert standards.DEFAULT == "kya_constitution_v1.yaml"

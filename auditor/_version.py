@@ -6,4 +6,4 @@ install, and a receipt stamped with the wrong instrument version is a receipt
 that lies about what produced it. pyproject now reads this attribute, so the
 packaged metadata and the running code cannot disagree.
 """
-__version__ = "0.6.4"
+__version__ = "0.6.5"

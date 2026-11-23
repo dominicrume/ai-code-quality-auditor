@@ -86,7 +86,14 @@ def generate_keypair() -> tuple[str, str]:
     return _b64(raw_private), _b64(raw_public)
 
 
-def _signed_statement(finding_digest: str, sealed_at: str, key_id: str) -> bytes:
+def _signed_statement(content_digest: str, sealed_at: str, key_id: str) -> bytes:
+    """The bytes a signature is taken over.
+
+    The key inside the statement stays spelled `finding_digest` even for a
+    merged envelope whose own field is `content_digest`. It is part of the
+    signed blob, and renaming it would invalidate every signature already
+    issued for the sake of tidiness.
+    """
     """Exactly the bytes a signature covers.
 
     The finding digest, the moment, and which key. Binding the time means a
@@ -95,7 +102,7 @@ def _signed_statement(finding_digest: str, sealed_at: str, key_id: str) -> bytes
     """
     return bundle.canonical({
         "alg": ALGORITHM,
-        "finding_digest": finding_digest,
+        "finding_digest": content_digest,
         "sealed_at": sealed_at,
         "key_id": key_id,
     })
@@ -123,14 +130,17 @@ def seal(finding: dict, private_key_b64: str, public_key_b64: str,
             "that signature")
     if not bundle.intact(finding):
         raise ValueError(
-            "finding_digest does not match the finding; refusing to seal "
-            "content that has been altered since it was computed"
+            f"{bundle.digest_field(finding)} does not match the receipt; "
+            "refusing to seal content that has been altered since it was "
+            "computed"
         )
     kid = key_id(public_key_b64)
     sealed_at = (at or datetime.now(timezone.utc)).strftime("%Y-%m-%dT%H:%M:%SZ")
     private = Ed25519PrivateKey.from_private_bytes(_unb64(private_key_b64))
+    # Whichever field names this receipt's content. The signature is over the
+    # digest, so signing the wrong field would attest to nothing.
     signature = private.sign(
-        _signed_statement(finding["finding_digest"], sealed_at, kid))
+        _signed_statement(finding[bundle.digest_field(finding)], sealed_at, kid))
     out = dict(finding)
     out["seal"] = {
         "algorithm": ALGORITHM,
@@ -232,7 +242,7 @@ def verify(finding: dict, public_key_b64: str | None = None) -> dict:
     try:
         Ed25519PublicKey.from_public_bytes(_unb64(key)).verify(
             _unb64(seal_block["signature"]),
-            _signed_statement(finding.get("finding_digest", ""),
+            _signed_statement(finding.get(bundle.digest_field(finding), ""),
                               seal_block.get("sealed_at", ""),
                               seal_block.get("key_id", "")),
         )
