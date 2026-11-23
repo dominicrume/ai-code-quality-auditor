@@ -1,6 +1,39 @@
 # Changelog
 
-## Unreleased
+## 0.6.3 — 23 November 2026
+
+0.6.2 was tagged and built but never published, and the artefacts built for it
+carried none of what follows. This is the release that reaches a user.
+
+**Five audits of work already reported finished.** The headline repair is that
+the MCP server was broken in every real client: `auditor/core/logger.py` built
+its handler on stdout, and a single warning about an unparseable file between
+two JSON-RPC messages corrupts the stream and the client drops the connection.
+Logging now goes to stderr. A JSON-RPC batch array killed the session for every
+later request. A broken pipe was a traceback. `resources/list` and `prompts/list`
+returned errors to clients that call them regardless of capabilities.
+
+**Metering could lose revenue silently.** Concurrent seals read a stale billable
+count and slipped inside the free quota: 64 threads against a quota of 8 charged
+55 where 56 were owed. A free unsealed reading could shadow the paid seal of
+identical work. **Sealing had a forgery vector**: an attacker could sign with
+their own key, copy the trusted key id into the seal block, and verification
+reported a valid signature.
+
+**Honesty repairs.** The security policy named a version that was never
+published and said nothing about the published one with an unclosed
+vulnerability. The version was read from installed metadata, so a receipt could
+be stamped by a version that did not produce it. The kappa script printed 0.852
+in detail and 0.853 in summary for the same figure of record. A wheel built
+without isolation shipped a file that never existed in the source tree.
+
+**FINDING_004 is open and disclosed in every receipt.** FINDING_003's second
+stated fix, excluding the instrument from its own scan, shipped for the
+governance path only. Scope drift still reports its own detector vocabulary.
+
+Full detail in the entry below and in `docs/FINDING_004_*`.
+
+## 0.6.2 — tagged, built, never published
 
 **Per-use billing, fixed where it cannot be bypassed.** The check is MIT and
 public, so there is nothing to meter in the computation, and a counter placed in
