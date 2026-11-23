@@ -193,6 +193,15 @@ def analyze(codebase: dict, interaction_log: list[dict], spec: dict,
 
     scanned = max(py_loc + js_loc, 0)
     density = (len(issues) + len(js_issues)) / max(scanned, 1) * 1000
+
+    # The tally as data, not only inside the first details string. The band
+    # needs it: a density divides by size, so a large codebase is rewarded for
+    # being large, and severity is the thing that division throws away.
+    # See FINDING_005.
+    tally: dict[str, int] = {}
+    for f in issues + js_issues:
+        tally[_severity(f)] = tally.get(_severity(f), 0) + 1
+
     return MetricScore(
         name="security_density",
         value=density,
@@ -203,4 +212,5 @@ def analyze(codebase: dict, interaction_log: list[dict], spec: dict,
         languages=languages.present(files),
         unparsed=sorted(unparsed) or None,
         count=len(issues) + len(js_issues),
+        diagnostics={"severity": tally} if tally else None,
     )

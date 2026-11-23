@@ -28,7 +28,7 @@ from auditor.analyzers import (
     security_analyzer,
 )
 from auditor.analyzers import languages
-from auditor.core.calibration import Band, band_for
+from auditor.core.calibration import Band, band_for, floor_for
 
 
 @dataclass
@@ -90,6 +90,11 @@ class ScanResult:
     python_files: int = 0
     readable_files: int = 0
     python_loc: int = 0
+    # Files set aside as vendored or generated, by kind. A number that quietly
+    # stopped counting things is the same class of error as one that quietly
+    # counted them, so what was set aside travels with the reading.
+    # See FINDING_006.
+    not_authored: dict[str, str] | None = None
     spec_name: str | None = None
     # Where the specification came from, when nobody wrote one: {"from": ...}.
     # A derived specification is provisional and every surface that reports a
@@ -279,6 +284,7 @@ def scan_directory(path: Path, spec: dict | None = None,
         spec_source=({"from": spec["_discovered_from"]}
                      if (spec or {}).get("_discovered") else None),
         honoured_ignores=not include_all,
+        not_authored=codebase.get("not_authored") or None,
     )
 
     for name, label, module in _METRICS:
@@ -305,9 +311,15 @@ def scan_directory(path: Path, spec: dict | None = None,
             ))
             continue
 
+        # The band, then raised to whatever the worst finding present
+        # requires. A density divides by size and discards severity, so nine
+        # HIGH findings in a 304k-line codebase measured 2.40 and printed a
+        # green OK. See FINDING_005 and calibration.floor_for.
+        banded = floor_for(band_for(name, score.value),
+                           (getattr(score, "diagnostics", None) or {}).get("severity"))
         result.outcomes.append(MetricOutcome(
             name=name, label=label, value=score.value, unit=score.unit,
-            band=band_for(name, score.value),
+            band=banded,
             coverage=score.coverage, languages=score.languages,
             unparsed=score.unparsed, count=score.count,
             diagnostics=getattr(score, "diagnostics", None),

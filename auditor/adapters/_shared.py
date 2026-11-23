@@ -223,5 +223,25 @@ def load_codebase(work_dir: Path, respect_ignores: bool = False) -> dict:
 
     manifest_path = work_dir / "manifest.json"
     manifest = json.loads(manifest_path.read_text()) if manifest_path.exists() else []
-    return {"files": files, "manifest": manifest,
-            "unreadable": sorted(unreadable)}
+    codebase = {"files": files, "manifest": manifest,
+                "unreadable": sorted(unreadable)}
+
+    # Code the project redistributes but did not write, and build output.
+    #
+    # Only on the user-facing path, for the same reason `respect_ignores` is:
+    # the experiment walked what it walked, and the published figures must stay
+    # reproducible. See FINDING_006.
+    #
+    # Separated rather than silently dropped. A number that quietly stopped
+    # counting things is the same class of error as one that quietly counted
+    # them, and `not_authored` is what lets the report say which.
+    if respect_ignores:
+        from auditor.analyzers import provenance
+        kinds = provenance.classify_all(files)
+        not_authored = {p: k for p, k in kinds.items()
+                        if k != provenance.FIRST_PARTY}
+        if not_authored:
+            codebase["files"] = {p: c for p, c in files.items()
+                                 if p not in not_authored}
+            codebase["not_authored"] = dict(sorted(not_authored.items()))
+    return codebase

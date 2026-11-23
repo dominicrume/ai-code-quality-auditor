@@ -12,7 +12,18 @@
 # Convention: add an entry the moment a defect is recorded, remove it when the
 # record's status line says it is fixed.
 
-open: []
+open:
+  - id: FINDING_008
+    summary: >
+      The duplication metric counts a project's built assets against their own
+      source tree, so a repository that ships both reports duplication it does
+      not have, and that one reading can set the worst band for a whole audit.
+    affects: >
+      Duplication percentages on any repository shipping built assets beside
+      their source may be substantially overstated. Read the duplicated paths
+      before quoting the figure. Security counts are also doubled where a
+      finding appears in both trees.
+    recorded: "2026-11-23"
 
 # Nothing is open. FINDING_004 was the last entry and was closed on
 # 23 November 2026; see docs/FINDING_004_fidelity_reads_its_own_vocabulary.md.

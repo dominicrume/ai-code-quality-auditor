@@ -238,6 +238,9 @@ def scan_cmd(path: Path, spec: Path | None, as_json: bool, fail_on: str,
                        for e in result.fidelity.extras],
         } if result.fidelity and result.fidelity.total else None),
         "honoured_ignores": result.honoured_ignores,
+        # Named, not dropped. A reader has to be able to check what the tool
+        # decided was somebody else's code. See FINDING_006.
+        "not_authored": result.not_authored or {},
         "worst_band": result.worst_band,
         "metrics": {
             o.name: ({"value": o.value, "unit": o.unit, "band": o.band,
@@ -267,8 +270,23 @@ def scan_cmd(path: Path, spec: Path | None, as_json: bool, fail_on: str,
             f"{result.readable_files} analysable"
             + (f" · spec: {result.spec_name}" if result.spec_name else "")
             + ("" if result.honoured_ignores else " · including ignored files")
-            + "[/dim]\n"
+            + "[/dim]"
         )
+        # What was set aside, and why. Printed even though it is a detail,
+        # because a reading that silently stopped counting files is the defect
+        # this was built to fix, not the fix. See FINDING_006 and FINDING_007.
+        aside = result.not_authored or {}
+        if aside:
+            kinds: dict[str, int] = {}
+            for kind in aside.values():
+                kinds[kind] = kinds.get(kind, 0) + 1
+            parts = ", ".join(f"{n} {k.replace('_', ' ')}"
+                              for k, n in sorted(kinds.items()))
+            console.print(
+                f"[dim]{len(aside)} files not measured ({parts}) — code this "
+                f"project redistributes or builds, not code it wrote. "
+                f"--json lists them.[/dim]")
+        console.print()
 
         _render_fidelity(console, result)
 

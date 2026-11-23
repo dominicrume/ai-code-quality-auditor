@@ -1,5 +1,85 @@
 # Changelog
 
+## 0.6.7 — 23 November 2026
+
+**A field report from the Lagos AI summit.** A user ran `auditor scan .` on
+SparkrCRM, a SuiteCRM-derived CRM of 303,862 lines. The tool printed:
+
+    Security      2.40   OK    719 findings
+
+Nine of those 719 were HIGH findings for dynamic code execution from a string,
+CWE-95. The tool showed a green dot and the word OK. Three defects, found and
+fixed; a fourth recorded and left open.
+
+### FINDING_005 — the security band could not fail
+
+`security_density` warned at 50 findings per 1000 lines. That is one finding
+every twenty lines. This codebase would have needed 15,193 findings to say
+"warn" and 30,386 to say "critical". It had 719. No real codebase reaches that
+rate, so the band was green on every project it was ever pointed at.
+
+Two compounding errors. A density divides by size, so a large codebase is
+rewarded for being large: the same nine findings in a 3,000-line service would
+have measured 240 per kLOC and banded critical. And division discards severity
+entirely, so one HIGH `eval()` and one LOW style note counted the same.
+
+`core/scan.py` already carried this exact reasoning about a metric that read
+nothing: *0.00 bands as OK, so the tool would report a clean bill of health for
+code it could not read.* That was applied to coverage and never to severity.
+
+`calibration.floor_for` now raises a band to whatever the worst finding
+present requires, and never lowers one. Deliberately narrow: HIGH only, because
+this one report carried 694 MEDIUM findings and a MEDIUM floor would warn on
+every real project; and to `warn`, not `critical`, because a HIGH static match
+is not a confirmed exploit and the report says so itself.
+
+### FINDING_006 — third-party code was reported as the project's own
+
+All nine HIGH findings were in code the audited team had not written: RGraph, a
+jQuery plugin, markItUp, FlashCanvas, pChart, Chart.js, Google's
+MarkerClusterer, and upstream SuiteCRM. Eight vendored libraries and one
+upstream file. **Not one was theirs.** The report's first recommendation was to
+go and validate all nine, which sends an engineer to audit jQuery.
+
+The guard existed and missed. `VENDOR_DIRS` matches directory names —
+`vendor`, `third_party`, `node_modules` — and its own comment names this
+failure mode. Projects of this age vendor into ordinary paths:
+`include/javascript/jquery/`, `modules/AOR_Charts/lib/pChart/`. Nothing is
+called `vendor`.
+
+`auditor/analyzers/provenance.py` classifies each file as `first_party`,
+`vendored` or `generated`. **Attribution, not exclusion**: files are not
+dropped, they are carried in `not_authored`, counted in the terminal header and
+listed by name in `--json`. A number that quietly stopped counting things is
+the same class of error as one that quietly counted them.
+
+Scan path only, like `respect_ignores`: the experiment walked what it walked
+and the published figures stay reproducible, pinned by a test.
+
+Misclassifying a project's own file hides a real finding, so every rule needs a
+positive signal. `lib` and `libs` are not signals — `src/lib/billing/charge.ts`
+and `app/libs/my_own_helper.js` stay first-party, both pinned.
+
+### FINDING_007 — minified files were analysed and cited by line
+
+`markerclusterer_packed.js:1` is line 1 of a file with one line. The citation
+points at a whole library. Packed code also trips source heuristics by
+construction. Detected by name (`.min.`, `_packed.`, `.bundle.`, …) and by
+shape: any line over 1,000 characters, or a median over 200, which are lengths
+no author produces.
+
+### FINDING_008 — open
+
+The 32.82% duplication that set `worst_band: critical` for the whole audit is
+substantially the project's own build layout: SuiteCRM ships
+`jssource/src_files/` beside the deployed copies, and the tool read both trees
+and called one a duplicate of the other. The fix is to count bytewise-identical
+files once, which changes a published figure and so needs an erratum rather
+than a quiet edit. Recorded open and disclosed in every receipt. A test pins
+that it is still open, so closing it has to be deliberate.
+
+501 tests.
+
 ## 0.6.6 — 23 November 2026
 
 **One author identity, everywhere.** No behaviour change.
