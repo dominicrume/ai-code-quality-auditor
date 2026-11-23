@@ -140,8 +140,37 @@ def test_the_old_thresholds_could_not_fail():
 
 
 def test_a_high_finding_cannot_read_good():
-    assert floor_for("good", {"HIGH": 9, "MEDIUM": 694, "LOW": 16}) == "warn"
-    assert floor_for("good", {"HIGH": 1}) == "warn"
+    assert floor_for("good", {"HIGH": 9, "MEDIUM": 694, "LOW": 16}) == "critical"
+    assert floor_for("good", {"HIGH": 1}) == "critical"
+
+
+def test_one_high_finding_decides_the_colour_however_much_good_code_surrounds_it():
+    """The published rule, pinned as a test.
+
+    Stated in public on 23 November 2026: *the single worst problem decides the
+    colour. One serious, unresolved problem turns the whole thing red, however
+    much good code sits around it.* A promise made to a room is a specification
+    this file now holds the instrument to. The density is deliberately varied
+    across the whole green range to show that none of it can soften a HIGH.
+    """
+    for density in (0.0, 0.01, 2.4034, 49.9):
+        assert band_for("security_density", density) == "good"
+        assert floor_for(band_for("security_density", density), {"HIGH": 1}) \
+            == "critical", density
+
+
+def test_the_floor_is_not_a_claim_that_the_finding_is_exploitable():
+    """Red is what to do next, not a verdict on the finding.
+
+    The instrument cannot tell an exploitable `eval` from a false positive --
+    FINDING_010 is one of its own false positives -- so the severity tally and
+    the findings list travel beside the band for a human to read. Banding it
+    red and handing over the evidence is honest; banding it comfortable and
+    handing over the same evidence is not.
+    """
+    assert floor_for("good", {"HIGH": 1}) == "critical"
+    # And it is still only the worst *present* severity that moves anything.
+    assert floor_for("good", {"HIGH": 0}) == "good"
 
 
 def test_mediums_and_lows_do_not_move_the_band():
@@ -157,7 +186,7 @@ def test_the_floor_never_lowers_a_band():
     assert floor_for("warn", None) == "warn"
 
 
-def test_a_high_finding_in_the_teams_own_code_warns(tmp_path):
+def test_a_high_finding_in_the_teams_own_code_turns_it_red(tmp_path):
     """End to end, at a density that bands `good` on its own."""
     root = tmp_path / "svc"
     (root / "src").mkdir(parents=True)
@@ -171,7 +200,7 @@ def test_a_high_finding_in_the_teams_own_code_warns(tmp_path):
     sec = next(o for o in scan_directory(root).outcomes
                if o.name == "security_density")
     assert band_for("security_density", sec.value) == "good", "density alone says good"
-    assert sec.band == "warn", "the HIGH finding must raise it"
+    assert sec.band == "critical", "the HIGH finding must decide the colour"
     assert sec.diagnostics and sec.diagnostics["severity"].get("HIGH") == 1
 
 

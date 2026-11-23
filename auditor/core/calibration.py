@@ -49,18 +49,29 @@ def band_for(metric: str, value: float) -> Band:
 # bands as OK, so the tool would report a clean bill of health for code it
 # could not read*. This is the same error in the banding rather than in the
 # coverage, and the same answer applies. See FINDING_005.
-# HIGH only, and only as far as "warn".
 #
-# Not MEDIUM: that CRM carried 694 of them, and a MEDIUM floor would warn on
-# essentially every real codebase, which is as useless as banding them all
-# good. `test_scan_names_serious_security_findings_without_changing_the_band`
-# pins that deliberate decision and still passes.
+# HIGH goes straight to critical. The first fix stopped at "warn", on the
+# argument that a HIGH static match is not a confirmed exploit. That argument
+# is about *confidence in the finding*, and a band is not a confidence: it is
+# what the reader is told to do next. "Warn" beside a green-ish dot is still a
+# number a team scrolls past, and the thing being scrolled past is an
+# unreviewed path to dynamic code execution. The rule, stated publicly on
+# 23 November 2026 and now binding on this file:
 #
-# Not "critical": a HIGH static match is not a confirmed exploit, and the tool
-# says so in its own report. "warn" is the honest reading of an unreviewed HIGH
-# finding -- a human has to look at this -- and critical stays a statement
-# about density.
-SEVERITY_FLOOR: dict[str, Band] = {"HIGH": "warn"}
+#   the single worst problem decides the colour, because a house with one
+#   open door is an unlocked house
+#
+# A HIGH finding that turns out to be a false positive costs a team one
+# review. A HIGH finding banded comfortable costs them the breach. The
+# instrument is not the arbiter of exploitability and must stop implying it is;
+# `details` and the severity tally say what was found, so a reader can
+# downgrade it themselves with the evidence in front of them. See FINDING_005,
+# revised in 0.6.10.
+#
+# Not MEDIUM, and this part is unchanged: that CRM carried 694 of them, and a
+# MEDIUM floor would fire on essentially every real codebase, which is as
+# useless as banding them all good. A rule that always says red says nothing.
+SEVERITY_FLOOR: dict[str, Band] = {"HIGH": "critical"}
 
 _RANK: dict[Band, int] = {"good": 0, "warn": 1, "critical": 2}
 

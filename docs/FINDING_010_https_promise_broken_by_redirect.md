@@ -2,7 +2,9 @@
 
 **Status:** fixed 23 November 2026, in 0.6.8. Pinned by
 `tests/test_finding_009_and_010.py`.
-**Found:** 23 November 2026, from an external user's report. The reported defect
+**Found:** 23 November 2026, reported by Owen Tenumah at the Lagos AI
+summit, who read this module's source rather than only its output. Named with
+his consent; see docs/CREDITS.md. The reported defect
 was a false positive; looking into it found a real one at the same line.
 **Module:** `auditor/core/share.py`
 

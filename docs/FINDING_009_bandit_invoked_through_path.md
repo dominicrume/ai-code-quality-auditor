@@ -2,7 +2,9 @@
 
 **Status:** fixed 23 November 2026, in 0.6.8. Pinned by
 `tests/test_finding_009_and_010.py`.
-**Found:** 23 November 2026, reported by an external user against 0.6.4.
+**Found:** 23 November 2026, against 0.6.4. Reported by Owen Tenumah from an
+unactivated virtual environment, and independently by Bright on Windows under
+PowerShell. Named with their consent; see docs/CREDITS.md.
 **Module:** `auditor/analyzers/security_analyzer.py`
 
 ## What happened

@@ -2,8 +2,9 @@
 
 **Status:** fixed 23 November 2026, in 0.6.7. Pinned by
 `tests/test_finding_005_to_008.py`.
-**Found:** 23 November 2026, in a field report. A user ran `auditor scan .` on
-SparkrCRM, a SuiteCRM-derived CRM, during the Lagos AI summit.
+**Found:** 23 November 2026, in a field report. Ola ran `auditor scan .` on
+SparkrCRM, a SuiteCRM-derived CRM, during the Lagos AI summit. Named with his
+consent; see docs/CREDITS.md.
 **Module:** `auditor/core/calibration.py`, `auditor/core/scan.py`
 
 ## What happened
@@ -73,3 +74,37 @@ The thresholds themselves. 50 and 100 per kLOC are still almost certainly
 wrong by an order of magnitude, and nothing in the repository records where
 they came from. Recalibrating them changes a published figure and needs an
 erratum, so it is a separate decision and is not taken here.
+
+## Revised in 0.6.10: the floor goes to `critical`, not `warn`
+
+The fix above stopped at `warn`, on the argument that a HIGH static match is
+not a confirmed exploit. That argument was wrong about what a band is.
+
+Confidence in a finding and instruction to a reader are two different things.
+A band is the second. `warn` beside an unreviewed path to dynamic code
+execution is still a line a team scrolls past, and the whole defect recorded
+here is that the instrument let a team scroll past nine of them.
+
+The rule now binding on `calibration.py`, stated in public on
+23 November 2026:
+
+> The tool stops averaging. The single worst problem decides the colour. One
+> serious, unresolved problem turns the whole thing red, however much good
+> code sits around it, because a house with one open door is an unlocked
+> house, and an attacker only needs the one.
+
+Asymmetry of cost settles it. A HIGH that turns out to be a false positive
+costs a team one review. A HIGH banded comfortable costs them the breach. The
+instrument is not the arbiter of exploitability and should stop implying it is:
+the severity tally and the findings list travel beside the band, so a reader
+can downgrade it themselves with the evidence in front of them. FINDING_010 is
+this instrument's own false positive, which is exactly why the band names the
+risk and the reader names the verdict.
+
+Unchanged: MEDIUM and LOW still do not move the band. 694 mediums were in that
+one report, and a rule that always says red says nothing.
+
+Verified end to end on a 12,121-line TypeScript project carrying one HIGH
+JS101: density 0.08, which bands `good` on its own, now reads **critical**.
+Pinned by `test_one_high_finding_decides_the_colour_however_much_good_code_surrounds_it`
+and `test_a_high_finding_in_the_teams_own_code_turns_it_red`.

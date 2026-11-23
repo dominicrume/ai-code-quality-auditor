@@ -72,3 +72,7 @@ media/
 # Internal method and doctrine. Local only.
 .claude/skills/
 dist-*/
+
+# The dissertation, copied out of build/ where build tools delete it.
+# Still not a backup: it needs a destination off this machine.
+dissertation-final/

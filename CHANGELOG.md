@@ -1,5 +1,59 @@
 # Changelog
 
+## 0.6.10 — 23 November 2026
+
+**The worst finding decides the colour.**
+
+0.6.7 stopped the security band averaging nine HIGH findings into a green OK,
+but it raised the band only as far as `warn`, reasoning that a HIGH static
+match is not a confirmed exploit. That reasoning confused confidence in a
+finding with instruction to a reader. A band is the second one. `warn` beside
+an unreviewed path to dynamic code execution is still a line a team scrolls
+past, and being scrolled past is the entire defect.
+
+The rule, now binding on `calibration.py` and pinned by two tests:
+
+> The single worst problem decides the colour. One serious, unresolved problem
+> turns the whole thing red, however much good code sits around it, because a
+> house with one open door is an unlocked house, and an attacker only needs
+> the one.
+
+`SEVERITY_FLOOR` is `{"HIGH": "critical"}`. Verified end to end: a
+12,121-line TypeScript project carrying one HIGH JS101 measures a density of
+0.08, which bands `good` on its own, and now reads **critical**.
+
+Asymmetry of cost settles it. A HIGH that turns out to be a false positive
+costs a team one review. A HIGH banded comfortable costs them the breach. The
+instrument does not claim to know which it is: the severity tally and the full
+findings list travel beside the band so a reader can downgrade it themselves,
+with the evidence in front of them. FINDING_010 is this instrument's own false
+positive, which is precisely why the band names the risk and the reader names
+the verdict.
+
+MEDIUM and LOW still do not move the band. One field report carried 694
+mediums, and a rule that always says red says nothing.
+
+### Credits, with consent
+
+`docs/CREDITS.md` names the three people at the Lagos AI Summit who found six
+of the ten numbered defects in this instrument's history — the first found by
+anyone other than its author. Owen Tenumah read the auditor's own source and
+reported the line where its https promise broke. Bright ran the installer on
+Windows under PowerShell, where it failed at the first command, and reported
+exactly what broke. Ola ran it on a large, long-lived production codebase
+rather than a clean fixture, and brought back the three most serious readings
+in the list.
+
+Earlier versions of these records described the reporters rather than naming
+them, because consent to credit had not been given. It has now.
+
+### Also
+
+- `docs/FINDING_005` carries a revision section recording why the floor moved
+  and what the earlier reasoning got wrong.
+
+546 tests.
+
 ## 0.6.9 — 23 November 2026
 
 **The structural answer to the field reports, rather than six more patches.**
