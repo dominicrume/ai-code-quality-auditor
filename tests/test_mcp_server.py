@@ -114,14 +114,63 @@ def test_a_tool_call_before_initialize_still_works():
     assert _call("kya_standard", {})["result"]["isError"] is False
 
 
-def test_tools_list_advertises_three_tools_without_leaking_handlers():
+def test_tools_list_advertises_every_tool_without_leaking_handlers():
+    """Named a fixed three before, so adding a tool failed this rather than
+    checking it. The properties worth pinning hold for any number of tools:
+    every registered tool is advertised, no Python callable crosses the wire,
+    and each description is long enough for a model to route on."""
     tools = mcp.handle({"jsonrpc": "2.0", "id": 4, "method": "tools/list"})["result"]["tools"]
-    assert {t["name"] for t in tools} == {
-        "kya_assess", "kya_classify_subject", "kya_standard"}
+    assert {t["name"] for t in tools} == {t["name"] for t in mcp.TOOLS}
+    assert {"kya_assess", "code_scan", "auditor_doctor"} <= {t["name"] for t in tools}
     for t in tools:
         assert "handler" not in t
         assert t["inputSchema"]["type"] == "object"
         assert len(t["description"]) > 80
+
+
+def test_a_scan_reading_cannot_be_quoted_without_its_limits(tmp_path):
+    """The whole reason this is exposed over MCP rather than only in a
+    terminal. A human who saw `Security 2.40 OK` beside nine HIGH findings
+    filed a bug report; a model reads the number and says the code is fine."""
+    import json as _json
+    (tmp_path / "a.ts").write_text("export function go(s){ return eval(s); }\n")
+    res = _call("code_scan", {"path": str(tmp_path)})
+    assert res["result"]["isError"] is False
+    body = _json.loads(res["result"]["content"][0]["text"])
+    assert body["limits"], "a reading with no stated limits is not a reading"
+    assert any("not confirmed" in l for l in body["limits"])
+    assert body["metrics"]["security_density"]["severity"]["HIGH"] == 1
+    assert body["metrics"]["security_density"]["band"] != "good"
+
+
+def test_a_scan_without_a_specification_says_intent_is_unknown(tmp_path):
+    import json as _json
+    (tmp_path / "a.py").write_text("x = 1\n")
+    body = _json.loads(
+        _call("code_scan", {"path": str(tmp_path)})["result"]["content"][0]["text"])
+    assert any("No specification" in l for l in body["limits"])
+
+
+def test_the_doctor_tool_reports_the_environment(tmp_path):
+    import json as _json
+    body = _json.loads(
+        _call("auditor_doctor", {})["result"]["content"][0]["text"])
+    assert "usable" in body
+    assert any(c["name"].startswith("bandit") for c in body["checks"])
+
+
+def test_every_reading_carries_the_instruments_open_defects(tmp_path):
+    """A verdict whose known weakness is invisible to whoever relies on it is
+    not an attestation, and an agent relies on it harder than a person does."""
+    import json as _json
+    from auditor.receipts import bundle
+    declared = [d["id"] for d in bundle.open_defects()]
+    if not declared:
+        pytest.skip("nothing open to disclose")
+    (tmp_path / "a.py").write_text("x = 1\n")
+    body = _json.loads(
+        _call("code_scan", {"path": str(tmp_path)})["result"]["content"][0]["text"])
+    assert [d["id"] for d in body["instrument_open_defects"]] == declared
 
 
 def test_unknown_tool_is_rejected():

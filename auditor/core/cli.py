@@ -65,6 +65,47 @@ def _free_port(preferred: int, attempts: int = 20) -> int:
         return sock.getsockname()[1]
 
 
+@main.command("doctor")
+@click.option("--json", "as_json", is_flag=True,
+              help="Machine-readable, for a wrapper or an agent.")
+def doctor_cmd(as_json: bool):
+    """What this installation can and cannot do, and what to type to fix it.
+
+    Two of the three reports from the field on 23 November 2026 were not about
+    readings at all: a correct install that could not find bandit, and a
+    correct install the shell could not see. Both left the user guessing. This
+    answers both before they have to ask.
+    """
+    import json as _j
+
+    from rich.console import Console
+
+    from auditor.core.doctor import run
+
+    report = run()
+    if as_json:
+        click.echo(_j.dumps(report.as_dict(), indent=2))
+        raise SystemExit(1 if report.broken else 0)
+
+    console = Console()
+    console.print()
+    console.print(f"[bold]{report.summary}[/bold]\n")
+    mark = {"ok": "[green]ok[/green]  ", "missing": "[red]FAIL[/red]",
+            "degraded": "[yellow]warn[/yellow]"}
+    from rich.markup import escape
+    for c in report.checks:
+        console.print(f"{mark[c.state]} [bold]{c.name}[/bold]  "
+                      f"[dim]{escape(c.detail)}[/dim]")
+        if c.affects:
+            console.print(f"       [dim]affects: {escape(c.affects)}[/dim]")
+        if c.fix:
+            console.print(f"       [cyan]{escape(c.fix)}[/cyan]")
+    console.print()
+    # A non-zero exit so CI can gate on it, and so a wrapper can tell without
+    # parsing anything.
+    raise SystemExit(1 if report.broken else 0)
+
+
 @main.command("live")
 @click.argument("path", type=click.Path(exists=True, file_okay=False, path_type=Path),
                 default=".")

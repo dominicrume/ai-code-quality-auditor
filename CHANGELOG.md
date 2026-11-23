@@ -1,5 +1,65 @@
 # Changelog
 
+## 0.6.9 — 23 November 2026
+
+**The structural answer to the field reports, rather than six more patches.**
+
+Six defects came from one event in one day. They were not six unrelated
+mistakes. Every fixture was written by the same mind that wrote the code, every
+test ran in the environment that built it, and no reading had ever been taken
+over a real codebase or in an environment we did not control. 544 tests all
+agreed with our assumptions.
+
+### `auditor doctor`, and `auditor_doctor` over MCP
+
+Two of the three reports were not about readings at all: a correct install that
+could not find bandit, and a correct install the shell could not see. Both left
+the user guessing. `doctor` answers in one call: what works, what does not,
+what each failure costs, and the exact command to fix it. It also names any
+defect already open in the instrument, because an installation report that
+hides those is the same green light over an unexamined thing that everything
+else here exists to prevent.
+
+### `code_scan` over MCP
+
+The quality scan was never exposed over MCP; only the three governance tools
+were. That matters more than it sounds, because **every installation failure
+reported from the field was a command-line failure.** There is no PATH over
+MCP, no console script and no activation step: the host starts the server with
+an interpreter that already has the package. Exposing the scan there removes
+that entire class of problem rather than documenting around it.
+
+The limits travel as fields, not as prose. A human who read `Security 2.40 OK`
+beside nine HIGH findings was suspicious enough to file a report; a model reads
+the number and says the code is fine. So `limits` is a structured list an agent
+has to step over deliberately: static matches are not confirmed
+vulnerabilities, vendored and generated files were excluded and must not be
+edited, and nothing is known about intent without a specification. Open defects
+are carried with every reading.
+
+### Every command must actually run
+
+`receipt` and `verify` shipped with `NameError: name 'console' is not defined`
+while every module test passed. `doctor` reproduced it exactly, a fortnight
+later, in the first line of its own body. A command is only wired when somebody
+invokes it, so the suite now walks the command group and invokes every one. A
+command added tomorrow is covered without anybody remembering.
+
+### A CI job that is dirty on purpose
+
+CI was ubuntu-latest, Python 3.11, environment activated. Neither install bug
+was reachable from there, and neither was reachable from six "clean venv"
+acceptance runs either — those venvs were clean, but the developer's machine
+had bandit on PATH, so the bare command resolved every time.
+
+`field_conditions.yml` installs the built wheel into an environment it never
+activates, across Linux, macOS and Windows on Python 3.10 and 3.13, runs the
+scan with `PATH` stripped to `/usr/bin:/bin`, runs it again through
+`python -m auditor`, then removes bandit and requires a degraded reading that
+says so rather than a crash or a silent skip.
+
+544 tests.
+
 ## 0.6.8 — 23 November 2026
 
 **Three field reports.** Two crashes and a false positive, all from users.

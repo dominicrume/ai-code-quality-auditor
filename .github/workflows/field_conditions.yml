@@ -1,0 +1,117 @@
+# The conditions users actually run in, which the test suite does not reproduce.
+#
+# Three reports arrived from one event on 23 November 2026. Two of them were
+# not about readings at all:
+#
+#   env/bin/auditor scan .   ->  FileNotFoundError: 'bandit'
+#   PS> auditor scan .       ->  CommandNotFoundException
+#
+# Both were correct installations. Neither was catchable by `pytest` on
+# ubuntu-latest with an activated environment, which is all CI did, and neither
+# was caught by six "clean venv" acceptance runs either -- those venvs were
+# clean but the developer's machine had bandit on PATH, so the bare command
+# resolved every time. A clean environment inside a dirty one does not test
+# what it appears to test.
+#
+# This job exists to be dirty on purpose.
+
+name: field conditions
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  unactivated-install:
+    name: "${{ matrix.os }} · py${{ matrix.python }} · never activated"
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python: ["3.10", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Build the wheel
+        run: |
+          python -m pip install --upgrade pip build
+          python -m build --wheel --outdir dist .
+
+      - name: Install into a fresh environment, and never activate it
+        shell: bash
+        run: |
+          python -m venv env
+          env/bin/pip install dist/*.whl 2>/dev/null || env/Scripts/pip install dist/*.whl
+
+      # The reported crash. PATH is stripped on POSIX so a stray system-wide
+      # bandit cannot rescue the run, which is exactly what hid this defect.
+      - name: scan through the console script, PATH stripped (POSIX)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          mkdir -p subject && printf 'import os\ndef f(c):\n    return os.system(c)\n' > subject/app.py
+          env -i HOME="$HOME" PATH="/usr/bin:/bin" "$PWD/env/bin/auditor" scan subject
+          env -i HOME="$HOME" PATH="/usr/bin:/bin" "$PWD/env/bin/auditor" doctor
+
+      # The Windows report. The console script is in Scripts\ and PowerShell
+      # cannot see it, so the documented fallback has to work.
+      - name: scan through python -m auditor (every platform)
+        shell: bash
+        run: |
+          mkdir -p subject && printf 'import os\ndef f(c):\n    return os.system(c)\n' > subject/app.py
+          PY=env/bin/python; [ -x "$PY" ] || PY=env/Scripts/python
+          "$PY" -m auditor scan subject
+          "$PY" -m auditor doctor
+          "$PY" -m auditor doctor --json
+
+  degrades-without-bandit:
+    name: "a missing analyser must not kill the scan"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Build and install
+        run: |
+          python -m pip install --upgrade pip build
+          python -m build --wheel --outdir dist .
+          python -m venv env
+          env/bin/pip install dist/*.whl
+
+      # A security density of 0.00 over code nothing read is the precise
+      # failure this instrument exists to detect in other tools. Skipping
+      # Python silently would produce exactly that.
+      - name: Remove bandit, then require a degraded reading rather than a crash
+        run: |
+          env/bin/pip uninstall -y bandit
+          mkdir -p subject
+          printf 'import os\ndef f(c):\n    return os.system(c)\n' > subject/app.py
+          printf 'export function go(s){ return eval(s); }\n' > subject/app.ts
+          env -i HOME="$HOME" PATH="/usr/bin:/bin" "$PWD/env/bin/auditor" scan subject \
+            | tee out.txt
+          grep -q "Python was not analysed" out.txt \
+            || { echo "::error::a missing analyser was not disclosed"; exit 1; }
+          grep -q "HIGH JS101" out.txt \
+            || { echo "::error::the JavaScript reading did not survive"; exit 1; }
+
+      - name: doctor must name the missing dependency and how to install it
+        run: |
+          env/bin/python -m auditor doctor --json > doc.json || true
+          python - <<'PY'
+          import json, sys
+          d = json.load(open("doc.json"))
+          bandit = [c for c in d["checks"] if c["name"].startswith("bandit")][0]
+          assert bandit["state"] == "missing", bandit
+          assert "pip install" in bandit["fix"], bandit
+          assert bandit["affects"], "a failed check with no stated consequence"
+          print("doctor correctly reports:", bandit["detail"][:80])
+          PY

@@ -307,6 +307,103 @@ def tool_kya_standard(args: dict) -> str:
     }, indent=2)
 
 
+def tool_doctor(args: dict) -> str:
+    """What this installation can and cannot do.
+
+    The first tool an agent should reach for when a reading looks wrong or a
+    call fails. Two of the three field reports on 23 November 2026 were a
+    correct install that could not find bandit and a correct install the shell
+    could not see. Both left a human guessing; over MCP they would leave a
+    model guessing, which is worse, because a model guesses fluently.
+    """
+    from auditor.core.doctor import run
+    return json.dumps(run().as_dict(), indent=2)
+
+
+def tool_code_scan(args: dict) -> str:
+    """The quality reading, with its limits as fields rather than as prose.
+
+    Why this exists over MCP at all: every installation failure reported from
+    the field was a command-line failure. There is no PATH here, no console
+    script and no activation step -- the host starts this server with an
+    interpreter that already has the package. Running the scan through MCP
+    removes that entire class of problem rather than documenting around it.
+
+    Why the limits are fields: a human who read `Security 2.40 OK` beside nine
+    HIGH findings was suspicious enough to file a report. A model reads the
+    number and says the code is fine. So what the reading does not cover is
+    returned as structured data an agent has to step over deliberately, not as
+    a sentence at the bottom it can summarise away.
+    """
+    from auditor.core.scan import scan_directory
+
+    codebase, root = _codebase(_given_path(args))
+    result = scan_directory(Path(_given_path(args)).expanduser())
+
+    metrics: dict[str, Any] = {}
+    for o in result.outcomes:
+        if not o.applicable:
+            metrics[o.name] = {"measured": False, "why_not": o.skipped_reason}
+            continue
+        entry: dict[str, Any] = {
+            "measured": True,
+            "value": o.value,
+            "unit": o.unit,
+            "band": o.band,
+            "count": o.count,
+            "coverage": o.coverage,
+        }
+        diagnostics = getattr(o, "diagnostics", None) or {}
+        if diagnostics.get("severity"):
+            entry["severity"] = diagnostics["severity"]
+        if diagnostics.get("unavailable"):
+            entry["not_analysed"] = diagnostics["unavailable"]
+        if o.details:
+            _listed(list(o.details), "findings", entry)
+        metrics[o.name] = entry
+
+    # Everything a reader is entitled to before quoting any number above.
+    limits: list[str] = [
+        "Static matches, not confirmed exploitable vulnerabilities. Each one "
+        "needs a human to decide whether the input is attacker-controlled and "
+        "whether the code is reachable.",
+    ]
+    aside = result.not_authored or {}
+    if aside:
+        kinds: dict[str, int] = {}
+        for kind in aside.values():
+            kinds[kind] = kinds.get(kind, 0) + 1
+        limits.append(
+            f"{len(aside)} files were not measured ("
+            + ", ".join(f"{n} {k.replace('_', ' ')}" for k, n in sorted(kinds.items()))
+            + ") because this project redistributes or builds them rather than "
+            "writing them. Do not propose edits to those files.")
+    if not result.spec_name:
+        limits.append(
+            "No specification was supplied, so nothing is known about what "
+            "this project was asked to build. Feature completeness and scope "
+            "drift are not reported and must not be inferred.")
+
+    body: dict[str, Any] = {
+        "path": root,
+        "files_measured": result.file_count,
+        "lines_measured": result.total_loc,
+        "worst_band": result.worst_band,
+        "specification": result.spec_name,
+        "metrics": metrics,
+        "limits": limits,
+    }
+    if aside:
+        _listed([f"{k}: {p}" for p, k in sorted(aside.items())], "not_measured", body)
+    # Known defects in this instrument, carried with every reading it produces.
+    from auditor.receipts import bundle
+    defects = bundle.open_defects()
+    if defects:
+        body["instrument_open_defects"] = [
+            {"id": d["id"], "affects": d.get("affects")} for d in defects]
+    return json.dumps(body, indent=2)
+
+
 TOOLS: list[dict] = [
     {
         "name": "kya_assess",
@@ -364,6 +461,41 @@ TOOLS: list[dict] = [
                               "description": "Optional path to a standard YAML."},
         }},
         "handler": tool_kya_standard,
+    },
+    {
+        "name": "code_scan",
+        "description": (
+            "Measure code quality in a directory: security findings by "
+            "severity, complexity, duplication, and -- when a specification "
+            "is present -- which requested features were delivered. Returns "
+            "every reading with its coverage and band, plus an explicit "
+            "`limits` list stating what the reading does not cover: static "
+            "matches are not confirmed vulnerabilities, vendored and generated "
+            "files are excluded and must not be edited, and nothing is known "
+            "about intent without a specification. Read `limits` before "
+            "summarising any number from this tool."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "path": {"type": "string",
+                         "description": "Directory to scan."},
+            },
+            "required": ["path"],
+        },
+        "handler": tool_code_scan,
+    },
+    {
+        "name": "auditor_doctor",
+        "description": (
+            "Report what this installation of the auditor can and cannot do, "
+            "and the exact command to fix anything missing. Call this first "
+            "when a tool here fails, when a reading looks wrong, or when a "
+            "user reports that the `auditor` command is not found. Names any "
+            "defect already known to be open in the instrument."
+        ),
+        "inputSchema": {"type": "object", "properties": {}},
+        "handler": tool_doctor,
     },
 ]
 
