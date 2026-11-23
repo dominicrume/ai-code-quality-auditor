@@ -4,7 +4,7 @@ dynamic = ["version"]
 description = "Checks whether an AI coding agent built what you asked for: per feature, what was delivered, what is missing, what exists but nothing can reach, with a file and line for every claim."
 readme = "README.md"
 license = { file = "LICENSE" }
-authors = [{ name = "O'Rume Dominic Uririe", email = "admin@veritaport.co.uk" }]
+authors = [{ name = "Orume Dominic Uririe", email = "dominicrume@gmail.com" }]
 requires-python = ">=3.11"
 # "sonarcloud" was here until 0.6.0 and had been wrong since the metric moved
 # to a local Bandit scan: a keyword is a promise about what the package does.

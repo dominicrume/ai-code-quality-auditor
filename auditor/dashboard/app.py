@@ -325,7 +325,7 @@ def _notify_operator(entry: dict) -> None:
         msg = EmailMessage()
         msg["Subject"] = f"[auditor waitlist] {entry.get('company','?')} — {entry.get('name','?')}"
         msg["From"] = os.environ.get("SMTP_FROM", "noreply@auditor.local")
-        msg["To"] = os.environ.get("OPERATOR_EMAIL", "admin@veritaport.co.uk")
+        msg["To"] = os.environ.get("OPERATOR_EMAIL", "dominicrume@gmail.com")
         msg.set_content(json.dumps(entry, indent=2))
         with smtplib.SMTP(host, int(os.environ.get("SMTP_PORT", "587"))) as s:
             s.starttls()

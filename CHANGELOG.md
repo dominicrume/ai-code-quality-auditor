@@ -1,5 +1,40 @@
 # Changelog
 
+## 0.6.6 — 23 November 2026
+
+**One author identity, everywhere.** No behaviour change.
+
+Five places carried an author name or a contact address, in two name forms and
+one address that is being retired:
+
+- `pyproject.toml`, which is the only one that reaches PyPI
+- `action.yml`
+- `.claude-plugin/plugin.json`
+- `SECURITY.md`
+- the dashboard's fallback operator address
+
+All five now read `Orume Dominic Uririe <dominicrume@gmail.com>`. The
+apostrophe form of the surname is gone, because two spellings of one author
+across published artefacts reads as two people to anyone cross-referencing
+them, and this work is about provenance.
+
+No organisation or job title appears in package metadata. PyPI has no
+affiliation field, so the only way to put one there is inside the author name,
+where it would be both malformed and a durable public claim. Affiliation
+belongs on a paper's byline, which is where it is.
+
+`.claude-plugin/plugin.json` also declared `version: 0.6.2`, four releases
+behind. A manifest that names a version it is not is a defect in its own right,
+independent of the identity change, and it is now in step.
+
+**What this cannot reach.** Metadata on a published PyPI release is immutable.
+Nine releases, 0.2.0 through 0.6.5, carry the retired address permanently, and
+no new release changes that. The alternative would be yanking nine versions to
+edit an email, which breaks every pinned install and draws far more attention
+than it removes. The fix is forward only, and this note is the record of why.
+
+472 tests, unchanged.
+
 ## 0.6.5 — 23 November 2026
 
 **One name, and one receipt envelope instead of two.** Additive. Nothing that

@@ -1,11 +1,11 @@
 {
   "name": "kya-conformance",
   "displayName": "KYA Conformance",
-  "version": "0.6.2",
+  "version": "0.6.6",
   "description": "Assess whether an autonomous agent is governed well enough to run unsupervised, against the five KYA conformance elements. Ships the skill and the kya MCP server together.",
   "author": {
-    "name": "O'Rume Dominic Uririe",
-    "email": "admin@veritaport.co.uk"
+    "name": "Orume Dominic Uririe",
+    "email": "dominicrume@gmail.com"
   },
   "license": "MIT",
   "keywords": [
@@ -17,7 +17,9 @@
   "mcpServers": {
     "kya": {
       "command": "auditor",
-      "args": ["mcp"]
+      "args": [
+        "mcp"
+      ]
     }
   }
 }
