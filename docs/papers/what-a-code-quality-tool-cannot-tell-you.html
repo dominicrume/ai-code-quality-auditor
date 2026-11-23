@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>What a code quality tool cannot tell you</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+/* Working paper: single measure column, hanging section numbers, severity encoded as a left stripe. */
+:root {
+  --paper: #f6f6f4;
+  --card: #fffffe;
+  --ink: #16191d;
+  --muted: #596069;
+  --faint: #868d96;
+  --rule: #dcdcd7;
+  --accent: #1d4e6f;
+  --accent-soft: #e7eef3;
+  --good: #2c6b4e;
+  --warn: #8c6111;
+  --critical: #9d2f29;
+  --mono-bg: #ececeb;
+  --display: "Newsreader", Georgia, "Times New Roman", serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #11141a;
+    --card: #171b22;
+    --ink: #e7e9e8;
+    --muted: #a0a8b2;
+    --faint: #7c848f;
+    --rule: #2a3039;
+    --accent: #83b8d8;
+    --accent-soft: #1b2733;
+    --good: #72c2a0;
+    --warn: #d6a84f;
+    --critical: #e2857d;
+    --mono-bg: #1d222a;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #11141a;
+  --card: #171b22;
+  --ink: #e7e9e8;
+  --muted: #a0a8b2;
+  --faint: #7c848f;
+  --rule: #2a3039;
+  --accent: #83b8d8;
+  --accent-soft: #1b2733;
+  --good: #72c2a0;
+  --warn: #d6a84f;
+  --critical: #e2857d;
+  --mono-bg: #1d222a;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 17px;
+  line-height: 1.62;
+  font-synthesis: none;
+}
+.wrap { max-width: 50rem; margin: 0 auto; padding: 0 20px 6rem; }
+header.masthead { border-bottom: 1px solid var(--rule); padding: 3.2rem 0 1.6rem; margin-bottom: 2.4rem; }
+.eyebrow {
+  font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--accent); margin: 0 0 1.1rem;
+}
+h1 {
+  font-family: var(--display); font-weight: 500; font-size: clamp(2.1rem, 6vw, 3.3rem);
+  line-height: 1.08; letter-spacing: -0.015em; margin: 0 0 1rem; text-wrap: balance;
+}
+.standfirst {
+  font-family: var(--display); font-size: clamp(1.1rem, 2.6vw, 1.35rem); line-height: 1.45;
+  color: var(--muted); margin: 0 0 1.8rem; max-width: 40rem;
+}
+dl.meta {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.9rem 1.6rem; margin: 0; padding-top: 0.4rem;
+}
+dl.meta div { min-width: 0; }
+dl.meta dt {
+  font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.09em;
+  text-transform: uppercase; color: var(--faint); margin-bottom: 0.25rem;
+}
+dl.meta dd { margin: 0; font-size: 0.9rem; color: var(--ink); }
+section { margin: 0 0 3.2rem; }
+h2 {
+  font-family: var(--display); font-weight: 600; font-size: clamp(1.4rem, 3.4vw, 1.85rem);
+  line-height: 1.2; letter-spacing: -0.01em; margin: 0 0 1rem; text-wrap: balance;
+  padding-top: 1.6rem; border-top: 1px solid var(--rule);
+}
+h2 .num {
+  display: block; font-family: var(--mono); font-size: 0.7rem; font-weight: 500;
+  letter-spacing: 0.12em; color: var(--accent); margin-bottom: 0.5rem;
+}
+h3 {
+  font-family: var(--body); font-weight: 600; font-size: 1.02rem; line-height: 1.35;
+  margin: 2rem 0 0.6rem; text-wrap: balance;
+}
+h4 {
+  font-family: var(--mono); font-weight: 500; font-size: 0.72rem; letter-spacing: 0.09em;
+  text-transform: uppercase; color: var(--faint); margin: 1.6rem 0 0.5rem;
+}
+p { margin: 0 0 1.05rem; max-width: 42rem; }
+p.lead { font-size: 1.06rem; }
+a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+strong { font-weight: 600; }
+ul, ol { max-width: 42rem; padding-left: 1.3rem; margin: 0 0 1.05rem; }
+li { margin-bottom: 0.45rem; }
+code {
+  font-family: var(--mono); font-size: 0.84em; background: var(--mono-bg);
+  padding: 0.1em 0.35em; border-radius: 3px;
+}
+pre {
+  font-family: var(--mono); font-size: 0.8rem; line-height: 1.55; background: var(--mono-bg);
+  border: 1px solid var(--rule); border-radius: 4px; padding: 0.9rem 1rem;
+  overflow-x: auto; margin: 0 0 1.2rem;
+}
+pre code { background: none; padding: 0; font-size: inherit; }
+blockquote {
+  margin: 0 0 1.2rem; padding: 0.2rem 0 0.2rem 1.1rem; border-left: 3px solid var(--accent);
+  font-family: var(--display); font-size: 1.08rem; line-height: 1.5; color: var(--muted);
+  max-width: 40rem;
+}
+blockquote p:last-child { margin-bottom: 0; }
+.tablewrap { overflow-x: auto; margin: 0 0 1.4rem; border: 1px solid var(--rule); border-radius: 4px; background: var(--card); }
+table { border-collapse: collapse; width: 100%; font-size: 0.86rem; font-variant-numeric: tabular-nums; }
+caption {
+  caption-side: bottom; text-align: left; font-size: 0.78rem; color: var(--faint);
+  padding: 0.7rem 0.9rem; border-top: 1px solid var(--rule);
+}
+th, td { text-align: left; padding: 0.6rem 0.9rem; border-bottom: 1px solid var(--rule); vertical-align: top; }
+thead th {
+  font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--faint); font-weight: 500; white-space: nowrap;
+}
+tbody tr:last-child td { border-bottom: none; }
+td.num, th.num { text-align: right; white-space: nowrap; }
+.id { font-family: var(--mono); font-size: 0.78rem; white-space: nowrap; }
+.pill {
+  display: inline-block; font-family: var(--mono); font-size: 0.64rem; letter-spacing: 0.07em;
+  text-transform: uppercase; padding: 0.15em 0.5em; border-radius: 3px; border: 1px solid currentColor;
+  white-space: nowrap;
+}
+.pill.fixed { color: var(--good); }
+.pill.open { color: var(--critical); }
+.pill.limit { color: var(--warn); }
+.box {
+  background: var(--card); border: 1px solid var(--rule); border-radius: 4px;
+  padding: 1.2rem 1.3rem; margin: 0 0 1.6rem;
+}
+.box > :last-child { margin-bottom: 0; }
+.box h4 { margin-top: 0; }
+.stripe { border-left: 3px solid var(--accent); }
+.stripe.crit { border-left-color: var(--critical); }
+.stripe.warn { border-left-color: var(--warn); }
+.cannot { counter-reset: none; margin: 0 0 1.8rem; }
+.cannot article {
+  background: var(--card); border: 1px solid var(--rule); border-left: 3px solid var(--critical);
+  border-radius: 4px; padding: 1.1rem 1.3rem; margin-bottom: 1rem;
+}
+.cannot article > :last-child { margin-bottom: 0; }
+.cannot h3 { margin: 0 0 0.6rem; font-size: 1.06rem; }
+.cannot h3 .tag {
+  display: block; font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.09em;
+  text-transform: uppercase; color: var(--faint); font-weight: 500; margin-bottom: 0.3rem;
+}
+.readout {
+  font-family: var(--mono); font-size: 0.8rem; background: var(--mono-bg); border-radius: 3px;
+  padding: 0.55rem 0.8rem; margin: 0 0 0.9rem; display: inline-block; max-width: 100%; overflow-x: auto;
+}
+.readout b { font-weight: 500; }
+.readout .ok { color: var(--good); }
+.readout .bad { color: var(--critical); }
+footer.colophon {
+  border-top: 1px solid var(--rule); padding-top: 1.8rem; margin-top: 1rem;
+  font-size: 0.86rem; color: var(--muted);
+}
+footer.colophon p { max-width: 42rem; }
+.sig { font-family: var(--display); font-size: 1.05rem; color: var(--ink); }
+hr.thin { border: none; border-top: 1px solid var(--rule); margin: 2rem 0; }
+@media (max-width: 460px) {
+  body { font-size: 16px; }
+  .wrap { padding: 0 16px 4rem; }
+}
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="masthead">
+  <p class="eyebrow">Working paper · Instrument self-audit</p>
+  <h1>What a code quality tool cannot tell you</h1>
+  <p class="standfirst">Ten numbered defects in one measuring instrument, six of them found in a single day by people who did not build it, and the six questions no static code quality tool can answer about your codebase.</p>
+  <dl class="meta">
+    <div><dt>Author</dt><dd>Orume Dominic Uririe</dd></div>
+    <div><dt>Date</dt><dd>23 November 2026</dd></div>
+    <div><dt>Instrument</dt><dd>AI Code Quality Auditor 0.6.10</dd></div>
+    <div><dt>Status</dt><dd>Version 1.0. Open to correction.</dd></div>
+  </dl>
+</header>
+
+<section>
+  <h2><span class="num">Summary</span>The argument in one page</h2>
+
+  <p class="lead">A code quality tool that reports a clean bill of health for code it could not read is lying. That sentence has been in this instrument's source for a year, as a comment, next to the check that enforces it. It was enforced for one of the six ways a tool can fail to read your code, and not for the other five.</p>
+
+  <p>This paper is the record of finding that out. The subject is a measuring instrument I built and published: an auditor that scores code on security density, cyclomatic complexity, duplication, specification fidelity and rework. Ten defects in it are written up as numbered, dated records in its public repository. Three published figures have formal errata. Six of the ten were found on 23 November 2026, at the Lagos AI Summit, by three builders who ran the tool on their own machines and their own code, owed me nothing, and reported what broke.</p>
+
+  <p>The defects are not ten separate mistakes. They fall into four classes, and each class is a general property of how static analysis is built rather than a quirk of this implementation:</p>
+
+  <ol>
+    <li><strong>Answering a question that does not apply</strong>, instead of declining to answer.</li>
+    <li><strong>Arithmetic that cannot fail</strong>: a rate divided by a large codebase, with severity discarded on the way.</li>
+    <li><strong>No model of who wrote the code</strong>, so a team is charged for libraries they vendored and build output they never typed.</li>
+    <li><strong>No model of the tool's own environment</strong>, so a missing dependency becomes either a crash or, far worse, a silent zero.</li>
+  </ol>
+
+  <p>From those four classes come six things no tool of this kind can tell you, each demonstrated on itself with the figures and the file. The paper ends with a protocol: six tests you can run against any code quality tool you currently trust, including mine, in under an hour.</p>
+
+  <p>I can write this paper because the defect records were published before anyone asked for them. An instrument with no public failure record cannot produce this document, because it has nothing to cite.</p>
+</section>
+
+<section>
+  <h2><span class="num">1</span>How the figures in this paper are graded</h2>
+
+  <p>The instrument grades every number it reports before reporting it. The same discipline applies to this paper, and the grades are stated so a hostile reader can go straight to the weakest claim.</p>
+
+  <div class="tablewrap">
+    <table>
+      <caption>Evidence grading used throughout. The practice rule is that a partly measured result is never a result passed: any withheld element makes the aggregate incomplete, never a pass.</caption>
+      <thead>
+        <tr><th>Grade</th><th>Means</th><th>Where it applies here</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="pill fixed">Measured</span></td>
+          <td>Reproduced in this repository, pinned by a test that fails on the prior version</td>
+          <td>Every mechanism described: the banding, the provenance rules, the invocation fix, the 0.6.10 before and after</td>
+        </tr>
+        <tr>
+          <td><span class="pill limit">Reported</span></td>
+          <td>From a run on a user's machine, which I have in full but did not re-run myself</td>
+          <td>All figures from the production CRM: the line count, the 719 findings, the duplication percentage</td>
+        </tr>
+        <tr>
+          <td><span class="pill open">Withheld</span></td>
+          <td>Cannot be established from what I have</td>
+          <td>Whether any other tool has these defects. Stated as a hypothesis with a test, never as a result</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="box stripe warn">
+    <h4>What this evidence base is, exactly</h4>
+    <p>One instrument, audited by its own author, plus three external users at one event on one day. That is a <strong>descriptive</strong> account of a single case. It is not a sample, nothing here is inferential, and no claim in this paper is tested for significance, because there is nothing to test it against.</p>
+    <p>Its value is not statistical. It is that the mechanisms are visible: for each defect you can read the line that caused it, the figure it produced, and the test that now prevents it. A single case with a published mechanism travels further than a survey with a hidden one, and it is the only honest thing a sample of one can offer.</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">2</span>The ten defects</h2>
+
+  <p>Every record states what happened, why, what it cost, what a fix must do, and what may not be claimed until the fix exists. They are committed to the repository rather than quietly patched, and the one that is still open is disclosed inside every receipt the tool issues.</p>
+
+  <div class="tablewrap">
+    <table>
+      <caption>Findings 001 to 010 and errata 001 to 003, in the public repository under <code>docs/</code>. Class refers to section 3. Six records carry the date 23 November 2026 and came from external reports on that day.</caption>
+      <thead>
+        <tr><th>Record</th><th>What the instrument got wrong</th><th class="num">Class</th><th>State</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="id">FINDING_001</td><td>Scope substitution is invisible to a scope-drift count: the tool measured code it had never read the shape of</td><td class="num">1</td><td><span class="pill limit">Limitation</span></td></tr>
+        <tr><td class="id">FINDING_002</td><td>A fidelity verdict against a brief nobody supplied. Commit subjects describing errands were harvested as features, and the tool answered "0 of 12 delivered"</td><td class="num">1</td><td><span class="pill fixed">Fixed 0.6.1</span></td></tr>
+        <tr><td class="id">FINDING_003</td><td>A governance verdict scored against repositories that contain no agent at all</td><td class="num">1</td><td><span class="pill fixed">Fixed</span></td></tr>
+        <tr><td class="id">FINDING_004</td><td>The analyser reported its own detector vocabulary back as findings in the audited code</td><td class="num">1</td><td><span class="pill fixed">Fixed 0.6.4</span></td></tr>
+        <tr><td class="id">FINDING_005</td><td>The security band could not fail. Nine high-severity findings printed green</td><td class="num">2</td><td><span class="pill fixed">Fixed 0.6.7, revised 0.6.10</span></td></tr>
+        <tr><td class="id">FINDING_006</td><td>Third-party code reported as the audited team's own. All nine high findings were in code they did not write</td><td class="num">3</td><td><span class="pill fixed">Fixed 0.6.7</span></td></tr>
+        <tr><td class="id">FINDING_007</td><td>Minified build output analysed and cited by line number, at locations no reader can act on</td><td class="num">3</td><td><span class="pill fixed">Fixed 0.6.7</span></td></tr>
+        <tr><td class="id">FINDING_008</td><td>A project's own duplicated build tree counted as duplicated work, which set the worst band for an entire audit</td><td class="num">3</td><td><span class="pill open">Open</span></td></tr>
+        <tr><td class="id">FINDING_009</td><td>A security scanner invoked through PATH, so a correct install crashed with a traceback</td><td class="num">4</td><td><span class="pill fixed">Fixed 0.6.8</span></td></tr>
+        <tr><td class="id">FINDING_010</td><td>A function that promised https would follow a redirect off it, sending its payload in the clear</td><td class="num">4</td><td><span class="pill fixed">Fixed 0.6.8</span></td></tr>
+        <tr><td class="id">ERRATUM_001</td><td>Security density inflated by assertions inside test files, penalising the conditions that wrote tests</td><td class="num">2</td><td><span class="pill fixed">Corrected</span></td></tr>
+        <tr><td class="id">ERRATUM_002</td><td>A false negative in the hallucination detector, found by two-rater validation</td><td class="num">1</td><td><span class="pill fixed">Corrected</span></td></tr>
+        <tr><td class="id">ERRATUM_003</td><td>Features credited on token evidence rather than on a definition a user can reach</td><td class="num">1</td><td><span class="pill fixed">Corrected</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">3</span>Four classes, and why they are not specific to me</h2>
+
+  <h3>Class 1. Answering a question that does not apply</h3>
+  <p>Four records have one shape. The instrument was asked a question whose precondition was absent, and it produced a number instead of declining. Fidelity against no brief. Governance against a subject that is not an agent. Drift measured over code whose structure had never been read.</p>
+  <p>Grading the evidence does not fix this, because a perfectly graded reading of the wrong subject is still wrong. The repair is a gate built <em>before</em> the metric, and the honest output when the gate closes is not a lower score. It is no score, plus the sentence naming what is missing and how to supply it.</p>
+  <p>This generalises because the incentive is universal. A tool that returns a number on every input looks more useful in a demonstration than one that sometimes refuses, and the refusal is the harder thing to build.</p>
+
+  <h3>Class 2. Arithmetic that cannot fail</h3>
+  <p>The security metric was a rate: findings per thousand lines, banding at 50 and 100. Fifty per thousand is one security finding every twenty lines. No real codebase reaches that, so the band was green on every project the tool was ever pointed at. On a codebase of roughly 304,000 lines it would have needed 15,193 findings to say "warn" and 30,386 to say "critical". It had 719, nine of them high severity for dynamic code execution from a string, and it printed:</p>
+  <p class="readout">Security &nbsp; <b>2.40</b> &nbsp; <b class="ok">OK</b> &nbsp; 719 findings</p>
+  <p>Two compounding errors. A density <strong>divides by size</strong>, so a large codebase is rewarded for being large: the same nine findings in a 3,000-line service would have measured 240 per thousand lines and banded critical, with identically dangerous code and only the denominator changed. And division <strong>discards severity</strong> entirely: one high-severity call to <code>eval</code> and one low-severity style note count the same toward the rate, and the rate was all the band ever saw.</p>
+  <p>Erratum 001 is the same class from the other direction. The scanner counted every <code>assert</code> statement, including assertions inside test files, where the assertion <em>is</em> the test. Roughly 77% of one published figure and 86% of another were test assertions. The metric was, in effect, penalising the subjects that tested their own work.</p>
+
+  <h3>Class 3. No model of who wrote the code</h3>
+  <p>Of the nine high-severity findings in that report, eight were in vendored libraries and the ninth was upstream framework code. <strong>Not one was written by the team being audited.</strong> The report's first recommendation was to validate the nine high flags first, which sends an engineer to audit jQuery.</p>
+  <p>A guard for this existed and missed, which is the instructive part. It matched directory names: <code>vendor</code>, <code>third_party</code>, <code>node_modules</code>. Codebases of that age vendor into ordinary paths such as <code>include/javascript/jquery/</code> and <code>modules/AOR_Charts/lib/pChart/</code>, where nothing is called <code>vendor</code>. The guard was built and it misses the commonest layout there is.</p>
+  <p>The same blindness produced citations a reader can do nothing with, pointing at line 1 of a minified file that has exactly one line. Minification also trips the heuristics by construction: packers rewrite code into string concatenation and dense property assignment, which are the shapes a source scanner looks for. Those findings are properties of the packer, not of the authored code.</p>
+
+  <h3>Class 4. No model of the tool's own environment</h3>
+  <p>The scanner was invoked as a bare command name, resolved through PATH. Installing into a virtual environment and running it without activating that environment is normal, is what every continuous integration job does, and was the exact sequence in the reporter's steps. The scan died with a traceback. The dependency was installed, correctly, precisely where it belonged, and could not be found.</p>
+  <p>Six acceptance runs from "clean" virtual environments had been written in this repository to prove earlier releases installed correctly. Every one of them passed. The environments were clean; the machine was not, because the scanner also sat on the developer's own PATH, so the bare command resolved every time. <strong>A clean environment inside a dirty one does not test what it looks like it tests.</strong> Reproducing the crash required stripping the environment entirely.</p>
+  <p>The crash was the visible half. The dangerous half is what a more forgiving implementation would have done: skip the language it could not scan and report a density of 0.00, which bands green. That is the failure this instrument exists to detect in other tools, and it was one exception handler away from committing it.</p>
+</section>
+
+<section>
+  <h2><span class="num">4</span>Six things a code quality tool cannot tell you</h2>
+
+  <p>Each of these is demonstrated above on this instrument, with the record to check. Each is a limit of the method, not of the effort: more rules and better heuristics do not remove any of them.</p>
+
+  <div class="cannot">
+
+    <article>
+      <h3><span class="tag">Cannot tell you · one</span>Whether the code it could not read is safe</h3>
+      <p>Coverage and verdict are different quantities, and almost every tool reports the verdict in the prominent position. A file that failed to parse, a language with no analyser installed, a dependency that could not be run: each produces zero findings, and zero findings banded against a threshold reads as a pass.</p>
+      <p>Ask what share of your lines were actually read. If the tool cannot tell you, every number it gives you is conditional on an unknown denominator.</p>
+    </article>
+
+    <article>
+      <h3><span class="tag">Cannot tell you · two</span>Whether the number has been diluted by size</h3>
+      <p>Any per-thousand-lines figure improves when you add code. A team that ships a large framework alongside a small amount of dangerous work will measure better than a team that ships only the dangerous work. The metric rewards the denominator.</p>
+      <p>Ask for the count as well as the rate, and the worst severity present as well as both. If a dashboard shows you only the rate, it is showing you the quantity most easily improved without changing anything.</p>
+    </article>
+
+    <article>
+      <h3><span class="tag">Cannot tell you · three</span>Whether a finding is exploitable</h3>
+      <p>This instrument produced a textbook demonstration against itself. An external reader reported that a call accepted any URL scheme and could therefore read local files. <strong>That was a false positive</strong>: a check nine lines above already refused every scheme but https.</p>
+      <p>The reported <em>line</em> was right, for a reason nobody had looked for. The call followed redirects, and the standard redirect handler permits the new location to be plain http, so a server answering with a redirect would have moved the payload onto a cleartext connection. The promise held once, on the first URL, and did not survive the first redirect.</p>
+      <p>So a careful reader took a static finding at face value and reported correct code as broken, and the same report found a real defect no test was looking for. Both halves are the same lesson: <strong>a static finding is a place to look, never a verdict.</strong> A tool that presents it as a verdict is making a claim it has no way to support.</p>
+    </article>
+
+    <article>
+      <h3><span class="tag">Cannot tell you · four</span>Whose code it is reading</h3>
+      <p>Without a provenance model, every file in the tree is charged to whoever is standing in front of the report. Vendored libraries, generated clients, build output, migrations, upstream framework code: all of it becomes your team's quality score, your team's security debt, and your team's remediation list.</p>
+      <p>The repair is attribution, not exclusion. A number that quietly stops counting things is the same class of error as one that quietly counts them, so files that are not first-party are named and set aside in the open, with the count shown.</p>
+      <p>One warning for anyone building this: every rule needs a <em>positive</em> signal, because misclassifying a team's own file as third-party hides a real finding, which is the costlier direction to be wrong in. A directory called <code>lib</code> is not a signal. Plenty of teams keep their own code there.</p>
+    </article>
+
+    <article>
+      <h3><span class="tag">Cannot tell you · five</span>Whether the code does what you asked for</h3>
+      <p>No tool built on linting can see missing work, because none of them knows what was requested. This is the failure mode that matters most in practice: four of five features built, success reported, and nothing in the output that could notice.</p>
+      <p>A tool can only answer this against a specification a human supplied. When this instrument inferred a brief from commit subjects instead, it harvested a list of errands and reported zero of twelve delivered, which impugns the guess rather than the code. A derived brief is never a measurement, however much of it happens to match, because the thing in doubt is the brief.</p>
+    </article>
+
+    <article>
+      <h3><span class="tag">Cannot tell you · six</span>Whether its own installation is intact</h3>
+      <p>A tool is a process on a machine, with dependencies that resolve or do not, on an operating system that may not be the one it was written on. Every one of the installation failures reported from the field was a command line failure: a resolution step that worked on the author's machine and nowhere else.</p>
+      <p>Most tools treat this as the user's problem and report nothing. The honest design is a self-check that names what works, what does not, what each gap costs in lost coverage, and the exact command that fixes it. Mine did not have one until the day users needed it.</p>
+    </article>
+
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">5</span>The protocol: six tests to run on any tool you trust</h2>
+
+  <p>Here the paper stops describing one instrument and becomes usable. Each test below detects one of the six limits, on any tool, in minutes. Each was derived from a defect in my own and is pinned by a test in my own repository.</p>
+
+  <p>What this protocol can and cannot establish is worth stating plainly. It establishes behaviour on your tool, on your machine, today. It does not establish anything about a vendor's quality in general, and a failure on one test is a finding to raise, not a verdict to publish.</p>
+
+  <div class="tablewrap">
+    <table>
+      <caption>Six tests, derived from findings 002 and 005 to 010. A tool that passes all six is not correct; it is honest about six specific ways of being wrong.</caption>
+      <thead>
+        <tr><th class="num">Test</th><th>Do this</th><th>A failing tool</th><th>An honest tool</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="num">1</td>
+          <td>Remove one language's analyser, or feed it a file that cannot parse, then scan</td>
+          <td>Reports zero findings for that language and bands it as a pass</td>
+          <td>Drops coverage, names the language as unread, and says why</td>
+        </tr>
+        <tr>
+          <td class="num">2</td>
+          <td>Scan a small project with one serious finding. Then concatenate a large library into it and scan again</td>
+          <td>The grade improves</td>
+          <td>The grade does not move, because the worst finding present decides it</td>
+        </tr>
+        <tr>
+          <td class="num">3</td>
+          <td>Take its most severe finding and try to exploit it, or read the twenty lines around it</td>
+          <td>Presents it as a confirmed vulnerability with a severity and no caveat</td>
+          <td>Presents it as a location to review, with the rule that fired and the evidence</td>
+        </tr>
+        <tr>
+          <td class="num">4</td>
+          <td>Vendor a library into an ordinary path, not into a folder called <code>vendor</code>, and scan</td>
+          <td>Charges the library's findings to your team and tells you to fix them first</td>
+          <td>Names the file as third-party, sets it aside, and shows the count it set aside</td>
+        </tr>
+        <tr>
+          <td class="num">5</td>
+          <td>Ask it which of the things you asked for were not built</td>
+          <td>Answers from the code alone, or infers a specification and measures against it</td>
+          <td>Declines until a specification is supplied, and says how to supply one</td>
+        </tr>
+        <tr>
+          <td class="num">6</td>
+          <td>Install it into a fresh environment, do not activate that environment, and run it on a machine with a stripped PATH and on Windows</td>
+          <td>Crashes, or silently skips what it cannot run</td>
+          <td>Runs, or tells you exactly what is missing and what to type</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="box stripe">
+    <h4>One note on test six, because it is the one that fooled me</h4>
+    <p>A virtual environment created inside your normal shell is not a clean environment. The tool you think you removed may still be on your own PATH, and the bare command will resolve every time. The test only means anything with the environment stripped:</p>
+<pre><code>env -i HOME="$HOME" PATH="/usr/bin:/bin" ./env/bin/your-tool scan .</code></pre>
+    <p>Six acceptance runs in my own repository missed a crash that a user hit within minutes of installing, for exactly this reason.</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">6</span>What the instrument now does instead</h2>
+
+  <p>Six design rules, each the repair for a numbered defect, each pinned by a test that fails on the previous version. They are stated as rules rather than as patches because the patch is not the contribution.</p>
+
+  <h3>The gate comes before the metric</h3>
+  <p>Does the question apply to this subject at all? Fidelity requires a supplied specification. Governance requires a subject that both calls a model and has a path to act. When the gate closes, no score is produced and the output names what is missing.</p>
+
+  <h3>Every reading carries what it rests on</h3>
+  <p>Three grades, with no threshold to tune: measured, provisional, withheld. A derived input is never promoted to a measurement by matching well. A partly measured standard is incomplete, never passed.</p>
+
+  <h3>The worst finding decides the colour</h3>
+  <p>A density may not speak for a severity. One high-severity finding raises the band to critical regardless of how much sound code surrounds it. The asymmetry settles it: a high finding that proves to be a false positive costs a team one review, while a high finding banded comfortable costs them the breach.</p>
+  <p>Verified end to end on a 12,121-line project carrying a single high-severity finding for dynamic code execution. Its density is 0.08 per thousand lines, which bands as good on its own and cannot soften it:</p>
+  <p class="readout">0.6.5 &nbsp; 0.08 &nbsp; <b class="ok">OK</b> &nbsp;→&nbsp; 0.6.10 &nbsp; 0.08 &nbsp; <b class="bad">RISK</b></p>
+  <p>Medium and low findings still do not move the band. One field report carried 694 medium findings, and a rule that always says red says nothing.</p>
+
+  <h3>Provenance is attributed, never silently dropped</h3>
+  <p>Each file is classified first-party, vendored or generated, from positive signals only: a known library's name as a filename stem or path segment, a build-output filename, and line lengths no author produces. Metrics about the project's code are computed over the project's code, and everything set aside is counted and named in the report.</p>
+
+  <h3>The tool reports on itself</h3>
+  <p>A single command answers what works, what does not, what each gap costs, and the command that fixes it. It also names every defect still open in the instrument, because an installation report that hides those is the same comfortable green light over an unexamined thing that the rest of this exists to prevent.</p>
+
+  <h3>Open defects travel with the output</h3>
+  <p>Finding 008 is open as this is published. Duplication on any repository that ships built assets beside their source may be substantially overstated, and that single reading can set the worst band for a whole audit on its own. The fix is known: count a file once per content digest, and say how many copies were collapsed. It is not shipped because it changes the value of a figure already published, which requires an erratum and a deliberate decision rather than a quiet edit.</p>
+  <p>Meanwhile it is disclosed in every receipt the tool issues, and a test asserts that the disclosure is still there. When it is fixed, that test fails. That is the point of it.</p>
+</section>
+
+<section>
+  <h2><span class="num">7</span>The case that matters next: tools read by agents</h2>
+
+  <p>Everything above assumed a person reads the output. That assumption is expiring, and it was carrying more weight than anyone noticed.</p>
+
+  <p>Consider the reading that started this. A green dot, the word OK, a density of 2.40, and 719 findings on the same line. A human looked at that, became suspicious, and filed a report. The suspicion came from the <em>incongruity</em>: a reassuring colour sitting next to a large number.</p>
+
+  <p>A language model given the same line does not become suspicious. It summarises. "The security scan passed with a density of 2.40" is a faithful summary of a dishonest reading, and it will be passed upward with the incongruity smoothed away, because smoothing is what summarising is. <strong>Every weakness in this paper gets worse when the reader is a model, because the one safeguard that caught it was a human finding the output strange.</strong></p>
+
+  <p>Two consequences for anyone exposing analysis to an agent.</p>
+
+  <h3>Limits must be structured fields, not prose</h3>
+  <p>A caveat in a sentence is something a model may or may not carry forward. A caveat as a named field in a structured result is something it must step over: what was not measured, what the coverage was, which severities are present, which defects in the instrument are open. The honest shape is a result that cannot be read as a pass without also reading what it could not do.</p>
+
+  <h3>A tool failure is a result, not a protocol error</h3>
+  <p>When the analysis cannot run, the answer to the calling agent must be a result that says so, in the same shape as a successful reading. A traceback thrown into a model's context is the worst of all outcomes: it is unreadable, it is unstructured, and the model will confabulate around it rather than stop.</p>
+
+  <p>I think this is an unclaimed position, and I want to state its strength accurately. Many servers now expose code analysis to agents. I have not surveyed them, so I claim nothing about what they do. What I claim is narrower and checkable: the question <em>what does this return when it cannot do its job, inside somebody else's agent</em> has a right answer, that answer is not a traceback, and it is the same doctrine this paper applies to a human reader, pointed at a machine one.</p>
+</section>
+
+<section>
+  <h2><span class="num">8</span>What this paper does not establish</h2>
+
+  <ul>
+    <li><strong>Nothing about any other tool.</strong> The four classes are properties of how static analysis is built, and I believe they are widespread, but belief is not a result. Section 5 exists so that anyone can convert it into a result on their own tool rather than taking my word for it.</li>
+    <li><strong>Nothing statistical.</strong> One instrument, one event, three users, one day. Descriptive throughout. No significance is claimed or tested.</li>
+    <li><strong>No completeness.</strong> Ten defects found is not ten defects existing. The honest reading of this record is that an instrument with a hard look taken at it yields about ten, and that the next hard look will yield more. Finding 008 is open; the thresholds behind the density bands are still almost certainly wrong by an order of magnitude, and nothing in the repository records where they came from.</li>
+    <li><strong>No claim of adoption.</strong> Three external users on one day are three external users on one day. Install counts, registry listings and sign-ups are distribution signals, not adoption and not revenue. A count is not an economy, and that rule applies to my figures first.</li>
+    <li><strong>No safety claim of any kind.</strong> Use a tool of this sort as a second reader, never as a judge whose word is final. Anyone claiming their tool makes software safe is selling you something.</li>
+  </ul>
+</section>
+
+<section>
+  <h2><span class="num">9</span>Credits</h2>
+
+  <p>Six of the ten defects came from three builders at the Lagos AI Summit on 23 November 2026. They are the first defects in this instrument's history found by anyone other than its author. All three consented to be named.</p>
+
+  <p><strong>Owen Tenumah</strong> read the auditor's own source rather than only its output, and reported the line where its https promise broke. His reported cause was a false positive and his reported line was right, which found a defect no test in the repository was looking for. He also reported the crash from an unactivated environment, and proposed the invocation that fixes it, which is the one that shipped.</p>
+
+  <p><strong>Bright</strong> ran the installer on Windows under PowerShell, where it failed at the first command: the kind of failure that makes a person close the window and never come back. He did not close the window. He reported exactly what broke.</p>
+
+  <p><strong>Ola</strong> ran the tool on a large, long-lived production codebase rather than a clean demonstration, and brought back the readings. Three defects fell out of that one report, and they are the three most serious in the list.</p>
+
+  <p>The most valuable work on this instrument that day was done for free by people who did not build it. The lesson is not to test harder in private. It is to get the thing in front of strangers sooner, because strangers have dirty machines and ugly codebases, and that is the only place these defects live.</p>
+</section>
+
+<footer class="colophon">
+  <h4>Reproduction</h4>
+  <p>Every record cited here is a file in the instrument's public repository under <code>docs/</code>, named for its number. Each describes the defect, the mechanism, the figure it produced, the repair, and the test that pins it. Fixes are tagged by version: 0.6.1, 0.6.4, 0.6.7, 0.6.8, 0.6.10. The suite at 0.6.10 is 546 tests.</p>
+  <p>Figures attributed to a production codebase are from a user's own run, supplied in full, and are labelled <span class="pill limit">Reported</span> for that reason. The mechanisms behind them are reproduced on synthetic fixtures in the test suite, which is what <span class="pill fixed">Measured</span> means in section 1. No real customer data is held, used or published.</p>
+  <hr class="thin" />
+  <p class="sig">Orume Dominic Uririe</p>
+  <p>Built in London. Tested in Lagos. Corrections are welcome and will be recorded as numbered findings, with the finder credited by name if they want to be.</p>
+</footer>
+
+</div>
+</body>
+</html>
