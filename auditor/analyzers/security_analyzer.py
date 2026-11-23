@@ -31,6 +31,7 @@ from __future__ import annotations
 
 import json
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 
@@ -55,6 +56,12 @@ def _write_codebase(codebase: dict, dest: Path) -> int:
     return loc
 
 
+# Distinguishable from "no file failed to parse", which is an empty list, and
+# from a list of files that did. Identity is the test, so a real file named
+# like this cannot be mistaken for it.
+_UNAVAILABLE: list[str] = ["<bandit unavailable>"]
+
+
 def _run_bandit(scan_dir: Path) -> tuple[list[dict], list[str]]:
     """Run Bandit; return its findings and the files it could not parse.
 
@@ -66,10 +73,30 @@ def _run_bandit(scan_dir: Path) -> tuple[list[dict], list[str]]:
     """
     if not any(scan_dir.rglob("*.py")):
         return [], []
-    proc = subprocess.run(
-        ["bandit", "-r", str(scan_dir), "-f", "json", "-q"],
-        capture_output=True, text=True, check=False,
-    )
+    # `sys.executable -m bandit`, never a bare `bandit`.
+    #
+    # A bare name is resolved through PATH, and a console script installed into
+    # a virtual environment is not on PATH unless that environment has been
+    # activated. `env/bin/pip install ai-code-quality-auditor` followed by
+    # `env/bin/auditor scan .` is a correct installation and the documented
+    # one, and it crashed the whole scan with FileNotFoundError. Naming the
+    # running interpreter uses the environment the auditor is already in.
+    # Reported from the field; see FINDING_009.
+    try:
+        proc = subprocess.run(
+            [sys.executable, "-m", "bandit", "-r", str(scan_dir), "-f", "json", "-q"],
+            capture_output=True, text=True, check=False,
+        )
+    except (OSError, ValueError):
+        # Bandit is a declared dependency, so this is an environment that has
+        # been taken apart. A security reading is still owed for the languages
+        # that do not need it, and a tool that dies on the whole scan because
+        # one analyser is missing has turned a partial answer into no answer.
+        return [], _UNAVAILABLE
+    if proc.returncode != 0 and not proc.stdout.strip():
+        # Bandit exits non-zero and silent when the module is absent. Same
+        # situation as above, reached by a different route.
+        return [], _UNAVAILABLE
     if not proc.stdout.strip():
         return [], []
     try:
@@ -160,6 +187,20 @@ def _review_details(findings: list[dict]) -> list[str] | None:
     return lines
 
 
+def _diagnostics(tally: dict[str, int], bandit_missing: bool) -> dict | None:
+    """What the reader needs beside the number, if anything."""
+    out: dict = {}
+    if tally:
+        out["severity"] = tally
+    if bandit_missing:
+        out["unavailable"] = (
+            "Python was not analysed: bandit could not be run in this "
+            "environment. Reinstall with `pip install ai-code-quality-auditor` "
+            "to restore it. Any JavaScript or TypeScript reading above is "
+            "unaffected.")
+    return out or None
+
+
 def _scan_javascript(files: dict[str, str]) -> tuple[list[dict], int]:
     """Findings and lines read across the JS/TS files, test files excluded."""
     findings, loc = [], 0
@@ -182,9 +223,20 @@ def analyze(codebase: dict, interaction_log: list[dict], spec: dict,
         py_loc = _write_codebase(codebase, scan_dir)
         raw_issues, unparsed = _run_bandit(scan_dir)
         issues = _counts(raw_issues, scan_dir)
-        # Lines Bandit could not parse are not lines Bandit read.
-        py_loc -= sum(len((codebase.get("files", {}).get(f) or "").splitlines())
-                      for f in unparsed)
+
+        # Bandit could not be run at all. Every Python line is then a line
+        # nothing read, and saying so is the whole point: a density computed
+        # over code that was never scanned is the "0.00 OK" this instrument
+        # exists to catch. The JavaScript reading is still owed and still good.
+        bandit_missing = unparsed is _UNAVAILABLE
+        if bandit_missing:
+            unparsed = sorted(f for f in (codebase.get("files") or {})
+                              if f.endswith(".py"))
+            py_loc = 0
+        else:
+            # Lines Bandit could not parse are not lines Bandit read.
+            py_loc -= sum(len((codebase.get("files", {}).get(f) or "").splitlines())
+                          for f in unparsed)
 
     js_issues, js_loc = ([], 0) if version < 2 else _scan_javascript(files)
     suffixes = languages.PYTHON if version < 2 else (
@@ -212,5 +264,5 @@ def analyze(codebase: dict, interaction_log: list[dict], spec: dict,
         languages=languages.present(files),
         unparsed=sorted(unparsed) or None,
         count=len(issues) + len(js_issues),
-        diagnostics={"severity": tally} if tally else None,
+        diagnostics=_diagnostics(tally, bandit_missing),
     )

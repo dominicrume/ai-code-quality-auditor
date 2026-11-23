@@ -1,5 +1,79 @@
 # Changelog
 
+## 0.6.8 — 23 November 2026
+
+**Three field reports.** Two crashes and a false positive, all from users.
+
+### FINDING_009 — a correct install crashed the scan
+
+    python3 -m venv env
+    env/bin/pip install ai-code-quality-auditor
+    env/bin/auditor scan .
+
+    FileNotFoundError: [Errno 2] No such file or directory: 'bandit'
+
+Reported by an external user. `_run_bandit` ran `["bandit", ...]`, a bare command
+resolved through PATH, and `pip install` puts the console script in that
+environment's `bin` directory, which is not on PATH unless the environment has
+been activated. Bandit was installed, correctly, exactly where it should be,
+and could not be found. Running from `env/bin/` without activating is what
+every CI job does.
+
+Fixed as the reporter proposed: `[sys.executable, "-m", "bandit", ...]`.
+
+Two repairs beyond the invocation, because a tool that dies when a dependency
+is missing is still broken:
+
+- `FileNotFoundError` and a silent non-zero exit are both caught.
+- The scan **degrades instead of stopping**. Python files are reported as
+  unread, coverage falls and says so, the JavaScript reading is still produced,
+  and the report prints *"Python was not analysed: bandit could not be run in
+  this environment"*. A security density of 0.00 over code nothing read is the
+  precise failure this instrument exists to detect, and a silent skip would
+  have produced exactly that.
+
+**Why six "clean venv" acceptance runs missed it.** The venvs were clean; the
+machine was not. `bandit` sat on the developer's PATH at
+`~/Library/Python/3.13/bin/bandit`, so the bare command resolved every time. A
+clean environment inside a dirty one does not test what it appears to test.
+Reproducing the crash needed `env -i PATH=/usr/bin:/bin`, and the release
+acceptance run now sanitises PATH.
+
+### FINDING_010 — `send()` promised https and would follow a redirect off it
+
+The same report flagged `MEDIUM B310 CWE-22` at `core/share.py`: *urlopen
+accepts any scheme, including `file:`*.
+
+**That part is a false positive.** Nine lines above the call,
+`if not str(url).lower().startswith("https://"): raise ValueError(...)` refuses
+`file:`, `http:`, `ftp:`, `gopher:` and a leading-space `" https://"`, now
+pinned by a test. Bandit flags `urlopen` wherever it cannot prove the scheme,
+and it cannot follow a guard in an enclosing function.
+
+Worth stating plainly, because it is this project's own subject: a careful
+reader took a static finding at face value and reported code that was already
+correct. Same shape as FINDING_006, mirrored — there it charged a team for
+somebody else's code, here it called correct code broken.
+
+**The right line, for a different reason.** `urlopen` follows redirects, and
+Python's handler permits the new location to be `http` or `ftp`. A server could
+answer this POST with `302 Location: http://…` and the payload would be re-sent
+in the clear, defeating the exact promise the docstring makes. Only the initial
+scheme was ever checked.
+
+`_https_only_opener()` now refuses any redirect away from https. Verified
+against a local server that answers the POST with a 302 to `http://`.
+
+### The Windows report
+
+From the Lagos AI summit, in PowerShell: `auditor scan .` →
+`CommandNotFoundException`. Not a code defect. `python -m auditor` has existed
+and worked throughout, and `auditor/__main__.py` anticipates this exact case in
+its docstring. Nobody told the user. The README now answers it directly, with
+the invocation for each platform, immediately after the install block.
+
+517 tests.
+
 ## 0.6.7 — 23 November 2026
 
 **A field report from the Lagos AI summit.** A user ran `auditor scan .` on

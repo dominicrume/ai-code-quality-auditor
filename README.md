@@ -104,6 +104,31 @@ auditor forget --all                          # delete that history, and the ran
 auditor share                                 # see what an opt-in share would contain
 ```
 
+### If `auditor` is "not recognized" or "command not found"
+
+The command is installed into your environment's script directory, which is
+very often not on `PATH`. The tool is there; the shell cannot see it. Reported
+from a Windows PowerShell session and from an unactivated virtual environment
+on macOS, so it is not a platform quirk.
+
+**This always works, on every platform, activated or not:**
+
+```
+python -m auditor scan .
+```
+
+It uses the interpreter you just named, so there is no PATH to get wrong.
+
+| | |
+|---|---|
+| Windows PowerShell | `python -m auditor scan .` |
+| Windows, venv not activated | `.\env\Scripts\python -m auditor scan .` |
+| macOS / Linux, venv not activated | `env/bin/python -m auditor scan .` |
+| Activated venv, any platform | `auditor scan .` |
+
+Nothing else needs to change, and every command below works the same way with
+`python -m auditor` in place of `auditor`.
+
 Or put the agent governance check inside the agent you already use, so the
 assessment happens where the work happens.
 

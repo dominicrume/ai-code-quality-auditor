@@ -331,6 +331,14 @@ def scan_cmd(path: Path, spec: Path | None, as_json: bool, fail_on: str,
             for line in security.details[1:]:
                 console.print(f"  • {escape(line)}")
 
+        # An analyser that could not run at all. Louder than a coverage note,
+        # because the number above is a reading over a subset of the languages
+        # the user has, and nothing else on screen says so. See FINDING_009.
+        for outcome in result.outcomes:
+            note = (getattr(outcome, "diagnostics", None) or {}).get("unavailable")
+            if note:
+                console.print(f"\n[yellow]Not analysed:[/yellow] {note}")
+
         if result.coverage_note:
             console.print(f"\n[yellow]Coverage:[/yellow] {result.coverage_note}")
 

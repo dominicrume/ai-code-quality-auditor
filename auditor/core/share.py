@@ -83,16 +83,50 @@ def leaks(payload: dict, rows: list) -> list:
     return sorted(set(found))
 
 
+def _https_only_opener():
+    """An opener that keeps the https promise across redirects.
+
+    Checking the URL the caller passed is not enough. `urlopen` follows
+    redirects, and Python's own handler permits the new location to be `http`
+    or `ftp` -- it blocks `file:` and little else. A server could therefore
+    answer a 302 and move this POST onto a cleartext connection, which is
+    precisely what the scheme check exists to prevent and exactly what the
+    docstring promised it did.
+
+    Reported from the field as a path-traversal risk at this line. That part
+    was a false positive, because the scheme check does block `file:`. The line
+    was the right line: the hole was one redirect further on. See FINDING_010.
+    """
+    import urllib.request
+
+    class _HttpsOnlyRedirect(urllib.request.HTTPRedirectHandler):
+        def redirect_request(self, req, fp, code, msg, headers, newurl):
+            if not str(newurl).lower().startswith("https://"):
+                raise urllib.error.HTTPError(
+                    newurl, code,
+                    "refusing a redirect away from https: the payload would "
+                    "travel in the clear", headers, fp)
+            return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+    return urllib.request.build_opener(_HttpsOnlyRedirect)
+
+
 def send(url: str, payload: dict, opener=None, timeout: float = 15.0) -> str:
-    """Post the payload. Refuses anything but https, so a root cannot travel in the clear."""
+    """Post the payload. Refuses anything but https, so a root cannot travel in the clear.
+
+    The promise holds across redirects too; see `_https_only_opener`.
+    """
     if not str(url).lower().startswith("https://"):
         raise ValueError("the destination must be https://")
     body = json.dumps(payload).encode("utf-8")
     if opener is not None:
         return str(opener(url, body))
+    import urllib.error                                     # noqa: F401  (used by the handler)
     import urllib.request                                   # imported here, never at module load
     request = urllib.request.Request(
         url, data=body, method="POST",
         headers={"Content-Type": "application/json", "User-Agent": "ai-code-quality-auditor"})
-    with urllib.request.urlopen(request, timeout=timeout) as response:   # the only network call
+    # The only network call. Through an opener that will not be redirected off
+    # https, rather than the module-level `urlopen`, which would be.
+    with _https_only_opener().open(request, timeout=timeout) as response:
         return f"{response.status} {response.reason}"
