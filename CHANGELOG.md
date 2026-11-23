@@ -1,5 +1,62 @@
 # Changelog
 
+## 0.6.4 — 23 November 2026
+
+**FINDING_004 is closed, and the instrument now reports no open defects.**
+
+`auditor scan .` on this repository used to report `add`, `/path` and `export`
+as features nobody asked for. None of those is a feature. They are the strings
+the detectors search for, sitting in the docstrings that document them, being
+read back as findings. That is the defect FINDING_003 diagnosed, arriving in a
+second place after FINDING_003 was marked fixed.
+
+Three repairs, each pinned by a test that fails on 0.6.3:
+
+- **A detection inside a string literal or a comment is discarded.**
+  `auditor/analyzers/literals.py` computes, per file, the ranges that hold
+  string and comment text — from Python's own tokeniser where the file
+  tokenises, lexically where it does not — and a detection is dropped when the
+  start of the whole construct falls inside one. This is not a path exclusion:
+  excluding the instrument's own files would have fixed this repository and
+  left every customer with an example route in a docstring exactly as exposed.
+  A route's path is written inside a string by design, so the test is on where
+  the construct starts, not on where the name sits.
+
+  It caught a class the defect record had not identified.
+  `scripts/demo_agent.py` holds whole example codebases in string constants,
+  and their four routes were being counted as this repository's own surface.
+
+- **One feature, one piece of evidence.** A definition can be the cited
+  evidence of at most one feature. Where every definition a feature matches is
+  already spoken for, the verdict is `ambiguous` rather than `delivered` or
+  `not_found`: something matched, so absence would be false, and the evidence
+  is taken, so delivery would be a second claim on one line.
+
+- **A contradiction is withheld, not banded.** A feature reported as nowhere
+  declared, while the route on its own noun is reported as unrequested, is one
+  incoherent reading rather than two findings. Both halves are now withheld
+  together — the feature loses its verdict and the route loses its accusation.
+
+`ambiguous` features count in the fidelity total and not in the delivered, so
+`completeness` can now fall. That is the intended direction: the figure should
+drop when the instrument cannot tell. JSON output gains a `withheld` list, and
+both the terminal table and the live page give withheld readings their own
+paragraph, because a result the instrument declined to give is not a pass and
+not a fail and must not render as either.
+
+None of this touches the published study figures. Those were produced by
+`manifest_deriver.derive` version 1, retained unchanged so they stay
+reproducible, and no part of this repair runs in that path.
+
+`auditor/standards/open_defects.yaml` now declares `open: []`, so receipts
+built by this version disclose no open defect. The test that proved the
+disclosure worked used to name FINDING_004 and so had to be edited to close it;
+it now checks that a receipt carries exactly what the shipped list declares,
+with a second test that plants a defect to prove the wire is live when the list
+is empty.
+
+432 tests.
+
 ## 0.6.3 — 23 November 2026
 
 0.6.2 was tagged and built but never published, and the artefacts built for it

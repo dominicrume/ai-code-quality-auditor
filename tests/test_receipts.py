@@ -561,7 +561,29 @@ def test_a_bare_date_in_the_shipped_defect_list_cannot_break_a_receipt():
     json.dumps(coerced)          # the property that actually matters
 
 
-def test_an_open_defect_is_disclosed_in_the_receipt(finding):
-    """FINDING_004 is open, so every receipt must carry it."""
-    ids = [d["id"] for d in finding["instrument_open_defects"]]
-    assert "FINDING_004" in ids
+def test_the_receipt_discloses_exactly_what_the_shipped_list_declares(finding):
+    """Named FINDING_004 before, and so had to be edited to close it. A test
+    that has to be edited when a defect is fixed is pinning the contents of the
+    list rather than the disclosure, and the disclosure is the property worth
+    having: whatever is open travels with the artefact, and nothing else does.
+
+    This holds when the list is empty, which is when under-disclosure is
+    easiest to ship and hardest to notice."""
+    declared = [d["id"] for d in bundle.open_defects()]
+    assert "instrument_open_defects" in finding
+    assert [d["id"] for d in finding["instrument_open_defects"]] == declared
+    for entry in finding["instrument_open_defects"]:
+        assert entry.get("affects"), "a disclosed defect with no stated effect"
+
+
+def test_a_defect_added_to_the_list_reaches_the_receipt(tmp_path, monkeypatch):
+    """The test above passes trivially while the list is empty. This one proves
+    the wire is live, by putting a defect on it."""
+    planted = [{"id": "FINDING_000", "summary": "synthetic",
+                "affects": "nothing, this is a test", "recorded": "2026-01-01"}]
+    monkeypatch.setattr(bundle, "open_defects", lambda: planted)
+    (tmp_path / "agent.py").write_text(AGENT)
+    cb = load_codebase(str(tmp_path))
+    std = con.load_standard(STANDARD)
+    built = bundle.build(cb, std, con.evaluate(cb, std))
+    assert [d["id"] for d in built["instrument_open_defects"]] == ["FINDING_000"]

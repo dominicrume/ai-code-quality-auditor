@@ -47,7 +47,11 @@ DELIVERED = "delivered"
 UNREACHABLE = "unreachable"
 NOT_FOUND = "not_found"
 
-_MARKS = {DELIVERED: "✓", UNREACHABLE: "!", NOT_FOUND: "✗"}
+# A reading that contradicts itself is a defect, not an output. This status is
+# how the analyser declines to band one. See FINDING_004.
+AMBIGUOUS = "ambiguous"
+
+_MARKS = {DELIVERED: "✓", UNREACHABLE: "!", NOT_FOUND: "✗", AMBIGUOUS: "?"}
 
 
 @dataclass
@@ -98,6 +102,8 @@ class FeatureVerdict:
             return self.evidence or "found"
         if self.status == UNREACHABLE:
             return f"{self.evidence} exists, but nothing exposes it"
+        if self.status == AMBIGUOUS:
+            return self.evidence or "withheld: the reading is not coherent"
         return "not found"
 
 
@@ -132,8 +138,17 @@ class FidelityReport:
         return [v for v in self.verdicts if v.status == UNREACHABLE]
 
     @property
+    def ambiguous(self) -> list[FeatureVerdict]:
+        """Features whose reading was withheld because it did not cohere."""
+        return [v for v in self.verdicts if v.status == AMBIGUOUS]
+
+    @property
     def headline(self) -> str:
-        return f"{len(self.delivered)} of {self.total} delivered"
+        line = f"{len(self.delivered)} of {self.total} delivered"
+        held = len(self.ambiguous)
+        if held:
+            line += f", {held} withheld"
+        return line
 
     @property
     def completeness(self) -> float | None:
@@ -141,6 +156,27 @@ class FidelityReport:
         if not self.total:
             return None
         return round(100.0 * len(self.delivered) / self.total, 2)
+
+
+def _identity(definition: defs.Definition) -> tuple:
+    """What makes one definition a different fact from another.
+
+    Kind and name are not enough: the same function name in two files is two
+    definitions, and a feature allocated one of them has not consumed the
+    other.
+    """
+    return (definition.kind, definition.name, definition.file, definition.line)
+
+
+def _pick(candidates: list[defs.Definition], feature_id: str) -> defs.Definition:
+    """The candidate that best fits this feature, earliest found on a tie.
+
+    ``sorted`` is stable, so equal candidates keep the order the index found
+    them in, which is file order: a verdict cites the first place the thing is
+    written rather than an arbitrary one.
+    """
+    return sorted(candidates,
+                  key=lambda d: not defs.discriminates(d, feature_id))[0]
 
 
 def assess(spec: dict, codebase: dict) -> FidelityReport:
@@ -170,23 +206,54 @@ def assess(spec: dict, codebase: dict) -> FidelityReport:
     has_surface = any(d.is_surface for d in index)
 
     report = FidelityReport()
-    claimed: set[tuple[str, str]] = set()      # definitions a feature accounted for
 
-    for feature in features:
+    # Every definition each feature could rest on, computed before any of them
+    # is allocated. The allocation below needs to know how many alternatives a
+    # feature has, which cannot be known while walking the list once.
+    hits_for = {f["id"]: [d for d in index if defs.matches(d, f["id"])]
+                for f in features}
+
+    claimed: set[tuple[str, str]] = set()     # names a feature accounted for
+    for hits in hits_for.values():
+        for d in hits:
+            claimed.add((d.kind, d.name))
+
+    # One line cannot be the delivery of two different features.
+    # `definitions.py` carried a comment acknowledging this defect; this is its
+    # repair, and the order of allocation is the whole of it.
+    #
+    # Two rules, in this order. A feature with fewer alternatives is served
+    # first, because specification order let the first feature take the only
+    # definition the second had. Then, among features with equally many, the
+    # one the definition actually names: given one `POST /auth/register`, both
+    # `auth.register` and `auth.login` match on `auth`, and `register` is the
+    # word that says which of them this line is.
+    def _priority(feature: dict) -> tuple:
         fid = feature["id"]
-        hits = [d for d in index if defs.matches(d, fid)]
-        surface = [d for d in hits if d.is_surface]
-        internal = [d for d in hits if not d.is_surface]
+        hits = hits_for[fid]
+        return (len(hits),
+                not any(defs.discriminates(d, fid) for d in hits))
+
+    cited: dict[tuple, str] = {}              # definition identity -> feature
+
+    verdicts: dict[str, FeatureVerdict] = {}
+    for feature in sorted(features, key=_priority):
+        fid = feature["id"]
+        hits = hits_for[fid]
+        free = [d for d in hits if _identity(d) not in cited]
+        surface = [d for d in free if d.is_surface]
+        internal = [d for d in free if not d.is_surface]
+        note: str | None = None
 
         if surface:
-            best = surface[0]
+            best = _pick(surface, fid)
             status = DELIVERED
         elif internal and not wants_surface:
             # For a library or a pipeline, a defined function is the delivery.
-            best = internal[0]
+            best = _pick(internal, fid)
             status = DELIVERED
         elif internal:
-            best = internal[0]
+            best = _pick(internal, fid)
             # Only call it unreachable when nothing calls it. A helper invoked
             # by a route is wired up and working, and telling a team otherwise
             # costs more than missing a finding would: the verdict needs
@@ -194,24 +261,61 @@ def assess(spec: dict, codebase: dict) -> FidelityReport:
             invoked = has_surface and any(defs.is_invoked(d.name, codebase)
                                           for d in internal)
             status = DELIVERED if invoked else UNREACHABLE
+        elif hits:
+            # Everything this feature matches is already the evidence for
+            # another one. Saying "delivered" here would credit two features to
+            # one line; saying "not found" would be false, because something
+            # matched. Neither is a reading, so neither is given.
+            held = hits[0]
+            owners = sorted({cited[_identity(d)] for d in hits})
+            best, status = None, AMBIGUOUS
+            note = (f"the only match is {held.describe()} at {held.where}, "
+                    f"already cited for {', '.join(owners)}")
         else:
-            best = None
-            status = NOT_FOUND
+            best, status = None, NOT_FOUND
 
-        report.verdicts.append(FeatureVerdict(
+        if best is not None:
+            cited[_identity(best)] = fid
+
+        verdicts[fid] = FeatureVerdict(
             feature_id=fid,
             description=str(feature.get("description") or "").strip(),
             status=status,
             where=best.where if best else None,
-            evidence=best.describe() if best else None,
-        ))
-        for d in hits:
-            claimed.add((d.kind, d.name))
+            evidence=note if note else (best.describe() if best else None),
+        )
 
     # Surface nobody asked for. Only the surface counts: an unrequested helper
     # function is how code is organised, not a feature that was shipped.
-    for d in index:
-        if d.is_surface and (d.kind, d.name) not in claimed:
-            report.extras.append(Extra(name=d.name, kind=d.kind, where=d.where))
+    spare = [d for d in index
+             if d.is_surface and (d.kind, d.name) not in claimed]
+
+    # A feature reported as nowhere declared, while the route on its own noun
+    # is reported as unrequested, is not two findings. It is one incoherent
+    # reading, and a reviewer sees the contradiction in ten seconds. The
+    # method test is what usually produces it: it is good evidence for
+    # crediting a feature and not good enough to assert absence over. So the
+    # pair is withheld together -- the feature loses its verdict and the route
+    # loses its accusation.
+    withdrawn: set[tuple] = set()
+    for fid, verdict in verdicts.items():
+        if verdict.status != NOT_FOUND:
+            continue
+        near = [d for d in spare if defs.matches(d, fid, ignore_method=True)]
+        if not near:
+            continue
+        verdict.status = AMBIGUOUS
+        verdict.where = near[0].where
+        verdict.evidence = (
+            f"nothing declares it, yet {near[0].describe()} at {near[0].where} "
+            f"is reported as unrequested; both cannot be true"
+        )
+        withdrawn.update(_identity(d) for d in near)
+
+    # Reported in the order the specification was written, not the order the
+    # allocator worked in: the person reading the table wrote the list.
+    report.verdicts = [verdicts[f["id"]] for f in features]
+    report.extras = [Extra(name=d.name, kind=d.kind, where=d.where)
+                     for d in spare if _identity(d) not in withdrawn]
 
     return report

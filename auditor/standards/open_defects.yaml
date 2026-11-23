@@ -12,17 +12,13 @@
 # Convention: add an entry the moment a defect is recorded, remove it when the
 # record's status line says it is fixed.
 
-open:
-  - id: FINDING_004
-    summary: >
-      The scope-drift analyser matches detector strings in source text, so it
-      reports its own vocabulary, and a file whose role is to describe a
-      pattern can be read back as a feature nobody asked for.
-    affects: >
-      Scope-drift counts may overstate drift on a codebase containing
-      route-like or command-like strings in non-route positions. Read the
-      evidence lines rather than quoting the count.
-    recorded: "2026-11-21"
+open: []
+
+# Nothing is open. FINDING_004 was the last entry and was closed on
+# 23 November 2026; see docs/FINDING_004_fidelity_reads_its_own_vocabulary.md.
+# An empty list is a claim in its own right, and it is only worth anything
+# because the records in docs/ are checked against it by
+# tests/test_receipts.py::test_every_open_defect_record_is_declared_in_the_shipped_list.
 
 # Shape of an entry, for whoever adds the next one:
 #

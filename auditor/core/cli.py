@@ -223,10 +223,16 @@ def scan_cmd(path: Path, spec: Path | None, as_json: bool, fail_on: str,
             "delivered": [v.feature_id for v in result.fidelity.delivered],
             "missing": [v.feature_id for v in result.fidelity.missing],
             "unreachable": [v.feature_id for v in result.fidelity.unreachable],
+            # Withheld, not failed: a reading that contradicted itself. A
+            # consumer that sums delivered and missing must not find it there.
+            "withheld": [v.feature_id for v in result.fidelity.ambiguous],
             "completeness_pct": result.fidelity.completeness,
+            # `reason` is the sentence a person reads; the terminal table and
+            # the live page both show it, and JSON omitting it left a machine
+            # consumer with a withheld verdict and no way to say why.
             "features": [{"id": v.feature_id, "label": v.label,
                           "status": v.status, "where": v.where,
-                          "evidence": v.evidence}
+                          "evidence": v.evidence, "reason": v.reason()}
                          for v in result.fidelity.verdicts],
             "extras": [{"name": e.name, "kind": e.kind, "where": e.where}
                        for e in result.fidelity.extras],
@@ -358,7 +364,8 @@ def scan_cmd(path: Path, spec: Path | None, as_json: bool, fail_on: str,
         raise SystemExit(1)
 
 
-_FIDELITY_STYLE = {"delivered": "green", "unreachable": "yellow", "not_found": "red"}
+_FIDELITY_STYLE = {"delivered": "green", "unreachable": "yellow", "not_found": "red",
+                   "ambiguous": "magenta"}
 
 
 def _render_fidelity(console, result):
@@ -408,6 +415,15 @@ def _render_fidelity(console, result):
         for v in report.unreachable:
             console.print(f"  [yellow]·[/yellow] {escape(v.label)} "
                           f"[dim]— {escape(v.evidence or '')} at {v.where}[/dim]")
+    # Withheld readings get their own paragraph because they are not a result
+    # about the code. They are the instrument saying it cannot tell, which a
+    # reader is entitled to see rather than have rounded into a verdict.
+    if report.ambiguous:
+        console.print("\n[magenta]Withheld[/magenta] [dim]— the evidence does not "
+                      "support a verdict either way:[/dim]")
+        for v in report.ambiguous:
+            console.print(f"  [magenta]·[/magenta] {escape(v.label)} "
+                          f"[dim]— {escape(v.reason())}[/dim]")
     console.print()
 
 

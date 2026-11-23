@@ -187,6 +187,10 @@
   .fid-unreachable .fid-id, .fid-unreachable .fid-label { color: var(--warn); }
   .fid-not_found .fid-mark, .fid-not_found .fid-id,
   .fid-not_found .fid-label { color: var(--risk); }
+  /* Withheld, not failed: the instrument could not tell. Given its own colour
+     because rendering it as a pass or a fail is the error FINDING_004 was. */
+  .fid-ambiguous .fid-mark, .fid-ambiguous .fid-id,
+  .fid-ambiguous .fid-label { color: var(--accent); }
   .fid-extra .fid-mark, .fid-extra .fid-id { color: var(--accent); }
   .fid-callout { margin-top: .9rem; padding: .6rem .75rem; border-radius: 8px;
                  font-size: .8rem; line-height: 1.45; }
@@ -196,6 +200,9 @@
                          border: 1px solid color-mix(in srgb, var(--warn) 28%, transparent); margin-top: .5rem; }
   .fid-callout.shape { background: var(--accent-wash); color: var(--accent);
                        border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); }
+  .fid-callout.held { background: var(--accent-wash); color: var(--accent);
+                      border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+                      margin-top: .5rem; }
   @media (max-width: 560px) {
     .fid-row { grid-template-columns: 1.2rem 1fr; }
     .fid-where { grid-column: 2; }
@@ -360,6 +367,13 @@ function renderFidelity(r){
   if (unreach.length){
     h += `<div class="fid-callout unreach"><b>Built but unreachable:</b> ${unreach.map(esc).join(', ')}`
       +  ` — the code exists, nothing exposes it.</div>`;
+  }
+  const held = f.features.filter(v => v.status === 'ambiguous');
+  if (held.length){
+    h += `<div class="fid-callout held"><b>Withheld:</b> `
+      +  `${held.map(v => esc(label(v))).join(', ')}`
+      +  ` — the evidence does not support a verdict either way. `
+      +  `Read the reason beside each row.</div>`;
   }
   if (r.shape_note){
     h += `<div class="fid-callout shape"><b>Wrong shape:</b> ${esc(r.shape_note)}</div>`;

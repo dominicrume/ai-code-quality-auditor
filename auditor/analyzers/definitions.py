@@ -35,6 +35,8 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
+from auditor.analyzers.literals import mask_for
+
 # ---------------------------------------------------------------- definitions
 
 SURFACE_KINDS = frozenset({"command", "route"})
@@ -123,6 +125,11 @@ def index(codebase: dict) -> list[Definition]:
 
     Duplicates are kept: the same name defined in two files is two facts, and
     a verdict that cites one of them should cite the one it found.
+
+    A detection that begins inside a string literal or a comment is discarded.
+    It is a mention of a declaration, not a declaration: the difference between
+    the ``@app.get("/orders")`` a service serves and the one its docstring uses
+    as an example. See `auditor/analyzers/literals.py` and FINDING_004.
     """
     out: list[Definition] = []
     for path, content in (codebase.get("files") or {}).items():
@@ -132,8 +139,11 @@ def index(codebase: dict) -> list[Definition]:
             patterns = _JS_PATTERNS
         else:
             continue
+        mask = mask_for(path, content)
         for kind, pattern in patterns:
             for match in pattern.finditer(content):
+                if mask.covers(match.start(0)):
+                    continue      # quoted or commented: a mention, not a use
                 # A route pattern captures its method first, then its path.
                 if kind == "route" and match.re.groups == 2:
                     method, name = match.group(1).upper(), match.group(2)
@@ -240,7 +250,35 @@ def _method_allows(method: str, head: set[str]) -> bool:
     return not implied or method in implied
 
 
-def matches(definition: Definition, feature_id: str) -> bool:
+def declared_words(definition: Definition) -> set[str]:
+    """The words of a declared name, however the language writes it.
+
+    A route's name is a path, split on its separators; everything else is an
+    identifier, split on case and punctuation.
+    """
+    if definition.kind == "route":
+        return {s.lower() for s in _SPLIT.split(definition.name) if s}
+    return set(words(definition.name))
+
+
+def discriminates(definition: Definition, feature_id: str) -> bool:
+    """True when this definition carries the feature's supporting words too.
+
+    Supporting tokens cannot establish a match: crediting them credited
+    ``remove.item`` to a ``def add_item``, a different feature on the same
+    noun. They can choose between two definitions that already match on the
+    head, which is a narrower question and the only one asked here. It is what
+    stops ``auth.register`` and ``auth.login`` both citing the one line whose
+    name happens to contain ``auth``.
+    """
+    _, supporting = feature_tokens(feature_id)
+    if not supporting:
+        return False
+    return bool(declared_words(definition) & supporting)
+
+
+def matches(definition: Definition, feature_id: str,
+            ignore_method: bool = False) -> bool:
     """True when this definition declares the thing the feature asks for.
 
     The test is on the *words of a declared name*, not on a substring being
@@ -250,6 +288,12 @@ def matches(definition: Definition, feature_id: str) -> bool:
     Routes are the one place a namespace alone counts. REST puts the action in
     the HTTP method and the noun in the path, so ``GET /courses`` is how a
     service implements ``course.list`` and there is no ``list`` to find.
+
+    ``ignore_method`` drops the HTTP-method test. It is not used to credit a
+    feature — the method is good evidence and dropping it would re-admit the
+    error it was added to fix. It is used to detect a reading that contradicts
+    itself: a feature reported as nowhere declared while the route on its own
+    noun is reported as unrequested. See FINDING_004.
     """
     head, supporting = feature_tokens(feature_id)
     if not head:
@@ -259,10 +303,9 @@ def matches(definition: Definition, feature_id: str) -> bool:
         # REST puts the action in the HTTP method and the noun in the path, so
         # `GET /courses` is how a service implements `course.list` and there is
         # no `list` to find. A path segment matching either set counts.
-        if not _method_allows(definition.method, head):
+        if not ignore_method and not _method_allows(definition.method, head):
             return False
-        segments = {s.lower() for s in _SPLIT.split(definition.name) if s}
-        return bool(segments & (head | supporting))
+        return bool(declared_words(definition) & (head | supporting))
 
     name_words = words(definition.name)
     if not name_words:
