@@ -1,5 +1,97 @@
 # Changelog
 
+## 0.6.11 — 24 November 2026
+
+**A specification the tool opened, reported as measured, and never read.**
+
+A user ran 0.6.10 on their own project with a hand-written `spec.yaml` whose
+sentences sat under `requirements:`. The scan printed a scope-drift value of
+0.00 banded OK, footed the report with "measured against spec.yaml", and
+omitted the fidelity table entirely without saying why. They concluded, in
+writing, that the tool had confirmed their implementation matched the stated
+requirements. It had not read one of them.
+
+### The sentences are now read out of whichever key the author used
+
+`brief.normalise_spec` reads requirement sentences from `features`,
+`requirements`, `acceptance_criteria`, `user_stories`, `stories`, `must_have`
+or `deliverables`, through the same `parse_brief` that has always converted a
+typed brief. The user's wording is kept verbatim; only an `id` is added.
+
+This is parsing, not inference, and the difference is the one this instrument
+rests on: a human wrote those sentences into that file. FINDING_002 was about
+features invented from commit subjects, where the brief itself was in doubt.
+Here the brief is not in doubt, it is in a different key. Only a list of plain
+strings is read: a list of dicts is a structure the tool does not understand,
+and stringifying it would put `{'id': ...}` into a report as if a person had
+written it.
+
+### A specification that declares nothing checkable no longer bands green
+
+Scope drift counts surface that no feature asked for. With zero features there
+is nothing to compare against, so the count cannot be anything but zero, and
+zero bands OK. A green pass earned by having read nothing, which is
+FINDING_005's error in a third place after the severity band and the coverage
+check. It is now withheld, with a reason that names the keys to use.
+
+### The near-miss, which is the more useful half
+
+The first version of this fix was worse than the defect. `slugify` takes the
+first three meaningful words, so "The program must add two numbers" became
+`program.add.two`; the matcher tests the head word first; nothing declares
+`program`. The same correct three-function script came back as **0 of 3
+delivered**, a red verdict against working code.
+
+The cause was already documented in `brief._STOP`, one category short. That
+set drops verbs that tell us to produce software, on the stated grounds that
+"build a course listing page" is a requirement about the page. A noun naming
+the deliverable as a whole is the same filler: `program`, `application`,
+`app`, `software`, `script`, `system`, `project` and `codebase` are dropped
+too. `page`, `site`, `report`, `service` and `dashboard` are not, because each
+names something somebody has to go and build. Both sides of that line are
+pinned.
+
+### Stated rather than implied
+
+Fidelity reads declared names, not behaviour. A requirement satisfied by a
+statement inside `main()` rather than by a declaration is reported as not
+found, which is literally what `not_found` means here and is not a gap in the
+user's code. `docs/FINDING_011` says so, and the limit is not papered over.
+
+560 tests.
+
+## 0.6.11 — 23 November 2026
+
+**A small problem reads amber, never green.**
+
+`SEVERITY_FLOOR` is now `{"HIGH": "critical", "MEDIUM": "warn"}`. A MEDIUM
+finding raises an otherwise-good security band to `warn` and never lowers a
+`critical`. HIGH still reads `critical`; LOW still does not move the band. The
+rule, stated in public and now binding on `calibration.py`:
+
+> Serious remains red no matter how much green code surrounds it. If it's a
+> small problem it will be amber and never green.
+
+This deliberately reverses the line in 0.6.10 that "MEDIUM and LOW still do
+not move the band". A known problem banded green is a clean bill of health the
+instrument has not earned: FIELD_REPORT_001's real B310 finding sat under a
+green OK. Amber tells a reader to look, and the severity tally and the findings
+list still travel beside the band so they can see what and decide for
+themselves.
+
+The trade-off is accepted, not denied: many real projects carrying MEDIUM
+findings will now read amber where they read green. Pipelines gating on
+`--fail-on warn` may start failing; the default `never` and `--fail-on
+critical` are unaffected. The floor applies in the scan path only, so the
+experiment path and every published figure are unchanged.
+
+- `docs/FINDING_005` carries a dated addendum recording the reversal.
+- `tests/test_scan.py`: `test_scan_names_serious_security_findings_without_changing_the_band`
+  becomes `test_scan_names_a_medium_finding_and_bands_it_amber_not_green`, and
+  the MEDIUM tests in `tests/test_finding_005_to_008.py` now pin amber.
+
+548 tests.
+
 ## 0.6.10 — 23 November 2026
 
 **The worst finding decides the colour.**

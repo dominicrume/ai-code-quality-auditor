@@ -268,6 +268,13 @@ def scan_directory(path: Path, spec: dict | None = None,
 
         spec = load_spec(path) or discover(path)
 
+    # Whatever arrived, read its features out of whichever key the author used.
+    # A specification is only evidence to the extent something reads it, and a
+    # hand-written one whose sentences sat under `requirements:` was read by
+    # nothing at all. See FINDING_011 and `brief.normalise_spec`.
+    from auditor.live.brief import normalise_spec
+    spec = normalise_spec(spec)
+
     codebase = load_codebase(path, respect_ignores=not include_all)
     files = codebase.get("files", {})
 
@@ -380,4 +387,19 @@ def _skip_reason(metric: str, r: ScanResult, spec: dict | None) -> str | None:
         return "no Python, JavaScript or TypeScript files to analyse"
     if metric == "hallucinations" and not spec:
         return "nothing yet says what was asked for"
+    if metric == "hallucinations" and not (spec.get("features") or []):
+        # A supplied specification that declares no feature this tool can
+        # check. The count of extra features is structurally incapable of
+        # being anything but zero here, and zero bands as OK, so the reading
+        # would be a green pass earned by having nothing to compare against.
+        # That is FINDING_005's error in a third place. See FINDING_011.
+        keys = ", ".join((spec.get("_no_features") or ["features"])[:4])
+        return (f"{_spec_label(spec)} declares no requirements this tool can "
+                f"check: expected a list of sentences under one of {keys}")
     return None
+
+
+def _spec_label(spec: dict) -> str:
+    """How to refer to the supplied specification in a sentence."""
+    name = spec.get("name")
+    return f"the specification {name!r}" if name else "the specification"
