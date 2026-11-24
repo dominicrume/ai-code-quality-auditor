@@ -204,12 +204,12 @@ hr.thin { border: none; border-top: 1px solid var(--rule); margin: 2rem 0; }
 <header class="masthead">
   <p class="eyebrow">Working paper · Instrument self-audit</p>
   <h1>What a code quality tool cannot tell you</h1>
-  <p class="standfirst">Ten numbered defects in one measuring instrument, six of them found in a single day by people who did not build it, and the six questions no static code quality tool can answer about your codebase.</p>
+  <p class="standfirst">Eleven numbered defects in one measuring instrument, six of them found in a single day by people who did not build it, and the six questions no static code quality tool can answer about your codebase.</p>
   <dl class="meta">
     <div><dt>Author</dt><dd>Orume Dominic Uririe</dd></div>
-    <div><dt>Date</dt><dd>23 November 2026</dd></div>
-    <div><dt>Instrument</dt><dd>AI Code Quality Auditor 0.6.10</dd></div>
-    <div><dt>Status</dt><dd>Version 1.0. Open to correction.</dd></div>
+    <div><dt>Date</dt><dd>23 November 2026, revised 25 November</dd></div>
+    <div><dt>Instrument</dt><dd>AI Code Quality Auditor 0.6.11</dd></div>
+    <div><dt>Status</dt><dd>Version 1.1. Open to correction.</dd></div>
   </dl>
 </header>
 
@@ -218,7 +218,7 @@ hr.thin { border: none; border-top: 1px solid var(--rule); margin: 2rem 0; }
 
   <p class="lead">A code quality tool that reports a clean bill of health for code it could not read is lying. That sentence has been in this instrument's source for a year, as a comment, next to the check that enforces it. It was enforced for one of the six ways a tool can fail to read your code, and not for the other five.</p>
 
-  <p>This paper is the record of finding that out. The subject is a measuring instrument I built and published: an auditor that scores code on security density, cyclomatic complexity, duplication, specification fidelity and rework. Ten defects in it are written up as numbered, dated records in its public repository. Three published figures have formal errata. Six of the ten were found on 23 November 2026, at the Lagos AI Summit, by three builders who ran the tool on their own machines and their own code, owed me nothing, and reported what broke.</p>
+  <p>This paper is the record of finding that out. The subject is a measuring instrument I built and published: an auditor that scores code on security density, cyclomatic complexity, duplication, specification fidelity and rework. Eleven defects in it are written up as numbered, dated records in its public repository. Three published figures have formal errata. Six of the ten were found on 23 November 2026, at the Lagos AI Summit, by three builders who ran the tool on their own machines and their own code, owed me nothing, and reported what broke.</p>
 
   <p>The defects are not ten separate mistakes. They fall into four classes, and each class is a general property of how static analysis is built rather than a quirk of this implementation:</p>
 
@@ -279,7 +279,7 @@ hr.thin { border: none; border-top: 1px solid var(--rule); margin: 2rem 0; }
 
   <div class="tablewrap">
     <table>
-      <caption>Findings 001 to 010 and errata 001 to 003, in the public repository under <code>docs/</code>. Class refers to section 3. Six records carry the date 23 November 2026 and came from external reports on that day.</caption>
+      <caption>Findings 001 to 011 and errata 001 to 003, in the public repository under <code>docs/</code>. Class refers to section 3. Six records carry the date 23 November 2026 and came from external reports on that day. Finding 011 arrived the day after this paper was first published; see the addendum.</caption>
       <thead>
         <tr><th>Record</th><th>What the instrument got wrong</th><th class="num">Class</th><th>State</th></tr>
       </thead>
@@ -294,6 +294,7 @@ hr.thin { border: none; border-top: 1px solid var(--rule); margin: 2rem 0; }
         <tr><td class="id">FINDING_008</td><td>A project's own duplicated build tree counted as duplicated work, which set the worst band for an entire audit</td><td class="num">3</td><td><span class="pill open">Open</span></td></tr>
         <tr><td class="id">FINDING_009</td><td>A security scanner invoked through PATH, so a correct install crashed with a traceback</td><td class="num">4</td><td><span class="pill fixed">Fixed 0.6.8</span></td></tr>
         <tr><td class="id">FINDING_010</td><td>A function that promised https would follow a redirect off it, sending its payload in the clear</td><td class="num">4</td><td><span class="pill fixed">Fixed 0.6.8</span></td></tr>
+        <tr><td class="id">FINDING_011</td><td>A specification the tool opened, footed the report as measured against, and never read. No feature verdict was produced and nothing said why</td><td class="num">1</td><td><span class="pill fixed">Fixed 0.6.11</span></td></tr>
         <tr><td class="id">ERRATUM_001</td><td>Security density inflated by assertions inside test files, penalising the conditions that wrote tests</td><td class="num">2</td><td><span class="pill fixed">Corrected</span></td></tr>
         <tr><td class="id">ERRATUM_002</td><td>A false negative in the hallucination detector, found by two-rater validation</td><td class="num">1</td><td><span class="pill fixed">Corrected</span></td></tr>
         <tr><td class="id">ERRATUM_003</td><td>Features credited on token evidence rather than on a definition a user can reach</td><td class="num">1</td><td><span class="pill fixed">Corrected</span></td></tr>
@@ -452,7 +453,7 @@ hr.thin { border: none; border-top: 1px solid var(--rule); margin: 2rem 0; }
   <p>A density may not speak for a severity. One high-severity finding raises the band to critical regardless of how much sound code surrounds it. The asymmetry settles it: a high finding that proves to be a false positive costs a team one review, while a high finding banded comfortable costs them the breach.</p>
   <p>Verified end to end on a 12,121-line project carrying a single high-severity finding for dynamic code execution. Its density is 0.08 per thousand lines, which bands as good on its own and cannot soften it:</p>
   <p class="readout">0.6.5 &nbsp; 0.08 &nbsp; <b class="ok">OK</b> &nbsp;→&nbsp; 0.6.10 &nbsp; 0.08 &nbsp; <b class="bad">RISK</b></p>
-  <p>Medium and low findings still do not move the band. One field report carried 694 medium findings, and a rule that always says red says nothing.</p>
+  <p>Low findings do not move the band. Medium findings raise it to amber and never let it read green, decided on 23 November 2026 and shipped in 0.6.11, reversing a position stated twice in the records before it: that a medium floor would fire on essentially every real codebase and was therefore as useless as banding them all good. The facts behind that argument stand. The conclusion drawn from them does not, because a known problem shown in green is a clean bill of health the instrument has not earned, which is the same error one step down. The trade-off is accepted rather than denied: many real projects will now read amber where they read green, and the codebase in finding 005, with 694 medium findings, would read amber without its nine high ones.</p>
 
   <h3>Provenance is attributed, never silently dropped</h3>
   <p>Each file is classified first-party, vendored or generated, from positive signals only: a known library's name as a filename stem or path segment, a build-output filename, and line lengths no author produces. Metrics about the project's code are computed over the project's code, and everything set aside is counted and named in the report.</p>
@@ -486,12 +487,48 @@ hr.thin { border: none; border-top: 1px solid var(--rule); margin: 2rem 0; }
 </section>
 
 <section>
+  <h2><span class="num">Addendum</span>Finding 011, the day after publication</h2>
+
+  <p class="lead">This paper was published on 23 November 2026. On 24 November a user ran the instrument on their own project, wrote up what it found and what it missed, and their write-up contained a defect the paper had not recorded. It is the eleventh, it belongs to class 1, and it is a cleaner demonstration of limit five than anything written above, so it is added here rather than folded away into a revision.</p>
+
+  <p>They supplied a specification. That is the one input that makes a fidelity verdict possible at all. Their <code>spec.yaml</code> was written the obvious way, with their three requirements as sentences under a key named <code>requirements</code>. The scan printed four green dots, a scope-drift reading of 0.00 banded OK, and a footer stating that the reading was measured against their specification. <strong>No feature verdict was printed at all, and nothing said why.</strong></p>
+
+  <p>Their conclusion, in writing:</p>
+
+  <blockquote><p>It successfully identified that the implementation matched the stated requirements.</p></blockquote>
+
+  <p>That is a fair reading of that output and it is false. Not one requirement had been read. The analyser looks for a key named <code>features</code> whose entries carry an identifier, found none, and produced an empty list. Three things followed, none of them announced: the verdict table returned early and vanished, the scope-drift count became structurally incapable of being anything but zero and zero bands green, and the footer went on claiming the specification had been measured against because the file had in fact been opened.</p>
+
+  <p>So the honest sentence from section 4 applies to the tool that is making the argument: <strong>a specification a tool opens is not a specification a tool reads</strong>, and the only reading that could have answered this user's question was removed by a key name without a word of explanation.</p>
+
+  <h3>What was fixed, and the mistake inside the fix</h3>
+
+  <p>Requirement sentences are now read from whichever of seven plausible keys holds them, through the same converter that has always turned a typed brief into features. The user's wording is kept exactly; only an identifier is added. This is parsing rather than inference, and the distinction is the one the whole instrument rests on: a human wrote those sentences into that file. An earlier finding in the table above concerns features invented from commit subjects, where the brief itself was the thing in doubt. Here the brief was never in doubt. It was in a different key.</p>
+
+  <p>And where a specification yields nothing readable, the scope-drift reading is now withheld and names the keys it looked for, instead of printing a zero and a green dot.</p>
+
+  <p>The first version of that fix was worse than the defect, which is the part worth publishing. The identifier is built from the first three meaningful words, so "The program must add two numbers" became <code>program.add.two</code>. The matcher tests the leading word first. Nothing in anybody's code declares <code>program</code>. The same correct script came back as <strong>0 of 3 delivered</strong>: three red crosses and a list headed "Missing", against code that implements two of the three requirements and runs. A false red against working code is a worse failure than the silence it replaced, and it is the same shape as the defect it was meant to repair, with an artefact of ours presented as a statement about their work.</p>
+
+  <p>The cause was already written down in the instrument, one category short. The word list that strips verbs telling us to produce software, on the stated grounds that "build a course listing page" is a requirement about the page, did not strip nouns by which a deliverable names itself. It does now, for <code>program</code>, <code>application</code>, <code>app</code>, <code>software</code>, <code>script</code>, <code>system</code>, <code>project</code> and <code>codebase</code>. It still does not strip <code>page</code>, <code>site</code>, <code>report</code>, <code>service</code> or <code>dashboard</code>, because each of those names something somebody has to go and build, which is exactly what a fidelity verdict is looking for. Both sides of that line are now pinned by tests.</p>
+
+  <h3>One limit this did not remove</h3>
+
+  <p>The third requirement, that the program must print its results, is still reported as not found. The program does print its results, from inside its entry point, and no declared definition is named for it. That verdict is literally what the tool means by the words it prints, and the reason column says so, but a requirement satisfied by a statement rather than by a declaration is a limit of the method and not a gap in anyone's code. Fidelity reads declared names. It does not read behaviour, and it must not be quoted as though it does.</p>
+
+  <div class="box stripe warn">
+    <h4>Why this addendum is the paper's strongest section</h4>
+    <p>Everything above section 7 was written by the author of the instrument, about the instrument, with the defect records already in hand. This part was not. A reader who wants to know whether the process described here is real, rather than a tidy story told after the fact, can compare the dates: the paper on the 23rd, the report on the 24th, the record, the tests and the release on the 25th, and the admission of a false red inside the fix on the same day.</p>
+    <p>The user's own account of the limits was better than the tool's. They noted that the scan did not establish the absence of vulnerabilities, that rework was not measurable from a directory scan, and that signed receipts were unavailable without an optional dependency. All three are correct, and the tool told them each one plainly. On the single point where it misled them, it gave them nothing to go on.</p>
+  </div>
+</section>
+
+<section>
   <h2><span class="num">8</span>What this paper does not establish</h2>
 
   <ul>
     <li><strong>Nothing about any other tool.</strong> The four classes are properties of how static analysis is built, and I believe they are widespread, but belief is not a result. Section 5 exists so that anyone can convert it into a result on their own tool rather than taking my word for it.</li>
     <li><strong>Nothing statistical.</strong> One instrument, one event, three users, one day. Descriptive throughout. No significance is claimed or tested.</li>
-    <li><strong>No completeness.</strong> Ten defects found is not ten defects existing. The honest reading of this record is that an instrument with a hard look taken at it yields about ten, and that the next hard look will yield more. Finding 008 is open; the thresholds behind the density bands are still almost certainly wrong by an order of magnitude, and nothing in the repository records where they came from.</li>
+    <li><strong>No completeness.</strong> Eleven defects found is not eleven defects existing. The honest reading of this record is that an instrument with a hard look taken at it yields about ten, and that the next hard look will yield more. One arrived the day after publication, which is the addendum below and the best evidence for this paragraph that the paper contains. Finding 008 is open; the thresholds behind the density bands are still almost certainly wrong by an order of magnitude, and nothing in the repository records where they came from.</li>
     <li><strong>No claim of adoption.</strong> Three external users on one day are three external users on one day. Install counts, registry listings and sign-ups are distribution signals, not adoption and not revenue. A count is not an economy, and that rule applies to my figures first.</li>
     <li><strong>No safety claim of any kind.</strong> Use a tool of this sort as a second reader, never as a judge whose word is final. Anyone claiming their tool makes software safe is selling you something.</li>
   </ul>
@@ -513,7 +550,7 @@ hr.thin { border: none; border-top: 1px solid var(--rule); margin: 2rem 0; }
 
 <footer class="colophon">
   <h4>Reproduction</h4>
-  <p>Every record cited here is a file in the instrument's public repository under <code>docs/</code>, named for its number. Each describes the defect, the mechanism, the figure it produced, the repair, and the test that pins it. Fixes are tagged by version: 0.6.1, 0.6.4, 0.6.7, 0.6.8, 0.6.10. The suite at 0.6.10 is 546 tests.</p>
+  <p>Every record cited here is a file in the instrument's public repository under <code>docs/</code>, named for its number. Each describes the defect, the mechanism, the figure it produced, the repair, and the test that pins it. Fixes are tagged by version: 0.6.1, 0.6.4, 0.6.7, 0.6.8, 0.6.10, 0.6.11. The suite at 0.6.11 is 560 tests.</p>
   <p>Figures attributed to a production codebase are from a user's own run, supplied in full, and are labelled <span class="pill limit">Reported</span> for that reason. The mechanisms behind them are reproduced on synthetic fixtures in the test suite, which is what <span class="pill fixed">Measured</span> means in section 1. No real customer data is held, used or published.</p>
   <hr class="thin" />
   <p class="sig">Orume Dominic Uririe</p>
