@@ -173,16 +173,39 @@ def test_the_floor_is_not_a_claim_that_the_finding_is_exploitable():
     assert floor_for("good", {"HIGH": 0}) == "good"
 
 
-def test_mediums_and_lows_do_not_move_the_band():
-    """694 mediums were in this one report. A MEDIUM floor warns on every real
-    project, which is as useless as banding them all good."""
-    assert floor_for("good", {"MEDIUM": 694, "LOW": 16}) == "good"
+def test_a_medium_finding_reads_amber_and_never_green():
+    """The owner's rule of 23 November 2026: a small problem is amber, never green.
+
+    This replaces `test_mediums_and_lows_do_not_move_the_band`, which pinned the
+    0.6.7 to 0.6.10 decision that MEDIUM left the band alone (694 mediums were
+    in the FINDING_005 report). That decision is deliberately reversed in
+    0.6.11; the trade-off, that many real projects now read amber, is accepted.
+    """
+    assert floor_for("good", {"MEDIUM": 1}) == "warn"
+    assert floor_for("good", {"MEDIUM": 694, "LOW": 16}) == "warn"
+    for density in (0.0, 0.01, 2.4034, 49.9):
+        assert floor_for(band_for("security_density", density), {"MEDIUM": 1}) \
+            == "warn", density
+
+
+def test_a_medium_stops_at_amber_and_red_still_belongs_to_high():
+    assert floor_for("good", {"MEDIUM": 694}) != "critical"
+    assert floor_for("warn", {"MEDIUM": 3}) == "warn"
+    assert floor_for("good", {"HIGH": 1, "MEDIUM": 694}) == "critical"
+
+
+def test_lows_do_not_move_the_band():
+    """LOW is unchanged: it never moves the band."""
     assert floor_for("good", {"LOW": 40}) == "good"
+    assert floor_for("good", {"LOW": 1}) == "good"
+    assert floor_for("good", {"MEDIUM": 0, "LOW": 16}) == "good"
 
 
 def test_the_floor_never_lowers_a_band():
     assert floor_for("critical", {"HIGH": 1}) == "critical"
+    assert floor_for("critical", {"MEDIUM": 694}) == "critical"
     assert floor_for("critical", {"LOW": 2}) == "critical"
+    assert floor_for("warn", {"LOW": 2}) == "warn"
     assert floor_for("warn", None) == "warn"
 
 

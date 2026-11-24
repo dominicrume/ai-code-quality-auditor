@@ -66,12 +66,31 @@ def band_for(metric: str, value: float) -> Band:
 # instrument is not the arbiter of exploitability and must stop implying it is;
 # `details` and the severity tally say what was found, so a reader can
 # downgrade it themselves with the evidence in front of them. See FINDING_005,
-# revised in 0.6.10.
+# revised in 0.6.10 and again in 0.6.11.
 #
-# Not MEDIUM, and this part is unchanged: that CRM carried 694 of them, and a
-# MEDIUM floor would fire on essentially every real codebase, which is as
-# useless as banding them all good. A rule that always says red says nothing.
-SEVERITY_FLOOR: dict[str, Band] = {"HIGH": "critical"}
+# MEDIUM goes to warn, and never reads green. Decided by the owner on
+# 23 November 2026, reversing the reasoning that stood here in 0.6.7 to
+# 0.6.10. The rule as stated in public:
+#
+#   serious remains red no matter how much green code surrounds it; a small
+#   problem will be amber and never green
+#
+# A known problem banded green is a clean bill of health the instrument has
+# not earned, which is the same error FINDING_005 records for HIGH, one step
+# down. Amber is not alarm: it tells a reader to look, and the severity tally
+# and the findings list travel beside the band so they can see what to look at
+# and dismiss it with the evidence in hand. MEDIUM stops at warn so that red
+# keeps meaning something only HIGH (or a critical density) can earn.
+#
+# The earlier argument was that the CRM in FINDING_005 carried 694 MEDIUM
+# findings and a MEDIUM floor fires on essentially every real codebase. That
+# trade-off is real and is accepted, not denied: many real projects carrying
+# MEDIUM findings will now read amber where they used to read green. The
+# owner's answer is that those projects do carry known problems, and green
+# beside them was the instrument flattering them.
+#
+# LOW does not move the band.
+SEVERITY_FLOOR: dict[str, Band] = {"HIGH": "critical", "MEDIUM": "warn"}
 
 _RANK: dict[Band, int] = {"good": 0, "warn": 1, "critical": 2}
 

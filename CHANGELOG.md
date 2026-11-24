@@ -1,8 +1,39 @@
 # Changelog
 
-## 0.6.11 — 24 November 2026
+## 0.6.11 — 25 November 2026
 
-**A specification the tool opened, reported as measured, and never read.**
+**Two changes to what a reading is allowed to say: a small problem is never
+green, and a specification the tool opens is a specification it reads.**
+
+### A small problem reads amber, never green
+
+`SEVERITY_FLOOR` is now `{"HIGH": "critical", "MEDIUM": "warn"}`. A MEDIUM
+finding raises an otherwise-good security band to `warn` and never lowers a
+`critical`. HIGH still reads `critical`; LOW still does not move the band. The
+rule, stated in public and now binding on `calibration.py`:
+
+> Serious remains red no matter how much green code surrounds it. If it's a
+> small problem it will be amber and never green.
+
+This deliberately reverses the line in 0.6.10 that "MEDIUM and LOW still do
+not move the band". A known problem banded green is a clean bill of health the
+instrument has not earned: FIELD_REPORT_001's real B310 finding sat under a
+green OK. Amber tells a reader to look, and the severity tally and the findings
+list still travel beside the band so they can see what and decide for
+themselves.
+
+The trade-off is accepted, not denied: many real projects carrying MEDIUM
+findings will now read amber where they read green. Pipelines gating on
+`--fail-on warn` may start failing; the default `never` and `--fail-on
+critical` are unaffected. The floor applies in the scan path only, so the
+experiment path and every published figure are unchanged.
+
+- `docs/FINDING_005` carries a dated addendum recording the reversal.
+- `tests/test_scan.py`: `test_scan_names_serious_security_findings_without_changing_the_band`
+  becomes `test_scan_names_a_medium_finding_and_bands_it_amber_not_green`, and
+  the MEDIUM tests in `tests/test_finding_005_to_008.py` now pin amber.
+
+### A specification the tool opened, reported as measured, and never read
 
 A user ran 0.6.10 on their own project with a hand-written `spec.yaml` whose
 sentences sat under `requirements:`. The scan printed a scope-drift value of
@@ -59,38 +90,6 @@ found, which is literally what `not_found` means here and is not a gap in the
 user's code. `docs/FINDING_011` says so, and the limit is not papered over.
 
 560 tests.
-
-## 0.6.11 — 23 November 2026
-
-**A small problem reads amber, never green.**
-
-`SEVERITY_FLOOR` is now `{"HIGH": "critical", "MEDIUM": "warn"}`. A MEDIUM
-finding raises an otherwise-good security band to `warn` and never lowers a
-`critical`. HIGH still reads `critical`; LOW still does not move the band. The
-rule, stated in public and now binding on `calibration.py`:
-
-> Serious remains red no matter how much green code surrounds it. If it's a
-> small problem it will be amber and never green.
-
-This deliberately reverses the line in 0.6.10 that "MEDIUM and LOW still do
-not move the band". A known problem banded green is a clean bill of health the
-instrument has not earned: FIELD_REPORT_001's real B310 finding sat under a
-green OK. Amber tells a reader to look, and the severity tally and the findings
-list still travel beside the band so they can see what and decide for
-themselves.
-
-The trade-off is accepted, not denied: many real projects carrying MEDIUM
-findings will now read amber where they read green. Pipelines gating on
-`--fail-on warn` may start failing; the default `never` and `--fail-on
-critical` are unaffected. The floor applies in the scan path only, so the
-experiment path and every published figure are unchanged.
-
-- `docs/FINDING_005` carries a dated addendum recording the reversal.
-- `tests/test_scan.py`: `test_scan_names_serious_security_findings_without_changing_the_band`
-  becomes `test_scan_names_a_medium_finding_and_bands_it_amber_not_green`, and
-  the MEDIUM tests in `tests/test_finding_005_to_008.py` now pin amber.
-
-548 tests.
 
 ## 0.6.10 — 23 November 2026
 

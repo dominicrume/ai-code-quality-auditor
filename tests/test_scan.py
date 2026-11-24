@@ -192,13 +192,22 @@ def test_asserts_in_production_code_are_still_findings(tmp_path):
     assert security.value > 0, "an assert used as a production check must still count"
 
 
-def test_scan_names_serious_security_findings_without_changing_the_band(tmp_path):
-    """The band still follows the density; the finding is reported beside it."""
+def test_scan_names_a_medium_finding_and_bands_it_amber_not_green(tmp_path):
+    """A MEDIUM finding raises an otherwise-good band to warn; it is named beside it.
+
+    Until 0.6.11 this test was
+    `test_scan_names_serious_security_findings_without_changing_the_band` and
+    pinned the opposite: the band followed the density alone and a MEDIUM was
+    only reported. The owner reversed that on 23 November 2026 (a small known
+    problem is amber, never green). See FINDING_005 and calibration.SEVERITY_FLOOR.
+    """
     (tmp_path / "svc.py").write_text(
         "import urllib.request\n" + "\n".join(f"x{i} = {i}" for i in range(400))
         + "\nurllib.request.urlopen(url)\n")
     outcome = _outcome(scan_directory(tmp_path), "security_density")
-    assert outcome.band == band_for("security_density", outcome.value) == "good"
+    # The density on its own still bands good; the MEDIUM is what moves it.
+    assert band_for("security_density", outcome.value) == "good"
+    assert outcome.band == "warn"
     assert outcome.details and any("MEDIUM B310" in d for d in outcome.details)
 
 
