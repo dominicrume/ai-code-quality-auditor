@@ -17,27 +17,53 @@ $ auditor scan .
 
 Specification fidelity  2 of 4 delivered
 
-✓  Submit a new claim with a policy number    api.py:4   route POST /claims
-✓  Look up a claim by reference               api.py:8   route GET /claims/<ref>
-✗  Attach supporting documents to a claim                not found
-!  Notify the assessor when a claim is        api.py:12  function notify_assessor
-   submitted                                             exists, nothing exposes it
-~  /admin/purge                               api.py:15  not asked for
+✓  add an item     cli.py:9   subcommand "add"
+✓  list items      cli.py:13  subcommand "list"
+!  export to csv   cli.py:23  function export_csv exists, but nothing exposes it
+✗  validate input             not found
+~  scheduler       cli.py:19  not asked for
 
 Missing — asked for, and nothing in the code declares it:
-  · Attach supporting documents to a claim
+  · validate input (validate.input)
+
+Built but unreachable — the code exists, nothing exposes it:
+  · export to csv — function export_csv at cli.py:23
 ```
+
+That block is captured from a run, not written by hand. Through 0.6.11 the example here
+was hand-written, showed an insurance API, and promised two things the tool does not
+produce from that code: `route POST /claims` evidence from a Flask `@app.route` decorator,
+and a `✓` for a requirement the matcher actually reports as not found. It is replaced with
+real output and recorded in
+[`docs/FINDING_012_readme_example_was_never_run.md`](docs/FINDING_012_readme_example_was_never_run.md).
 
 Nothing was typed to get that. The specification is read from whatever already
 states intent — a requirements document, the README, the package description,
 recent `feat:` commits — written to `.auditor/spec.yaml`, and yours to correct.
 **Never from your source code**, because a specification inferred from the code
 it measures is satisfied by that code by construction. A project that documents
-nothing gets no scope reading rather than a flattering one.
+nothing gets no scope reading rather than a flattering one, and so does a
+project whose derived brief matches nothing in the code: that points at the
+brief, and a brief the tool is not sure of is not one it will grade you
+against. Pointed at its own source, this instrument declines to report scope
+drift for exactly that reason.
+
+If you write the specification yourself, the features can sit under any of
+`features`, `requirements`, `acceptance_criteria`, `user_stories`, `stories`,
+`must_have` or `deliverables`, as a list of plain sentences. Before 0.6.11 only
+`features` was read and the rest were opened, counted as measured, and
+silently ignored.
 
 Alongside it, four conventional readings: security density, cyclomatic
 complexity, duplication, and rework from a captured session. Code the analysers
 could not parse is reported as `unread`, never as `OK`.
+
+**The worst single problem decides the colour.** A high-severity finding reads
+red and a medium reads amber, however much clean code surrounds it, because a
+band is an instruction to a reader and not a measure of our confidence in the
+finding. A false positive at amber costs somebody one review. A real finding
+banded green costs them the breach. Green does not mean safe; it means nothing
+above low was found in the code that could be read, by the checks that ran.
 
 **🟢 Try it in 30 seconds:**
 ```bash
@@ -132,10 +158,9 @@ Nothing else needs to change, and every command below works the same way with
 Or put the agent governance check inside the agent you already use, so the
 assessment happens where the work happens.
 
-> **Needs 0.6.2 or later, which is not on PyPI yet.** The latest published
-> release is 0.6.1 and it has no `mcp` command, so the two commands below fail
-> on it with `No such command 'mcp'`. Until 0.6.2 is published, install from
-> source: `pip install git+https://github.com/dominicrume/ai-code-quality-auditor`.
+> Needs 0.6.2 or later. Any current release carries `auditor mcp`; if you get
+> `No such command 'mcp'` you are on 0.6.1 or earlier, and `pip install -U
+> ai-code-quality-auditor` fixes it. Check what you have with `auditor doctor`.
 
 
 ```bash
@@ -153,6 +178,18 @@ all, and `kya_standard` states what the standard measures and what it refuses to
 conclude. Point it at something that is not an agent and it returns
 `NOT_APPLICABLE` with no score, which is the behaviour the check exists for.
 `skills/kya-conformance/` is the companion skill for an agent that will run it.
+
+It is a stdio MCP server speaking protocol `2024-11-05`, not a wrapper around
+the scan: it answers `initialize` and `tools/list` and advertises itself as
+`ai-code-quality-auditor`. You can confirm that without a client:
+
+```bash
+printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"probe","version":"1"}}}' '{"jsonrpc":"2.0","method":"notifications/initialized"}' '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' | auditor mcp
+```
+
+A tool that cannot complete its reading returns that as a result with the gap
+named in it, not as a protocol error, because a model that receives an error
+retries and a model that receives a stated limit has to account for it.
 
 A finding you can hand to somebody who was not there:
 
@@ -198,10 +235,12 @@ returns the post-repair values, which are circular and are not the result; see
 
 ## What it reports that nothing else does
 
-Point it at a folder. If the project documents what it is for, nothing needs
-to be typed at all: the specification is derived from that and written to
-`.auditor/spec.yaml` for you to correct. It then tells you, feature by
-feature, what arrived, what did not, and where the evidence is:
+Point it at a folder. If the project documents what it is for, often nothing
+needs to be typed at all: the specification is derived from that and written to
+`.auditor/spec.yaml` for you to correct. When the derivation does not produce a
+brief the tool can stand behind, it says so and reports no scope reading. It
+then tells you, feature by feature, what arrived, what did not, and where the
+evidence is:
 
 ```
 $ auditor scan . --brief "add an item
@@ -211,14 +250,17 @@ validate input"
 
 Specification fidelity  2 of 4 delivered
 
-✓  add.item        cli.py:7    subcommand "add"
-✓  list.items      cli.py:13   subcommand "list"
-!  export.csv      cli.py:17   function export_csv exists, but nothing exposes it
-✗  validate.input              not found
-~  scheduler       cli.py:20   not asked for
+✓  add an item     cli.py:9   subcommand "add"
+✓  list items      cli.py:13  subcommand "list"
+!  export to csv   cli.py:23  function export_csv exists, but nothing exposes it
+✗  validate input             not found
+~  scheduler       cli.py:19  not asked for
 
-Missing: validate.input — asked for, and nothing in the code declares it.
-Built but unreachable: export.csv — the code exists, nothing exposes it.
+Missing — asked for, and nothing in the code declares it:
+  · validate input (validate.input)
+
+Built but unreachable — the code exists, nothing exposes it:
+  · export to csv — function export_csv at cli.py:23
 ```
 
 A linter cannot produce this, because a linter does not know what was asked
@@ -235,14 +277,30 @@ implemented none of them. That defect and its correction are recorded in
 ## Case study: the instrument audits its own maker
 
 The fastest way to judge a measuring instrument is to point it at the person holding it.
-Run on this repository's own source, on 14 October 2026, with 0.6.0:
+Run on this repository's own source on 26 November 2026, with 0.6.12:
 
 ```
 $ auditor scan auditor
-  Security     2.82 per kLOC   OK     14 findings: 1 medium, 13 low
-  Complexity   4.31 cc         WARN   over 212 functions
-  Duplication  6.64 %          WARN   275 lines
+  68 files · 9,991 lines · 65 analysable
+  Security     1.74 per kLOC   OK     17 findings, none above low
+  Complexity   4.68 cc         WARN   over 396 functions
+  Duplication  4.03 %          OK     331 lines
+  Scope drift  n/a                    nothing yet says what was asked for
+  Rework       n/a                    needs a captured session
 ```
+
+Two of those five are not numbers, and that is the reading, not a gap in it. Pointed at
+its own source the instrument cannot establish what this project was asked to build: the
+brief it derived matched nothing in the code, which points at the brief rather than at the
+code, so it withholds scope drift instead of printing a flattering zero. On the
+best-documented project it will ever see, the derivation came up empty. Rework is not
+measurable from a directory at all.
+
+For comparison, the same scan on 14 October 2026 with 0.6.0, over 44 files and 3,971
+lines, read `Security 2.82 OK` with 14 findings of which one was medium, `Complexity 4.31
+WARN` over 212 functions, and `Duplication 6.64% WARN`. The codebase has since more than
+doubled. Complexity rose, duplication and security density fell, and the medium finding is
+gone — see below, because what happened to it is the more interesting half.
 
 These figures move as the code does, and two of them moved in 0.6.0 because the
 instrument was corrected rather than because the code changed. Duplication went
@@ -279,17 +337,34 @@ Those two findings got opposite verdicts, and saying so is the point:
   either. Deleting them closed the exposure and took duplication to 7.84%. A structural
   metric found a security defect that the security metric did not.
 
-**The one medium finding is our scanner being wrong about us,** and it stays on the
-record as such. It flags `core/share.py:97` for opening a URL without restricting the
-scheme (B310, CWE-22). The line above it rejects anything that is not `https://`, so the
-`file:` path the rule is warning about cannot be reached. This is the mirror of
-[`docs/FIELD_REPORT_001.md`](docs/FIELD_REPORT_001.md), where the same rule caught a
-genuine one. We are not suppressing it: teaching the detector to recognise this
-particular guard, on the codebase that wrote the guard, is how an instrument starts
-agreeing with its author. A scanner with no false positives at this cost is a scanner
-that has been fitted to someone's code.
+**The medium finding we called a false positive was pointing at a real hole one line
+further on.** This is the part of the self-audit worth reading, and it did not go the way
+we first wrote it up.
 
-The same pass over three neighbouring codebases, for calibration:
+Through 0.6.10 this README said the finding was our scanner being wrong about us. It
+flagged `core/share.py:97` for opening a URL without restricting the scheme (B310,
+CWE-22); the line above rejects anything that is not `https://`, so the `file:` path the
+rule warns about cannot be reached. That reasoning was correct and the conclusion was
+wrong. The guard checks the URL you pass in. It does not check where that URL sends you.
+A redirect from an `https://` address to any other scheme walked straight through a
+function whose docstring promised it could not. The field report had the right line and
+the wrong reason, and the version that dismissed it as noise was the version with the
+defect in it. Recorded in full at
+[`docs/FINDING_010_https_promise_broken_by_redirect.md`](docs/FINDING_010_https_promise_broken_by_redirect.md)
+— including that a published false-positive claim had to be withdrawn.
+
+So the current reading shows 17 findings and none above low: the medium is gone because
+the hole was closed, not because the detector was taught to agree with us. We still do
+not suppress rules on our own code. Teaching a detector to recognise one particular
+guard, on the codebase that wrote the guard, is how an instrument starts agreeing with its
+author, and a scanner with no false positives at that cost is a scanner fitted to someone's
+code. What this episode changed is cheaper and harsher: a finding we have reasoned our way
+past is still a finding, it still gets named beside the band, and since 0.6.11 a medium
+holds the band at amber while we are being clever about it.
+
+The same pass over three neighbouring codebases, for calibration. These are the 0.6.0
+readings from 14 October 2026 and have not been re-run; the `auditor/` row is therefore
+the old figure, not the one above, and the three external codebases have moved on since:
 
 | Codebase | Files / lines | Security (per kLOC) | Complexity | Duplication |
 |---|---|---|---|---|
@@ -304,11 +379,56 @@ scanner reads Python. The dissertation documents this caveat, and the honest rea
 plainly is the same discipline as publishing our own RISK.
 
 **Scope note.** The figures above score `auditor/` — the instrument's own source. The
-dissertation's §4.8 field audit scores the *whole repository* (141 files, 13,136 lines,
-including scripts, tests and tooling) and reports 3.14 security, 3.58 complexity, 4.01%
-duplication and 12 scope drift. Neither figure is wrong; they answer different questions,
-and a metric that did not move when you changed what you pointed it at would be useless.
-Always state the scanned path alongside the number.
+dissertation's §4.8 field audit scores the *whole repository* as it stood at submission
+(141 files, 13,136 lines, including scripts, tests and tooling) and reports 3.14 security,
+3.58 complexity, 4.01% duplication and 12 scope drift. Those are the figures of record and
+are not restated here, because a figure in a submitted dissertation is corrected by an
+erratum and not by an edit. The repository at that state is tagged
+`submission-2026-09-22`; a whole-repository scan today reads 290 files and 69,186 lines, of
+which 152 are analysable, and answers a different question about a different tree. Neither
+is wrong, and a metric that did not move when you changed what you pointed it at would be
+useless. Always state the scanned path and the version alongside the number.
+
+## What it will not tell you
+
+Run `auditor doctor` and it prints this list for your installation, including any open
+defect that could affect the numbers you just read. As of 0.6.12:
+
+- **Duplication is overstated on any repository that ships built assets beside their
+  source**, and security findings are counted twice where the same code appears in both
+  trees. This is open, it is
+  [`FINDING_008`](docs/FINDING_008_duplicated_source_tree_counted_as_duplication.md), and
+  it is disclosed in every receipt the tool writes. Read the duplicated paths before
+  quoting the figure. Fixing it moves a figure already published, so it needs an erratum
+  rather than a patch.
+- **Security and complexity are Python-only**, via `bandit` and `radon`. On a JavaScript
+  codebase the honest reading is "per-language vulnerability density", never "zero
+  vulnerabilities".
+- **The density bands are loose.** Security warns at 50 findings per 1,000 lines, which is
+  one every twenty lines, so density alone reads green almost everywhere. What makes a
+  security band move in practice is the severity floor, not the density.
+- **Fidelity reads declared names, not behaviour.** A requirement satisfied inside another
+  function, with nothing declaring it, reads as not found. The tool can tell you a name is
+  absent; it cannot tell you the thing works.
+- **Flask routes are not read as routes.** The Python detector recognises the
+  `@app.get(...)` / `@app.post(...)` decorator family, so FastAPI and Typer surfaces cite
+  `route POST /claims`. Flask's `@app.route("/claims", methods=["POST"])` does not match
+  it, and the endpoint is cited as `function submit_claim` instead. The feature is still
+  found; the evidence is weaker than it should be.
+- **A requirement whose first word is a verb the code does not use may read as not
+  found.** "Look up a claim by reference" becomes `look.up.claim`, and nothing in a
+  codebase declares `look`, so a requirement that *is* implemented reads `✗`. This is the
+  unfinished half of
+  [`FINDING_011`](docs/FINDING_011_supplied_spec_nobody_read.md): a false red against
+  working code is worse than a silence, and it is open.
+- **Rework needs a captured session.** It is not measurable from a directory, and is
+  reported as `n/a` rather than as zero.
+- **A reading is not an attestation.** It is unsigned, undated in any binding sense, and
+  addressed to nobody.
+
+Every numbered defect above is in `docs/`, named, with the version that carried it. We
+publish them because an instrument that hides its own findings cannot be trusted with
+anyone else's.
 
 ## When a reading is not enough
 
@@ -334,10 +454,23 @@ measurement you have to pay for is a measurement you cannot check.
 On 15 September 2026 a workshop team installed 0.5.0 from PyPI into a private
 health-advertising prototype (27 files, about 4,040 lines). The scan surfaced one real
 medium finding their own audit had missed: a URL opener that accepted `file:` paths. The
-other sixteen findings were already known. The composite security score still read OK,
-because one finding cannot move a density band, so the auditor now names every medium and
-high finding beside the score. Full account, including what the tool did not do:
+other sixteen findings were already known. The composite security score read OK anyway,
+because at the time no single finding could move a density band. Two changes came out of
+that: the auditor names every medium and high finding beside the score, and since 0.6.11 a
+medium floors the band to amber and a high floors it to red, however much good code
+surrounds it. A known problem under a green badge is a clean bill of health the instrument
+has not earned. Full account, including what the tool did not do:
 [`docs/FIELD_REPORT_001.md`](docs/FIELD_REPORT_001.md).
+
+On 24 November 2026 an entrant in a public challenge ran 0.6.10 over a three-function
+script and got four green dots, `Scope drift 0.00 OK`, and a footer saying `measured
+against spec.yaml`. The tool had opened their specification, reported it as measured, and
+read none of it: their requirements sat under a `requirements:` key and the analyser
+wanted `features:`. They concluded the implementation matched the requirements. It had
+never been checked. 0.6.11 reads the sentences from whichever key holds them and withholds
+the scope reading, by name, when it can read none —
+[`docs/FINDING_011_supplied_spec_nobody_read.md`](docs/FINDING_011_supplied_spec_nobody_read.md),
+including the false red the first version of that fix produced against working code.
 
 ## Read in this order
 1. `docs/ARCHITECTURE.md` — how the pieces fit

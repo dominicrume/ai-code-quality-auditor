@@ -1,5 +1,61 @@
 # Changelog
 
+## 0.6.12 — 26 November 2026
+
+**No analyser changed. Every outward claim was audited against the tool, and the
+ones that did not survive were corrected.** The project page had drifted from the
+instrument by two releases, and in one place it described behaviour the code has
+never had.
+
+### The headline example was never run
+
+The first code block in the README, which is also the first thing on the PyPI
+page, was written by hand. A fixture built to match it exactly produces different
+output in four places, two of which are defects in the tool and two of which are
+not yet established either way. Both README examples are now captured from real
+runs, and the text beside them says so. Recorded in
+`docs/FINDING_012_readme_example_was_never_run.md`.
+
+### Claims corrected
+
+- The MCP install note said 0.6.2 "is not on PyPI yet" and that the latest
+  release was 0.6.1 with no `mcp` command. Both were false. `auditor mcp` is a
+  working stdio MCP server speaking protocol `2024-11-05`; the README now carries
+  a handshake you can run yourself to confirm it without a client.
+- "One finding cannot move a density band" contradicted 0.6.11's severity floor.
+  The banding rule is now stated once, near the top: the worst single problem
+  decides the colour, and green does not mean safe.
+- The self-audit figures were a 0.6.0 reading from 14 October over 44 files. They
+  are re-run on 0.6.12 over 68 files: security 1.74 with 17 findings and none
+  above low, complexity 4.68, duplication 4.03%, scope drift withheld. The old
+  figures are kept beside them, dated, because the movement is the point.
+- The paragraph calling our one medium finding a false positive is rewritten. The
+  `file:` reasoning was sound and the conclusion was wrong: the hole was a
+  redirect one step further on, and the version that dismissed the finding as
+  noise was the version carrying the defect. See FINDING_010.
+- The derived-specification claim promised that a documented project needs nothing
+  typed. Pointed at its own source, the instrument declines to report scope drift
+  because the brief it derived matched nothing in the code. That refusal is now
+  described rather than omitted.
+- The seven keys `normalise_spec` accepts are documented, which is the wall
+  FINDING_011's reporter walked into.
+- The dissertation's §4.8 figures are marked as figures of record, corrected by
+  erratum and not by edit, with the tag that reproduces them.
+
+### Added
+
+A "What it will not tell you" section: FINDING_008 and its effect on duplication,
+the Python-only scope of security and complexity, the looseness of the density
+bands, Flask routes reading as functions, verb head words producing a false red,
+rework needing a captured session, and a reading not being an attestation.
+
+### Housekeeping
+
+`.claude-plugin/plugin.json` was still on 0.6.11 while `_version.py` had moved to
+0.6.12. 566 tests pass: the 560 that passed before, unchanged because no behaviour
+changed, plus six in `tests/test_finding_012.py` that run the README's example and
+assert the published block still matches what the run produces.
+
 ## 0.6.11 — 25 November 2026
 
 **Two changes to what a reading is allowed to say: a small problem is never

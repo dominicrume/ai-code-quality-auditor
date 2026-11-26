@@ -1,7 +1,7 @@
 {
   "name": "kya-conformance",
   "displayName": "KYA Conformance",
-  "version": "0.6.11",
+  "version": "0.6.12",
   "description": "Assess whether an autonomous agent is governed well enough to run unsupervised, against the five KYA conformance elements. Ships the skill and the kya MCP server together.",
   "author": {
     "name": "Orume Dominic Uririe",
